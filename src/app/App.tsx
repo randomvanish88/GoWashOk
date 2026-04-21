@@ -1,0 +1,383 @@
+import { useState, useEffect } from 'react';
+import { PriceList } from './components/PriceList';
+import { PriceForm } from './components/PriceForm';
+import { SizeEditor } from './components/SizeEditor';
+import { BrandEditor } from './components/BrandEditor';
+import { POS } from './components/POS';
+import { Gastos } from './components/Gastos';
+import { Login } from './components/Login';
+import { Card } from './components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Button } from './components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
+import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram } from 'lucide-react';
+const logoImage = "/logo.png";
+
+export interface Price {
+  id: string;
+  brand: string;
+  model: string;
+  year?: string;
+  size: string;
+  service: string;
+  price: number;
+  imageUrl?: string;
+}
+
+const DEFAULT_SIZES = ['Pequeño', 'Mediano', 'Grande', 'SUV', 'Camioneta', 'Van'];
+const DEFAULT_BRANDS = ['Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'Mazda', 'Volkswagen', 'Hyundai', 'Kia', 'BMW', 'Mercedes-Benz', 'Audi'];
+
+function App() {
+  const [prices, setPrices] = useState<Price[]>([]);
+  const [editingPrice, setEditingPrice] = useState<Price | null>(null);
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('pos'); // Default to POS for workers
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Cargar datos desde localStorage
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('gowash-auth');
+    if (savedAuth) {
+      const authData = JSON.parse(savedAuth);
+      setIsAuthenticated(true);
+      setUser(authData.username);
+    }
+    const savedPrices = localStorage.getItem('carwash-prices');
+    const savedSizes = localStorage.getItem('carwash-sizes');
+    const savedBrands = localStorage.getItem('carwash-brands');
+
+    if (savedPrices) {
+      setPrices(JSON.parse(savedPrices));
+    } else {
+      // Datos de ejemplo iniciales
+      const defaultPrices: Price[] = [
+        { id: '1', brand: 'Toyota', model: '-', size: 'Pequeño', service: 'Lavado Básico', price: 15 },
+        { id: '2', brand: 'Toyota', model: '-', size: 'Mediano', service: 'Lavado Básico', price: 20 },
+        { id: '3', brand: 'Toyota', model: '-', size: 'Grande', service: 'Lavado Básico', price: 25 },
+        { id: '4', brand: 'Honda', model: '-', size: 'Pequeño', service: 'Lavado Premium', price: 25 },
+        { id: '5', brand: 'Ford', model: '-', size: 'SUV', service: 'Lavado Premium + Encerado', price: 50 },
+      ];
+      setPrices(defaultPrices);
+      localStorage.setItem('carwash-prices', JSON.stringify(defaultPrices));
+    }
+
+    if (savedSizes) {
+      setSizes(JSON.parse(savedSizes));
+    } else {
+      setSizes(DEFAULT_SIZES);
+      localStorage.setItem('carwash-sizes', JSON.stringify(DEFAULT_SIZES));
+    }
+
+    if (savedBrands) {
+      setBrands(JSON.parse(savedBrands));
+    } else {
+      setBrands(DEFAULT_BRANDS);
+      localStorage.setItem('carwash-brands', JSON.stringify(DEFAULT_BRANDS));
+    }
+  }, []);
+
+  // Guardar en localStorage cuando cambian los datos
+  useEffect(() => {
+    if (prices.length > 0) {
+      localStorage.setItem('carwash-prices', JSON.stringify(prices));
+    }
+  }, [prices]);
+
+  useEffect(() => {
+    if (sizes.length > 0) {
+      localStorage.setItem('carwash-sizes', JSON.stringify(sizes));
+    }
+  }, [sizes]);
+
+  useEffect(() => {
+    if (brands.length > 0) {
+      localStorage.setItem('carwash-brands', JSON.stringify(brands));
+    }
+  }, [brands]);
+
+  const handleAddPrice = (price: Omit<Price, 'id'>) => {
+    const newPrice: Price = {
+      ...price,
+      id: Date.now().toString(),
+    };
+    setPrices([...prices, newPrice]);
+  };
+
+  const handleUpdatePrice = (updatedPrice: Price) => {
+    setPrices(prices.map(p => p.id === updatedPrice.id ? updatedPrice : p));
+    setEditingPrice(null);
+  };
+
+  const handleDeletePrice = (id: string) => {
+    setPrices(prices.filter(p => p.id !== id));
+  };
+
+  const handleEditPrice = (price: Price) => {
+    setEditingPrice(price);
+    setActiveTab('add');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPrice(null);
+  };
+
+  // Handlers para tamaños
+  const handleAddSize = (size: string) => {
+    setSizes([...sizes, size]);
+  };
+
+  const handleEditSize = (oldSize: string, newSize: string) => {
+    setSizes(sizes.map(s => s === oldSize ? newSize : s));
+  };
+
+  const handleDeleteSize = (size: string) => {
+    setSizes(sizes.filter(s => s !== size));
+  };
+
+  // Handlers para marcas
+  const handleAddBrand = (brand: string) => {
+    setBrands([...brands, brand]);
+  };
+
+  const handleEditBrand = (oldBrand: string, newBrand: string) => {
+    setBrands(brands.map(b => b === oldBrand ? newBrand : b));
+  };
+
+  const handleDeleteBrand = (brand: string) => {
+    setBrands(brands.filter(b => b !== brand));
+  };
+
+  const handleLogin = (username: string) => {
+    setIsAuthenticated(true);
+    setUser(username);
+    localStorage.setItem('gowash-auth', JSON.stringify({ username, timestamp: Date.now() }));
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    localStorage.removeItem('gowash-auth');
+  };
+
+  const onLoginSuccess = (username: string) => {
+    handleLogin(username);
+    setShowLoginModal(false);
+  };
+
+  // Si no está autenticado, simplemente mostramos la app con restricciones
+  // Eliminamos el bloqueo total anterior
+  const handleOpenLogin = () => setShowLoginModal(true);
+
+  return (
+    <div className="min-h-screen bg-[#0a0f1d] text-slate-100 p-4 md:p-8 selection:bg-cyan-500/30 relative overflow-x-hidden">
+      {/* Decorative Background Glows */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-cyan-500/5 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="mb-10 relative bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl py-10 shadow-xl overflow-hidden">
+          {/* Logout & User Info */}
+          <div className="absolute top-4 right-4 flex items-center gap-4 z-10">
+            {isAuthenticated ? (
+              <>
+                <div className="hidden md:flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-white border border-white/30">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium">{user}</span>
+                </div>
+                <Button 
+                  onClick={handleLogout} 
+                  variant="destructive" 
+                  size="sm" 
+                  className="rounded-full shadow-lg hover:scale-105 transition-transform"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Salir
+                </Button>
+              </>
+            ) : (
+              <Button 
+                onClick={handleOpenLogin} 
+                variant="secondary" 
+                size="sm" 
+                className="rounded-full shadow-lg hover:scale-105 transition-transform bg-white text-blue-600 hover:bg-blue-50 font-bold"
+              >
+                Acceso Admin
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-col md:flex-row items-center justify-start gap-8 md:gap-16 relative px-4 md:px-12">
+            <img 
+              src={logoImage} 
+              alt="GoWash Logo"
+              className="w-80 md:w-[500px] lg:w-[650px] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 z-10 animate-float"
+            />
+            
+            <div className="hidden md:flex flex-col space-y-10 text-white text-2xl lg:text-4xl font-black z-10 ml-auto items-end">
+              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '0s' }}>
+                <Sparkles className="w-12 h-12 lg:w-16 lg:h-16 text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)]" /> 
+                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Lavado Artesanal</span>
+              </div>
+              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '0.4s' }}>
+                <Award className="w-12 h-12 lg:w-16 lg:h-16 text-blue-300 drop-shadow-[0_0_15px_rgba(147,197,253,0.8)]" /> 
+                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Productos Premium</span>
+              </div>
+              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '0.8s' }}>
+                <Users className="w-12 h-12 lg:w-16 lg:h-16 text-green-300 drop-shadow-[0_0_15px_rgba(134,239,172,0.8)]" /> 
+                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Atención Personalizada</span>
+              </div>
+              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '1.2s' }}>
+                <Coffee className="w-12 h-12 lg:w-16 lg:h-16 text-amber-300 drop-shadow-[0_0_15px_rgba(252,211,77,0.8)]" /> 
+                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Bar - Cafeteria</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full max-w-5xl mx-auto ${isAuthenticated ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-2'} bg-white shadow-lg`}>
+            <TabsTrigger value="pos">Punto de Venta</TabsTrigger>
+            <TabsTrigger value="list">Lista de Precios</TabsTrigger>
+            {isAuthenticated && (
+              <>
+                <TabsTrigger value="add">Editar Precios</TabsTrigger>
+                <TabsTrigger value="sizes">Tamaños</TabsTrigger>
+                <TabsTrigger value="brands">Marcas</TabsTrigger>
+                <TabsTrigger value="gastos">Gastos</TabsTrigger>
+              </>
+            )}
+          </TabsList>
+
+          <TabsContent value="list">
+            <Card className="p-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <PriceList
+                prices={prices}
+                onEdit={isAuthenticated ? handleEditPrice : undefined}
+                onDelete={isAuthenticated ? handleDeletePrice : undefined}
+              />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="add">
+            <Card className="p-6 max-w-2xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <PriceForm
+                onSubmit={editingPrice ? handleUpdatePrice : handleAddPrice}
+                onCancel={editingPrice ? handleCancelEdit : undefined}
+                editingPrice={editingPrice}
+                sizes={sizes}
+                brands={brands}
+              />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="sizes">
+            <Card className="p-6 max-w-4xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <SizeEditor
+                sizes={sizes}
+                onAddSize={handleAddSize}
+                onEditSize={handleEditSize}
+                onDeleteSize={handleDeleteSize}
+              />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="brands">
+            <Card className="p-6 max-w-5xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <BrandEditor
+                brands={brands}
+                onAddBrand={handleAddBrand}
+                onEditBrand={handleEditBrand}
+                onDeleteBrand={handleDeleteBrand}
+              />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pos">
+            <POS />
+          </TabsContent>
+
+          <TabsContent value="gastos">
+            <Gastos />
+          </TabsContent>
+        </Tabs>
+
+        {/* Sección de Contacto y Redes */}
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-10 items-center border-t border-white/5 pt-16">
+          {/* Ubicación */}
+          <a 
+            href="https://maps.app.goo.gl/546T1kAsif8sdcBWA" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center md:items-start gap-4 group cursor-pointer"
+          >
+            <div className="flex items-center gap-6">
+              <div className="p-5 bg-blue-500/10 rounded-2xl border border-blue-400/20 group-hover:bg-blue-500/20 transition-all duration-500 shadow-[0_0_30px_rgba(59,130,246,0.1)] group-hover:scale-110">
+                <MapPin className="w-10 h-10 text-blue-400 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-white font-black text-xl tracking-tight">Nuestra Ubicación</h4>
+                <p className="text-slate-400 text-sm font-medium"> Ingeniero Madero (Ruta 26)y Panamericana, Del Viso - Pilar </p>
+                <p className="text-blue-400/60 text-[10px] font-bold uppercase tracking-widest hover:text-blue-400 transition-colors">Ver en Google Maps</p>
+              </div>
+            </div>
+          </a>
+
+          {/* Redes Sociales */}
+          <a 
+            href="https://www.instagram.com/gowashpilar?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center md:items-end gap-4 group cursor-pointer"
+          >
+            <div className="flex items-center gap-6">
+              <div className="text-right hidden md:block space-y-1">
+                <h4 className="text-white font-black text-xl tracking-tight">Seguinos</h4>
+                <p className="text-slate-400 text-sm font-medium">@gowashpilar</p>
+                <p className="text-pink-400/60 text-[10px] font-bold uppercase tracking-widest group-hover:text-pink-400 transition-colors">Ver Instagram</p>
+              </div>
+              <div className="p-5 bg-gradient-to-tr from-purple-500/10 via-pink-500/10 to-orange-500/10 rounded-2xl border border-purple-400/20 group-hover:from-purple-500/20 group-hover:via-pink-500/20 group-hover:to-orange-500/20 transition-all duration-500 shadow-[0_0_30px_rgba(168,85,247,0.1)] group-hover:scale-110">
+                <Instagram className="w-10 h-10 text-pink-400" />
+              </div>
+              <div className="md:hidden space-y-1 text-center">
+                <h4 className="text-white font-black text-xl tracking-tight">Seguinos</h4>
+                <p className="text-slate-400 text-sm font-medium">@gowashpilar</p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        {/* Footer */}
+        <footer className="mt-20 py-10 border-t border-white/10 flex items-center justify-center gap-4">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-yellow-400/20 blur-lg rounded-full group-hover:bg-yellow-400/40 transition-colors"></div>
+            <img 
+              src="/copyright.png" 
+              alt="Copyright Seal" 
+              className="w-10 h-10 relative z-10 mix-blend-screen brightness-125 contrast-125" 
+            />
+          </div>
+          <p className="text-slate-400 text-xs md:text-sm font-medium tracking-widest uppercase">
+            copyright 2026 <span className="text-blue-400 font-bold">&lt;Gauna Agustin - Developer &gt;</span>
+          </p>
+        </footer>
+
+        {/* Login Modal */}
+        <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+          <DialogContent className="sm:max-w-md bg-transparent border-0 p-0 overflow-hidden">
+            <Login onLogin={onLoginSuccess} />
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}
+
+export default App;

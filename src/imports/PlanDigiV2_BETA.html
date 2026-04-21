@@ -1,0 +1,2573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Cobro Gowash</title>
+  <style>
+    /* Variables CSS para una fácil personalización del tema */
+    :root {
+        --primary-color: #2C5D9F; /* Azul oscuro principal */
+        --secondary-color: #6C757D; /* Gris para acciones secundarias */
+        --accent-color-lavado: #e3f2fd; /* Azul claro para Lavado en tabla */
+        --accent-color-bar: #ffebee; /* Rojo claro para Bar en tabla */
+        --accent-color-cosmeticos: #e0f2f7; /* Azul verdoso claro para Cosméticos en tabla */
+        --background-light: #f0f2f5; /* Fondo general de la página */
+        --card-background: #ffffff; /* Fondo de las cajas/recuadros */
+        --border-color: #e0e0e0; /* Color de borde general */
+        --shadow-light: 0 4px 12px rgba(0,0,0,0.08); /* Sombra suave para cajas */
+        --shadow-hover: 0 6px 18px rgba(0,0,0,0.12); /* Sombra al pasar el mouse */
+        --text-color: #333; /* Color de texto principal */
+        --heading-color: #222; /* Color de títulos */
+        --total-color: #28a745; /* Color para el total (verde) */
+        --total-bg-color: #e6ffe6; /* Fondo para el total */
+        --cash-digital-bg: #f1f8e9; /* Fondo para cash/digital en tabla */
+    }
+
+    /* Estilos generales del cuerpo y layout principal */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px; /* Ancho máximo para el diseño de 2 columnas */
+      margin: auto;
+      padding: 15px;
+      background-color: var(--background-light);
+      color: var(--text-color);
+      font-size: 0.95em;
+      display: grid; /* Usamos CSS Grid para el layout principal */
+      grid-template-columns: 1fr; /* Por defecto, una columna para pantallas pequeñas */
+      gap: 20px; /* Espacio entre las secciones principales */
+    }
+
+    /* Media query para pantallas más grandes (tablets y desktops) */
+    @media (min-width: 768px) {
+        body {
+            grid-template-columns: repeat(2, 1fr); /* Dos columnas de igual ancho */
+            grid-template-areas: /* Definición de áreas para el layout */
+                "header header" /* El encabezado ocupa ambas columnas */
+                "datos-venta lavado" /* Datos de Venta a la izquierda, Lavado a la derecha */
+                "bar cosmeticos" /* Bar a la izquierda, Cosméticos a la derecha */
+                "pago pago" /* Pago ocupa ambas columnas */
+                "grilla grilla" /* La tabla (grilla) ocupa ambas columnas */
+                "arqueo cierre-caja" /* Arqueo a la izquierda, Cierre de Caja a la derecha */
+                "acciones acciones"; /* Acciones ocupa ambas columnas */
+        }
+        /* Asignación de elementos a las áreas definidas */
+        #datosVentaFieldset { grid-area: datos-venta; }
+        #lavadoFieldset { grid-area: lavado; }
+        #barFieldset { grid-area: bar; }
+        #cosmeticosFieldset { grid-area: cosmeticos; } /* Nueva área para cosméticos */
+        #pagoFieldset { grid-area: pago; }
+        #tablaVentas { grid-area: grilla; }
+        .arqueo { grid-area: arqueo; }
+        #cierreCaja { grid-area: cierre-caja; }
+        #accionesFieldset { grid-area: acciones; }
+    }
+
+    /* Estilos del encabezado */
+    header {
+        text-align: center;
+        margin-bottom: 25px;
+        grid-column: 1 / -1; /* El encabezado abarca todas las columnas */
+        align-self: start; /* Alineado al inicio del área de la grilla */
+    }
+    .logo-container {
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 10px;
+        background-color: var(--primary-color);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        position: relative;
+        overflow: hidden;
+    }
+    .logo-container::before {
+        content: 'G';
+        font-family: Arial, sans-serif;
+        color: white;
+        font-size: 40px;
+        font-weight: bold;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    .logo-container::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 30%;
+        background: linear-gradient(to right, #28a745, var(--primary-color));
+        transform: skewY(-5deg);
+        transform-origin: bottom left;
+    }
+    header h1 {
+        font-size: 2.5em;
+        color: var(--primary-color);
+        margin: 0;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    /* Estilos de las "cajas" o "recuadros" (fieldset, .arqueo, #cierreCaja) */
+    fieldset, .arqueo, #cierreCaja {
+      margin-bottom: 0; /* El espacio lo maneja el 'gap' del grid padre */
+      border: none; /* Quitamos el borde por defecto del fieldset */
+      padding: 20px;
+      border-radius: 12px;
+      background-color: var(--card-background);
+      box-shadow: var(--shadow-light);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex; /* Usamos flexbox para organizar el contenido interno */
+      flex-direction: column; /* Los elementos internos se apilan verticalmente */
+    }
+    fieldset:hover, .arqueo:hover, #cierreCaja:hover {
+        transform: translateY(-3px); /* Efecto de elevación al pasar el mouse */
+        box-shadow: var(--shadow-hover);
+    }
+    legend {
+      font-weight: bold;
+      font-size: 1.4em;
+      color: var(--primary-color);
+      padding: 8px 15px;
+      margin-left: -15px; /* Ajuste para que el legend sobresalga ligeramente */
+      background-color: var(--background-light);
+      border-radius: 8px;
+      margin-bottom: 15px; /* Espacio debajo del legend */
+      align-self: flex-start; /* Alinea el legend a la izquierda */
+    }
+    .arqueo h3, #cierreCaja h3 {
+        font-size: 1.4em;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+    }
+    .arqueo h4, #cierreCaja h4 {
+        font-size: 1.1em;
+        color: var(--primary-color);
+        margin-top: 15px;
+        margin-bottom: 8px;
+    }
+
+    /* Estilos para los grupos de inputs dentro de las cajas */
+    .grid-datos, .mixed-inputs, .input-with-select {
+      display: flex; /* Usamos flex para apilar verticalmente los inputs */
+      flex-direction: column;
+      gap: 12px; /* Espacio entre los grupos de label/input */
+      width: 100%;
+    }
+    .grid-datos div { /* Para cada par label/input */
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .grid-datos label, .mixed-inputs label, .input-with-select label {
+      font-weight: bold;
+      color: var(--text-color);
+      margin-bottom: 6px; /* Espacio entre label y input */
+    }
+    .grid-datos input[type="text"],
+    .grid-datos input[type="tel"],
+    .grid-datos input[type="time"],
+    fieldset select,
+    fieldset input[type="number"] {
+      padding: 12px; /* Mayor padding para mejor interacción táctil */
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 1.05em;
+      background-color: #fcfcfc;
+    }
+
+    #precioLavado, #precioBar, #precioCosmeticos, #editPrecioLavado, #editPrecioBar, #editPrecioCosmeticos {
+        background-color: #eef3f9; /* Fondo distinto para los campos de precio */
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    /* Estilo para el descuento del bar y cosmeticos */
+    .descuento-group { /* Renombrado de descuento-bar-group a descuento-group */
+        display: flex;
+        align-items: flex-end; /* Alinea los elementos al final */
+        gap: 10px; /* Espacio entre el input y el select */
+        margin-top: 10px;
+    }
+    .descuento-group input[type="number"] {
+        flex-grow: 1; /* Permite que el input ocupe el espacio disponible */
+    }
+    .descuento-group select {
+        width: auto; /* Ancho automático para el select */
+        min-width: 100px;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background-color: #fcfcfc;
+        font-size: 1.05em;
+    }
+
+
+    /* Estilos para la lista de productos del Bar y Cosméticos */
+    #listaProductos, #listaCosmeticos, #editListaProductos, #editListaCosmeticos {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 15px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: #fcfcfc;
+      overflow: hidden;
+    }
+    #listaProductos li, #listaCosmeticos li, #editListaProductos li, #editListaCosmeticos li {
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.98em;
+      background-color: var(--card-background);
+    }
+    #listaProductos li:last-child, #listaCosmeticos li:last-child, #editListaProductos li:last-child, #editListaCosmeticos li:last-child { border-bottom: none; }
+    #listaProductos li button, #listaCosmeticos li button, #editListaProductos li button, #editListaCosmeticos li button {
+      background-color: #dc3545; /* Rojo para el botón de eliminar */
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background-color 0.2s ease;
+    }
+    #listaProductos li button:hover, #listaCosmeticos li button:hover, #editListaProductos li button:hover, #editListaCosmeticos li button:hover {
+        background-color: #c82333;
+    }
+
+    /* Estilos para el display del Total */
+    .total {
+      font-weight: bold;
+      font-size: 2.2em;
+      text-align: right;
+      margin-top: 25px;
+      margin-bottom: 25px;
+      color: var(--total-color);
+      background-color: var(--total-bg-color);
+      padding: 15px 25px;
+      border-radius: 12px;
+      border: 1px solid var(--total-color);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Estilos para los botones de acción */
+    fieldset button, .arqueo button {
+      width: 100%; /* Ancho completo por defecto para mejor interacción táctil en móviles */
+      padding: 12px 20px;
+      margin-bottom: 10px; /* Espacio entre botones apilados */
+      font-size: 1.05em;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    /* Colores específicos para tipos de botones */
+    .primary-action { background-color: var(--primary-color); color: white; }
+    .primary-action:hover { background-color: #204b80; transform: translateY(-1px); }
+    .secondary-action { background-color: var(--secondary-color); color: white; }
+    .secondary-action:hover { background-color: #5a6268; transform: translateY(-1px); }
+    .danger-action { background-color: #dc3545; color: white; }
+    .danger-action:hover { background-color: #c82333; transform: translateY(-1px); }
+
+    /* Media query para los botones de acciones en pantallas grandes (se muestran en fila) */
+    @media (min-width: 768px) {
+        #accionesFieldset button {
+            width: auto; /* Los botones pueden auto-ajustar su ancho */
+            margin-right: 10px; /* Espacio entre botones uno al lado del otro */
+        }
+        #accionesFieldset {
+            display: flex;
+            flex-wrap: wrap; /* Permite que los botones se envuelvan en varias líneas */
+            justify-content: center; /* Centra los botones horizontalmente */
+            gap: 10px; /* Espacio entre los botones */
+            flex-direction: row; /* Los botones se organizan en fila */
+        }
+    }
+
+    /* Estilos de la tabla de ventas */
+    table {
+        width: 100%;
+        border-collapse: separate; /* Usamos 'separate' para aplicar border-radius a las celdas */
+        border-spacing: 0; /* Elimina el espacio entre celdas */
+        margin-top: 25px;
+        background-color: var(--card-background);
+        border-radius: 12px;
+        overflow: hidden; /* Asegura que el border-radius se aplique al contenido de la tabla */
+        box-shadow: var(--shadow-light);
+        display: block; /* Permite el scroll horizontal en pantallas pequeñas */
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        white-space: nowrap; /* Evita que el contenido de las celdas se envuelva */
+    }
+    th, td {
+        border: 1px solid var(--border-color); /* Borde más claro */
+        padding: 12px;
+        text-align: center;
+        font-size: 0.95em;
+        white-space: nowrap; /* Mantiene el contenido en una sola línea */
+    }
+    th {
+        background-color: var(--primary-color);
+        color: white;
+        text-transform: uppercase;
+        font-weight: normal;
+        border-color: var(--primary-color); /* El borde del encabezado coincide con el color principal */
+    }
+    /* Estilos específicos para columnas de la tabla (diferenciación por colores) */
+    .lavado-col { background-color: var(--accent-color-lavado); color: #333; } /* Celeste claro para Lavado */
+    .bar-col { background-color: var(--accent-color-bar); color: #333; } /* Amarillo claro para Bar */
+    .cosmeticos-col { background-color: var(--accent-color-cosmeticos); color: #333; } /* Nuevo color para Cosméticos */
+    .total-col { font-weight: bold; background-color: var(--total-bg-color); color: #333; } /* Verde claro para Total */
+    .cash-lavado-col { background-color: var(--accent-color-lavado); color: #333; } /* Celeste para Cash (L) */
+    .digital-lavado-col { background-color: var(--accent-color-lavado); color: #333; } /* Celeste para Digital (L) */
+    .cash-bar-col { background-color: var(--accent-color-bar); color: #333; } /* Amarillo para Cash (B) */
+    .digital-bar-col { background-color: var(--accent-color-bar); color: #333; } /* Amarillo para Digital (B) */
+    .cash-cosmeticos-col { background-color: var(--accent-color-cosmeticos); color: #333; } /* Nuevo color para Cash (C) */
+    .digital-cosmeticos-col { background-color: var(--accent-color-cosmeticos); color: #333; } /* Nuevo color para Digital (C) */
+
+
+    /* Resaltado de fila modificada en la tabla */
+    .modified-row {
+        background-color: #fff3cd !important; /* Amarillo para filas modificadas */
+    }
+    .modified-label {
+        font-size: 0.7em;
+        font-weight: bold;
+        color: #e65100; /* Naranja oscuro para la etiqueta MOD */
+    }
+
+    /* Estilos para Arqueo de Caja y Cierre de Caja */
+    .arqueo table {
+        width: 100%;
+        margin-top: 10px;
+        box-shadow: none; /* Quitamos la sombra extra para tablas internas */
+        border-radius: 0;
+        overflow-x: unset;
+        white-space: unset;
+    }
+    .arqueo input[type="number"] {
+        width: 70px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 1em;
+    }
+    #diffArqueo {
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    #diffArqueo.positive-diff { color: var(--total-color); } /* Verde si la diferencia es positiva */
+    #diffArqueo.negative-diff { color: var(--accent-color-bar); } /* Rojo si la diferencia es negativa */
+
+
+    /* Estilos del Modal de Edición */
+    .modal {
+        display: none; /* Oculto por defecto */
+        position: fixed;
+        z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Permite scroll si el contenido es muy largo */
+        background-color: rgba(0,0,0,0.6); /* Fondo semi-transparente */
+        padding-top: 50px;
+    }
+    .modal-content {
+        background-color: var(--card-background);
+        margin: 5% auto; /* Centrado vertical y horizontal */
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        width: 90%;
+        max-width: 700px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Espacio entre los elementos del modal */
+    }
+    .close-button {
+        color: var(--secondary-color);
+        font-size: 32px;
+        font-weight: bold;
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        cursor: pointer;
+    }
+    .close-button:hover, .close-button:focus {
+        color: var(--accent-color-bar);
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .modal-content label { font-weight: bold; margin-bottom: 5px; display: block; }
+    .modal-content input, .modal-content select, .modal-content textarea {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-sizing: border-box;
+        font-size: 1em;
+        background-color: #fcfcfc;
+    }
+    .modal-buttons {
+        display: flex;
+        justify-content: flex-end; /* Alinea los botones a la derecha */
+        gap: 10px; /* Espacio entre los botones */
+        margin-top: 20px;
+    }
+    .modal-buttons button {
+        flex-grow: 1; /* Permite que los botones crezcan para llenar el espacio */
+        max-width: 150px; /* Limita el ancho de los botones en el modal */
+    }
+
+    /* Media Queries para ajuste fino en móviles (menos de 768px de ancho) */
+    @media (max-width: 767px) {
+        body {
+            grid-template-columns: 1fr; /* Una sola columna para todo */
+            grid-template-areas: unset; /* Reinicia las áreas de la grilla */
+            padding: 10px;
+            font-size: 0.9em;
+        }
+        header h1 { font-size: 2em; }
+        legend { font-size: 1.2em; padding: 6px 12px; margin-left: -10px;}
+        fieldset, .arqueo, #cierreCaja { padding: 15px; }
+        fieldset button, .arqueo button { width: 100%; margin-right: 0; }
+        .total { font-size: 1.8em; padding: 12px 18px; }
+        .modal-content { width: 95%; margin: 2% auto; padding: 20px; }
+        .modal-buttons { flex-direction: column; align-items: stretch; } /* Apila los botones verticalmente en el modal */
+        .modal-buttons button { max-width: 100%; }
+        table { font-size: 0.85em; } /* Fuente más pequeña en la tabla en móviles */
+        th, td { padding: 8px; }
+
+        .descuento-group { /* También para móviles */
+            flex-direction: column; /* Apila el input y el select en móviles */
+            align-items: stretch; /* Estira los elementos */
+        }
+        .descuento-group select {
+            width: 100%; /* El select ocupa todo el ancho */
+            min-width: unset;
+        }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="logo-container"></div>
+  <h1>Sistema de Cobro</h1>
+</header>
+
+<fieldset id="datosVentaFieldset">
+  <legend>Datos de la Venta</legend>
+  <div class="grid-datos">
+    <div>
+      <label for="hora">Hora:</label>
+      <input type="time" id="hora">
+    </div>
+    <div>
+      <label for="cliente">Cliente (para descuentos esp.):</label>
+      <input type="text" id="cliente">
+    </div>
+    <div>
+      <label for="auto">Auto:</label>
+      <input type="text" id="auto">
+    </div>
+    <div>
+      <label for="patente">Patente:</label>
+      <input type="text" id="patente">
+    </div>
+    <div>
+      <label for="telefono">Teléfono:</label>
+      <input type="tel" id="telefono">
+    </div>
+  </div>
+</fieldset>
+
+<fieldset id="lavadoFieldset">
+  <legend>Lavado</legend>
+  <label for="tipoVehiculo">Tipo Vehículo:</label>
+  <select id="tipoVehiculo" onchange="setPrecioLavado()">
+    <option value="0">--Seleccione--</option>
+    <option value="manual">Otro (ingresar manualmente)</option> <option value="0">Promo (100% Desc.)</option>
+    <option value="15000">3 puertas (pequeño) — $15 000</option>
+    <option value="16000">5 puertas — $16 000</option>
+    <option value="17000">Sedán — $17 000</option>
+    <option value="17000">Coupé / Deportivo — $17 000</option>
+    <option value="17000">Familiar / Rural — $17 000</option>
+    <option value="19000">SUV (chica) — $19 000</option>
+    <option value="24000">SUV (grande) — $24 000</option>
+    <option value="25000">Monovolumen / Minivan — $25 000</option>
+    <option value="21000">Pick-up — $21 000</option>
+    <option value="25000">Pick-up XXL — $25 000</option>
+    <option value="18000">Utilitario — $18 000</option>
+    <option value="15000">Moto (250 cc) — $15 000</option>
+    <option value="20000">Moto grande — $20 000</option>
+    <option value="25000">COMBI — $25 000</option>
+    <option value="30000">Combi XL — $30 000</option>
+  </select>
+  <label for="precioLavado">Precio:</label>
+  <input type="number" id="precioLavado" oninput="calcularTotal()"> <label for="descuentoLavado">Desc. 10%:</label>
+  <select id="descuentoLavado" onchange="calcularTotal()">
+    <option value="no">No</option>
+    <option value="si">Sí</option>
+  </select>
+</fieldset>
+
+<fieldset id="barFieldset">
+  <legend>Bar</legend>
+  <label for="searchProductoBar">Buscar Producto Bar:</label>
+  <input type="text" id="searchProductoBar" onkeyup="filterBarProducts()" placeholder="Escribe para filtrar...">
+  <label for="productoBar">Producto:</label>
+  <select id="productoBar">
+    <option value="">-- Seleccionar Producto --</option>
+  </select>
+  <button type="button" onclick="agregarProductoBar()" class="secondary-action">Agregar Producto</button>
+
+  <label for="nombreProductoManualBar">Producto Genérico Bar:</label>
+  <input type="text" id="nombreProductoManualBar" placeholder="Nombre del producto">
+  <label for="precioProductoManualBar">Precio Genérico Bar:</label>
+  <input type="number" id="precioProductoManualBar" placeholder="0" min="0">
+  <button type="button" onclick="agregarProductoManualBar()" class="secondary-action">Agregar Producto Manual</button>
+
+  <ul id="listaProductos"></ul>
+  <label for="precioBar">Total Bar (Bruto):</label>
+  <input type="number" id="precioBar" placeholder="$0" readonly>
+
+  <label for="descuentoBarCantidad">Descuento Bar:</label>
+  <div class="descuento-group">
+      <input type="number" id="descuentoBarCantidad" placeholder="0" value="0" min="0" oninput="calcularTotal()">
+      <select id="tipoDescuentoBar" onchange="calcularTotal()">
+          <option value="monto">Monto ($)</option>
+          <option value="porcentaje">Porcentaje (%)</option>
+      </select>
+  </div>
+</fieldset>
+
+<fieldset id="cosmeticosFieldset">
+  <legend>Cosméticos</legend>
+  <label for="searchProductoCosmetico">Buscar Producto Cosmético:</label>
+  <input type="text" id="searchProductoCosmetico" onkeyup="filterCosmeticosProducts()" placeholder="Escribe para filtrar...">
+  <label for="productoCosmetico">Producto Cosmético:</label>
+  <select id="productoCosmetico">
+    </select>
+  <button type="button" onclick="agregarProductoCosmetico()" class="secondary-action">Agregar Cosmético</button>
+
+  <label for="nombreProductoManualCosmetico">Producto Genérico Cosmético:</label>
+  <input type="text" id="nombreProductoManualCosmetico" placeholder="Nombre del producto">
+  <label for="precioProductoManualCosmetico">Precio Genérico Cosmético:</label>
+  <input type="number" id="precioProductoManualCosmetico" placeholder="0" min="0">
+  <button type="button" onclick="agregarProductoManualCosmetico()" class="secondary-action">Agregar Cosmético Manual</button>
+
+  <ul id="listaCosmeticos"></ul>
+  <label for="precioCosmeticos">Total Cosméticos (Bruto):</label>
+  <input type="number" id="precioCosmeticos" placeholder="$0" readonly>
+
+  <label for="descuentoCosmeticosCantidad">Descuento Cosméticos:</label>
+  <div class="descuento-group">
+      <input type="number" id="descuentoCosmeticosCantidad" placeholder="0" value="0" min="0" oninput="calcularTotal()">
+      <select id="tipoDescuentoCosmeticos" onchange="calcularTotal()">
+          <option value="monto">Monto ($)</option>
+          <option value="porcentaje">Porcentaje (%)</option>
+      </select>
+  </div>
+</fieldset>
+
+<fieldset id="pagoFieldset">
+  <legend>Pago</legend>
+  <label for="formaPago">Forma de Pago:</label>
+  <select id="formaPago" onchange="toggleMixed()">
+    <option value="Cash">Cash</option>
+    <option value="Digital">Digital</option>
+    <option value="Mixto">Mixto</option>
+  </select>
+  <div class="mixed-inputs" id="mixedInputs">
+    <label for="cashPart">Cash:</label>
+    <input type="number" id="cashPart" placeholder="0" oninput="updateDigitalPart()">
+    <label for="digitalPart">Digital:</label>
+    <input type="number" id="digitalPart" placeholder="0" oninput="validateMixedInput()">
+  </div>
+  <div class="total">TOTAL: $<span id="total">0.00</span></div>
+  <button type="button" onclick="guardarVenta()" class="primary-action">Guardar Venta</button>
+</fieldset>
+
+<table id="tablaVentas">
+  <thead>
+    <tr>
+      <th>#</th><th>Tipo Venta</th><th>Hora</th><th>Auto</th><th>Patente</th><th>Tel.</th>
+      <th class="lavado-col">Lavado (B)</th>
+      <th class="bar-col">Bar (B)</th>
+      <th class="cosmeticos-col">Cosméticos (B)</th>
+      <th class="total-col">Total</th>
+      <th class="cash-lavado-col">Cash (L)</th>
+      <th class="digital-lavado-col">Dig (L)</th>
+      <th class="cash-bar-col">Cash (B)</th>
+      <th class="digital-bar-col">Dig (B)</th>
+      <th class="cash-cosmeticos-col">Cash (C)</th>
+      <th class="digital-cosmeticos-col">Dig (C)</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="arqueo">
+  <h3>Arqueo de Caja</h3>
+  <table>
+    <thead><tr><th>Denom.</th><th>Cant.</th><th>Subtotal</th></tr></thead>
+    <tbody>
+      <tr><td>$50</td><td><input type="number" id="cnt50" min="0" value="0" oninput="updateSubtotal(50)"></td><td id="sub50">$0</td></tr>
+      <tr><td>$100</td><td><input type="number" id="cnt100" min="0" value="0" oninput="updateSubtotal(100)"></td><td id="sub100">$0</td></tr>
+      <tr><td>$200</td><td><input type="number" id="cnt200" min="0" value="0" oninput="updateSubtotal(200)"></td><td id="sub200">$0</td></tr>
+      <tr><td>$500</td><td><input type="number" id="cnt500" min="0" value="0" oninput="updateSubtotal(500)"></td><td id="sub500">$0</td></tr>
+      <tr><td>$1000</td><td><input type="number" id="cnt1000" min="0" value="0" oninput="updateSubtotal(1000)"></td><td id="sub1000">$0</td></tr>
+      <tr><td>$2000</td><td><input type="number" id="cnt2000" min="0" value="0" oninput="updateSubtotal(2000)"></td><td id="sub2000">$0</td></tr>
+      <tr><td>$10000</td><td><input type="number" id="cnt10000" min="0" value="0" oninput="updateSubtotal(10000)"></td><td id="sub10000">$0</td></tr>
+      <tr><td>$20000</td><td><input type="number" id="cnt20000" min="0" value="0" oninput="updateSubtotal(20000)"></td><td id="sub20000">$0</td></tr>
+    </tbody>
+  </table>
+  <button type="button" onclick="calcularArqueo()" class="primary-action">Calcular Arqueo</button>
+  <p id="totalArqueo">Total contado: $0.00</p>
+  <p id="diffArqueo">Diferencia con caja: $0.00</p>
+</div>
+
+<div id="cierreCaja"></div>
+
+<fieldset id="accionesFieldset">
+    <legend>Acciones</legend>
+    <button type="button" onclick="calcularTotal()" class="secondary-action">Recalcular</button>
+    <button type="button" onclick="revertirUltimaVenta()" class="danger-action">Revertir Última Venta</button>
+    <button type="button" onclick="mostrarCierreCaja()" class="secondary-action">Cierre de Caja</button>
+    <button type="button" onclick="exportPDF()" class="secondary-action">Exportar PDF</button>
+    <button type="button" onclick="confirmReset()" class="danger-action">Reset General</button>
+</fieldset>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeEditModal()">&times;</span>
+    <h2>Editar Venta <span id="editVentaIndex"></span></h2>
+    <input type="hidden" id="currentEditIndex">
+
+    <label for="editHora">Hora:</label>
+    <input type="time" id="editHora">
+    <label for="editCliente">Cliente (para descuentos esp.):</label>
+    <input type="text" id="editCliente">
+    <label for="editAuto">Auto:</label>
+    <input type="text" id="editAuto">
+    <label for="editPatente">Patente:</label>
+    <input type="text" id="editPatente">
+    <label for="editTelefono">Teléfono:</label>
+    <input type="tel" id="editTelefono">
+
+    <label for="editTipoVehiculo">Tipo Vehículo:</label>
+    <select id="editTipoVehiculo" onchange="setPrecioLavadoEdit()">
+      <option value="0">--Seleccione--</option>
+      <option value="manual">Otro (ingresar manualmente)</option> <option value="0">Promo (100% Desc.)</option>
+      <option value="15000">3 puertas (pequeño) — $15 000</option>
+    <option value="16000">5 puertas — $16 000</option>
+    <option value="17000">Sedán — $17 000</option>
+    <option value="17000">Coupé / Deportivo — $17 000</option>
+    <option value="17000">Familiar / Rural — $17 000</option>
+    <option value="19000">SUV (chica) — $19 000</option>
+    <option value="24000">SUV (grande) — $24 000</option>
+    <option value="25000">Monovolumen / Minivan — $25 000</option>
+    <option value="21000">Pick-up — $21 000</option>
+    <option value="25000">Pick-up XXL — $25 000</option>
+    <option value="18000">Utilitario — $18 000</option>
+    <option value="15000">Moto (250 cc) — $15 000</option>
+    <option value="20000">Moto grande — $20 000</option>
+    <option value="25000">COMBI — $25 000</option>
+    <option value="30000">Combi XL — $30 000</option>
+  </select>
+    <label for="editPrecioLavado">Precio Lavado (Bruto):</label>
+    <input type="number" id="editPrecioLavado" oninput="calcularTotalEdit()"> <label for="editDescuentoLavado">Desc. 10%:</label>
+    <select id="editDescuentoLavado" onchange="calcularTotalEdit()">
+      <option value="no">No</option>
+      <option value="si">Sí</option>
+    </select>
+
+    <label for="editSearchProductoBar">Buscar Producto Bar:</label>
+    <input type="text" id="editSearchProductoBar" onkeyup="filterBarProductsEdit()" placeholder="Escribe para filtrar...">
+    <label for="editProductoBar">Producto Bar:</label>
+    <select id="editProductoBar">
+      <option value="">-- Seleccionar Producto --</option>
+    </select>
+    <button type="button" onclick="agregarProductoBarEdit()" class="secondary-action">Agregar Producto</button>
+
+    <label for="nombreProductoManualBarEdit">Producto Genérico Bar:</label>
+    <input type="text" id="nombreProductoManualBarEdit" placeholder="Nombre del producto">
+    <label for="precioProductoManualBarEdit">Precio Genérico Bar:</label>
+    <input type="number" id="precioProductoManualBarEdit" placeholder="0" min="0">
+    <button type="button" onclick="agregarProductoManualBarEdit()" class="secondary-action">Agregar Producto Manual</button>
+
+    <ul id="editListaProductos"></ul>
+    <label for="editPrecioBar">Total Bar (Bruto):</label>
+    <input type="number" id="editPrecioBar" placeholder="$0" readonly>
+
+    <label for="editDescuentoBarCantidad">Descuento Bar:</label>
+    <div class="descuento-group">
+        <input type="number" id="editDescuentoBarCantidad" placeholder="0" value="0" min="0" oninput="calcularTotalEdit()">
+        <select id="editTipoDescuentoBar" onchange="calcularTotalEdit()">
+            <option value="monto">Monto ($)</option>
+            <option value="porcentaje">Porcentaje (%)</option>
+        </select>
+    </div>
+
+    <label for="editSearchProductoCosmetico">Buscar Producto Cosmético:</label>
+    <input type="text" id="editSearchProductoCosmetico" onkeyup="filterCosmeticosProductsEdit()" placeholder="Escribe para filtrar...">
+    <label for="editProductoCosmetico">Producto Cosmético:</label>
+    <select id="editProductoCosmetico">
+        </select>
+    <button type="button" onclick="agregarProductoCosmeticoEdit()" class="secondary-action">Agregar Cosmético</button>
+
+    <label for="nombreProductoManualCosmeticoEdit">Producto Genérico Cosmético:</label>
+    <input type="text" id="nombreProductoManualCosmeticoEdit" placeholder="Nombre del producto">
+    <label for="precioProductoManualCosmeticoEdit">Precio Genérico Cosmético:</label>
+    <input type="number" id="precioProductoManualCosmeticoEdit" placeholder="0" min="0">
+    <button type="button" onclick="agregarProductoManualCosmeticoEdit()" class="secondary-action">Agregar Cosmético Manual</button>
+
+    <ul id="editListaCosmeticos"></ul>
+    <label for="editPrecioCosmeticos">Total Cosméticos (Bruto):</label>
+    <input type="number" id="editPrecioCosmeticos" placeholder="$0" readonly>
+
+    <label for="editDescuentoCosmeticosCantidad">Descuento Cosméticos:</label>
+    <div class="descuento-group">
+        <input type="number" id="editDescuentoCosmeticosCantidad" placeholder="0" value="0" min="0" oninput="calcularTotalEdit()">
+        <select id="editTipoDescuentoCosmeticos" onchange="calcularTotalEdit()">
+            <option value="monto">Monto ($)</option>
+            <option value="porcentaje">Porcentaje (%)</option>
+        </select>
+    </div>
+
+    <label for="editFormaPago">Forma de Pago:</label>
+    <select id="editFormaPago" onchange="toggleMixedEdit()">
+        <option value="Cash">Cash</option>
+        <option value="Digital">Digital</option>
+        <option value="Mixto">Mixto</option>
+    </select>
+    <div class="mixed-inputs" id="editMixedInputs">
+        <label for="editCashPart">Cash:</label>
+        <input type="number" id="editCashPart" placeholder="0" oninput="updateDigitalPartEdit()">
+        <label for="editDigitalPart">Digital:</label>
+        <input type="number" id="editDigitalPart" placeholder="0" oninput="validateMixedInputEdit()">
+    </div>
+    <div class="total">TOTAL Venta Editado: $<span id="editTotal">0.00</span></div>
+
+    <label for="justificacionModificacion">Justificación de Modificación:</label>
+    <textarea id="justificacionModificacion" rows="3" placeholder="Indique el motivo de la modificación..."></textarea>
+
+    <div class="modal-buttons">
+      <button type="button" onclick="guardarCambiosVenta()" class="primary-action">Guardar Cambios</button>
+      <button type="button" onclick="closeEditModal()" class="secondary-action">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { jsPDF } = window.jspdf;
+  let ventas = [];
+  let productosBar = []; // Para el formulario de entrada
+  let productosCosmeticos = []; // Nuevo: Para el formulario de entrada de cosméticos
+  let editProductosBar = []; // Para el formulario de edición en el modal
+  let editProductosCosmeticos = []; // Nuevo: Para el formulario de edición de cosméticos en el modal
+  let lastCashTotal = 0; // Total acumulado de efectivo de TODAS las ventas
+
+  // Objeto para almacenar el conteo de lavados por patente para la promoción 5+1
+  let washCounts = JSON.parse(localStorage.getItem('washCounts') || '{}');
+
+  // Objeto para almacenar precios personalizados por cliente y producto/servicio
+  const clientCustomPrices = {
+    "Vecino": {
+      "Café Negro Posillo": 2500,
+      "Café Negro Jarrito": 2500, // Añadido para el ejemplo
+      // Agrega más productos/servicios y sus precios personalizados aquí
+    }
+  };
+
+  // Datos de cosméticos extraídos del PDF
+  const cosmeticosData = [
+    { nombre: "Aromatizante Walker", contenido: "10 g", pvp: 2164 },
+    { nombre: "Aromatizante Walker", contenido: "10 g", pvp: 2164 },
+    { nombre: "Estrellas", contenido: "7g", pvp: 1623 },
+    { nombre: "Bolitas", contenido: "", pvp: 1623 },
+    { nombre: "Atomizadores", contenido: "60 cm3", pvp: 7303 },
+    { nombre: "Atomizadores Linea Gold", contenido: "60 cm³", pvp: 7303 },
+    { nombre: "Atomizadores", contenido: "120 cm3", pvp: 11360 },
+    { nombre: "Fragancia Uso Profesional", contenido: "250 cm3", pvp: 13524 },
+    { nombre: "Fragancia Uso Profesional", contenido: "500 cm3", pvp: 24344 },
+    { nombre: "Fragancia Uso Profesional", contenido: "5L", pvp: 240463 },
+    { nombre: "Perfumina para Ropa", contenido: "200 cm3", pvp: 5031 },
+    { nombre: "Mini Latita Walker (Frag. Sólida Gel)", contenido: "40 g", pvp: 8652 },
+    { nombre: "Latita Walker (Frag. Sólida Gel)", contenido: "80 g", pvp: 12977 },
+    { nombre: "Latita Walker (Frag. Sólida Gel)", contenido: "80 g", pvp: 12977 },
+    { nombre: "Latita Walker Camión (Frag. Sólida Gel)", contenido: "200 g", pvp: 30280 },
+    { nombre: "Walker Electric", contenido: "3,2 cm3", pvp: 16229 },
+    { nombre: "Walker Electric Repuesto", contenido: "3,2 cm3", pvp: 5151 },
+    { nombre: "Fragancia Climatizador", contenido: "120 cm3", pvp: 5139 },
+    { nombre: "Walker Cubo", contenido: "8 cm3", pvp: 7574 },
+    { nombre: "Walker Cubo Repuesto", contenido: "8 cm3", pvp: 4598 },
+    { nombre: "Walker Mini Cubo", contenido: "4 cm3", pvp: 4057 },
+    { nombre: "Yony Walker", contenido: "10 g", pvp: 2543 },
+    { nombre: "Walker Sport", contenido: "7 cm3", pvp: 8061 },
+    { nombre: "Walker Sport Repuesto", contenido: "7 cm3", pvp: 4923 },
+    { nombre: "Magic Walker", contenido: "5 cm3", pvp: 7574 },
+    { nombre: "Aromatizante Rejilla Minigitorio", contenido: "", pvp: 3787 },
+    { nombre: "Leblon Look - Difusor Bamboo", contenido: "60 cm3", pvp: 6492 },
+    { nombre: "Leblon Look - Aceite Esencial", contenido: "30 cm3", pvp: 4113 },
+    { nombre: "Bolsita Perfumada Walker", contenido: "", pvp: 3279 },
+    { nombre: "Walker Jack", contenido: "", pvp: 8219 },
+    { nombre: "Walker Perfume Amb. Aerosol", contenido: "150 cm³", pvp: 8219 },
+    { nombre: "Aromatizante Stick", contenido: "", pvp: 1437 },
+    { nombre: "Neutralizador de Olores", contenido: "360 cm³", pvp: 9314 },
+    { nombre: "Aerosol Dispenser Para Difusor Automatico", contenido: "185 g", pvp: 8115 },
+    { nombre: "Citronela Aerosol", contenido: "360 cm³", pvp: 8898 },
+    { nombre: "Silicona Perfumada", contenido: "120 cm³", pvp: 6537 },
+    { nombre: "Silicona Perfumada", contenido: "250 cm³", pvp: 11992 },
+    { nombre: "Silicona Perfumada", contenido: "500 cm³", pvp: 20286 },
+    { nombre: "Silicona Perfumada", contenido: "5 L", pvp: 167702 },
+    { nombre: "Renovador Siliconado Perfumado", contenido: "5 L", pvp: 97024 },
+    { nombre: "Silicona Perfumada Economica", contenido: "5 L", pvp: 138534 },
+    { nombre: "Silicona Pura 100%", contenido: "120 cm³", pvp: 16680 },
+    { nombre: "Silicona Pura 100%", contenido: "250 cm³", pvp: 33360 },
+    { nombre: "Silicona Perfumada Aerosol", contenido: "400 cm³", pvp: 9016 },
+    { nombre: "Renovador Multiproposito Aerosol", contenido: "400 cm³", pvp: 9467 },
+    { nombre: "Emulsion Silicona Power en Spray", contenido: "110 cm³", pvp: 8115 },
+    { nombre: "Emulsión Perfumada", contenido: "250 cm³", pvp: 9016 },
+    { nombre: "Emulsión Perfumada", contenido: "500 cm³", pvp: 14426 },
+    { nombre: "Emulsion Perfumada en Spray", contenido: "500 cm³", pvp: 17221 },
+    { nombre: "Revividor de Negro", contenido: "250 cm3", pvp: 5840 },
+    { nombre: "Revividor de Negro Brillante en Gel", contenido: "250 cm3", pvp: 6455 },
+    { nombre: "Revividor de Negro", contenido: "500 cm3", pvp: 7254 },
+    { nombre: "Revividor de Negro Brillante en Gel", contenido: "500 cm3", pvp: 8299 },
+    { nombre: "Desengrasante en Spray", contenido: "500 cm3", pvp: 9738 },
+    { nombre: "Desengrasante", contenido: "5 L", pvp: 34294 },
+    { nombre: "Desengrasante en Balde c/Pico Vertedor", contenido: "20 L", pvp: 137948 },
+    { nombre: "Quitainsectos en Spray", contenido: "500 cm3", pvp: 8115 },
+    { nombre: "Shampoo Siliconado", contenido: "250 cm3", pvp: 5193 },
+    { nombre: "Shampoo Siliconado", contenido: "500 cm3", pvp: 6600 },
+    { nombre: "Antiempañante", contenido: "60 cm3", pvp: 10116 },
+    { nombre: "Lavaparabrisas", contenido: "250 cm3", pvp: 6492 },
+    { nombre: "Lavaparabrisas", contenido: "500 cm3", pvp: 8926 },
+    { nombre: "Lavaparabrisas Concentrado", contenido: "50 cm3", pvp: 2975 },
+    { nombre: "Lavaparabrisas Concentrado", contenido: "120 cm3", pvp: 4328 },
+    { nombre: "Limpiacristales en Spray", contenido: "500 cm3", pvp: 12442 },
+    { nombre: "Quitaescarcha en Spray", contenido: "500 cm3", pvp: 11360 },
+    { nombre: "Cera", contenido: "250 cm3", pvp: 5410 },
+    { nombre: "Cera", contenido: "500 cm3", pvp: 6492 },
+    { nombre: "Cera", contenido: "5L", pvp: 47219 },
+    { nombre: "Cera Polish Clásica Protectora (Etiqueta Roja)", contenido: "450 cm3", pvp: 7303 },
+    { nombre: "Cera Polish Lustre Intenso (Etiqueta Azul)", contenido: "450 cm3", pvp: 7303 },
+    { nombre: "Cera Polish con Abrasivo (Etiqueta Amarilla)", contenido: "450 cm3", pvp: 7303 },
+    { nombre: "Lubricante Aerosol W-400", contenido: "400 cm3", pvp: 6762 },
+    { nombre: "Lubricante Aerosol W-400", contenido: "240 cm3", pvp: 5680 },
+    { nombre: "Brujita Halloween", contenido: "", pvp: 3895.01 },
+    { nombre: "Estopa de Algodón para Lustre", contenido: "300 g", pvp: 1384.90 },
+    { nombre: "Estopa de Algodón para Limpieza", contenido: "300 g", pvp: 1211.75 },
+    { nombre: "Rejillas Triples", contenido: "", pvp: 3635.35 },
+    { nombre: "Rejilla Profesional", contenido: "", pvp: 4327.81 },
+    { nombre: "Gamuza Sintética", contenido: "", pvp: 3460.60 },
+    { nombre: "Franelas", contenido: "", pvp: 2120.65 },
+    { nombre: "Paño Lustre Siliconado", contenido: "", pvp: 3895.01 },
+    { nombre: "Cepillo Lavaauto", contenido: "", pvp: 3245.85 },
+    { nombre: "Cepillo Camiones", contenido: "", pvp: 5409.75 },
+    { nombre: "Cepillo para Llanta", contenido: "", pvp: 4089.74 },
+    { nombre: "Cepillo Barredendero Grandes Superficies", contenido: "", pvp: 17311.18 },
+    { nombre: "Limpiacontactos Aerosol", contenido: "360 cm3", pvp: 7328 },
+    { nombre: "Inflador - Sellador Aerosol SOS Auto", contenido: "400 cm3", pvp: 17311 },
+    { nombre: "Inflador - Sellador Aerosol SOS Moto", contenido: "240 cm3", pvp: 14065 }
+  ];
+
+  // Datos de productos del Bar (extraídos del HTML original)
+  const allBarProductsData = [
+    { group: "Cafetería", name: "Café Negro Posillo", value: 3000 },
+    { group: "Cafetería", name: "Café Negro Jarrito", value: 3000 },
+    { group: "Cafetería", name: "Café Negro Doble (Americano)", value: 3500 },
+    { group: "Cafetería", name: "Café Cortado Jarrito", value: 3500 },
+    { group: "Cafetería", name: "Café Lagrima Jarrito", value: 3500 },
+    { group: "Cafetería", name: "Café con Leche", value: 4000 },
+    { group: "Cafetería", name: "Té (en tetera)", value: 3000 },
+    { group: "Cafetería", name: "Té con Leche", value: 3500 },
+    { group: "Bebidas", name: "CocaCola 500 cc", value: 2300 },
+    { group: "Bebidas", name: "CocaCola Light 500 cc", value: 2300 },
+    { group: "Bebidas", name: "Sprite 500 cc", value: 2300 },
+    { group: "Bebidas", name: "Sprite Zero 500 cc", value: 2300 },
+    { group: "Bebidas", name: "Fanta 500 cc", value: 2300 },
+    { group: "Bebidas", name: "SmartWater 500 cc", value: 2000 },
+    { group: "Bebidas", name: "SmartW C/Gas 500 cc", value: 2000 },
+    { group: "Bebidas", name: "Powerade 500 cc", value: 2000 },
+    { group: "Bebidas", name: "Levite Manzana 500 cc", value: 2000 },
+    { group: "Bebidas", name: "Levite Pomelo 500 cc", value: 2000 },
+    { group: "Bebidas", name: "Aquarius Pera 500 cc", value: 2000 },
+    { group: "Comidas", name: "Super Pancho Simple", value: 2000 },
+    { group: "Comidas", name: "Super Pancho Completo", value: 2000 },
+    { group: "Comidas", name: "Tostado doble de JyQ", value: 6500 },
+    { group: "Comidas", name: "Tostado Árabe", value: 6500 },
+    { group: "Comidas", name: "Medialuna de Manteca", value: 1200 },
+    { group: "Comidas", name: "Alfajor Maicena", value: 2000 },
+    { group: "Comidas", name: "Alfajor Chocolate", value: 2000 },
+    { group: "Comidas", name: "Alfajor RASTA", value: 2000 },
+    { group: "Comidas", name: "Donas rellenas", value: 2500 },
+    { group: "Comidas", name: "Muffins", value: 3500 },
+    { group: "Comidas", name: "Waffle de JyQ", value: 5500 },
+    { group: "Promos", name: "Café con leche + 2 medialunas", value: 7600 },
+    { group: "Promos", name: "Café con leche + Tostado árabe", value: 9450 },
+    { group: "Promos", name: "Café con leche + Waffle JyQ", value: 8550 },
+    { group: "Promos", name: "Café con leche + Muffin", value: 6750 },
+    { group: "Promos", name: "Café con leche + Donas", value: 5850 },
+    { group: "Cervezas", name: "BlueMoon 330 cc", value: 5500 },
+    { group: "Cervezas", name: "Heineken 330 cc", value: 4000 },
+    { group: "Cervezas", name: "STELLA 330 cc", value: 3000 },
+    { group: "Cervezas", name: "SOL 330 cc", value: 3400 },
+    { group: "Cervezas", name: "MILLER 330 cc", value: 3000 },
+    { group: "Cervezas", name: "BRAHMA 473 cc", value: 3000 },
+    { group: "Cervezas", name: "Heineken 473 cc", value: 3500 },
+    { group: "Cervezas", name: "Imperial Gold 473 cc", value: 3200 },
+    { group: "Cervezas", name: "AMSTEL 473 cc", value: 3200 },
+    { group: "Cervezas", name: "Schneider 473 cc", value: 2600 },
+    { group: "Cervezas", name: "CORONA 330 cc", value: 3000 }
+  ];
+
+  // --- Funciones de Utilidad ---
+  function formatMoney(amount) {
+      // Formatea el monto a moneda argentina con 2 decimales
+      return `$${parseFloat(amount).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  // Función para establecer la hora actual en el campo de entrada
+  function setCurrentTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${hours}:${minutes}`;
+    document.getElementById('hora').value = currentTime;
+    console.log("Hora actualizada a:", currentTime); // Debugging: Confirmar que la hora se actualiza
+  }
+
+  // --- Funciones del Formulario Principal ---
+
+  // Rellena el select de cosméticos al cargar la página
+  function populateCosmeticosSelect(searchTerm = '') {
+    const select = document.getElementById("productoCosmetico");
+    select.innerHTML = `<option value="">-- Seleccionar Cosmético --</option>`; // Clear existing options
+    const filteredData = cosmeticosData.filter(p =>
+      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.contenido && p.contenido.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = "Cosméticos del Automotor";
+    filteredData.forEach(p => {
+      const displayName = p.contenido ? `${p.nombre} (${p.contenido})` : p.nombre;
+      const option = document.createElement('option');
+      option.value = p.pvp;
+      option.textContent = `${displayName} — ${formatMoney(p.pvp)}`;
+      optgroup.appendChild(option);
+    });
+    select.appendChild(optgroup);
+  }
+
+  // Nuevo: Función para filtrar productos cosméticos
+  function filterCosmeticosProducts() {
+    const searchTerm = document.getElementById('searchProductoCosmetico').value;
+    populateCosmeticosSelect(searchTerm);
+  }
+
+  // Nuevo: Rellena el select de productos del Bar
+  function populateBarSelect(searchTerm = '') {
+    const select = document.getElementById("productoBar");
+    select.innerHTML = `<option value="">-- Seleccionar Producto --</option>`; // Clear existing options
+
+    const filteredData = allBarProductsData.filter(p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const groupedOptions = filteredData.reduce((acc, product) => {
+      if (!acc[product.group]) {
+        acc[product.group] = [];
+      }
+      acc[product.group].push(product);
+      return acc;
+    }, {});
+
+    for (const groupName in groupedOptions) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = groupName;
+      groupedOptions[groupName].forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.value;
+        option.textContent = `${p.name}`;
+        optgroup.appendChild(option);
+      });
+      select.appendChild(optgroup);
+    }
+  }
+
+  // Nuevo: Función para filtrar productos del Bar
+  function filterBarProducts() {
+    const searchTerm = document.getElementById('searchProductoBar').value;
+    populateBarSelect(searchTerm);
+  }
+
+
+  // Establece el precio del lavado basado en la selección del vehículo y aplica descuentos si aplica
+  function setPrecioLavado() {
+    const tipoVehiculoSelect = document.getElementById("tipoVehiculo");
+    const selectedValue = tipoVehiculoSelect.value;
+    const precioLavadoInput = document.getElementById("precioLavado");
+    const cliente = document.getElementById("cliente").value.trim();
+    const patente = document.getElementById("patente").value.trim().toUpperCase();
+    const tipoVehiculoText = tipoVehiculoSelect.options[tipoVehiculoSelect.selectedIndex].text;
+
+    let precio = 0;
+    let isPromoWash = false;
+
+    if (selectedValue === "manual") {
+        precioLavadoInput.removeAttribute("readonly"); // Habilitar edición
+        precioLavadoInput.value = ""; // Limpiar el valor para que el usuario ingrese
+        precio = 0; // Inicialmente el precio es 0, el usuario lo ingresará
+    } else {
+        precio = parseFloat(selectedValue) || 0;
+        precioLavadoInput.setAttribute("readonly", true); // Deshabilitar edición si no es manual
+    }
+
+    // Lógica para la opción "Promo (100% Desc.)"
+    if (tipoVehiculoText.includes("Promo (100% Desc.)")) {
+        precio = 0; // Precio 0 para la promoción
+        isPromoWash = true;
+        // Reemplazado alert con un mensaje en consola para evitar interrupciones
+        console.log("¡Promoción aplicada! El lavado es GRATIS.");
+    } else if (patente && precio > 0 && selectedValue !== "manual") { // Lógica para la promoción "5 lavados y el 6to gratis" (solo si no es ya una promo manual)
+        const currentWashCount = washCounts[patente] || 0;
+        if (currentWashCount === 5) {
+            precio = 0; // El lavado es gratis
+            console.log(`¡Felicitaciones! El lavado para la patente ${patente} es GRATIS (promoción 5+1).`);
+        }
+    }
+
+    // Aplica descuentos personalizados si el cliente tiene uno para este lavado
+    if (cliente && clientCustomPrices[cliente] && clientCustomPrices[cliente]["Lavado"]) {
+        precio = clientCustomPrices[cliente]["Lavado"];
+        console.log(`Precio de lavado ajustado para ${cliente}: ${precio}`);
+    }
+
+    // Solo actualiza el input si no es la opción manual, o si es la opción manual y el precio ya fue ingresado (evita sobrescribir lo que el usuario está escribiendo)
+    if (selectedValue !== "manual" || precioLavadoInput.value === "") {
+        precioLavadoInput.value = precio.toFixed(2);
+    }
+    
+    calcularTotal();
+  }
+
+  // Agrega un producto del bar a la lista de la venta actual, aplicando descuentos personalizados
+  function agregarProductoBar() {
+    const select = document.getElementById("productoBar");
+    let precio = parseFloat(select.value);
+    const nombre = select.options[select.selectedIndex].text;
+    const cliente = document.getElementById("cliente").value.trim();
+
+    if (precio > 0 && nombre) { // Asegura que se seleccionó un producto válido
+      // Aplica descuentos personalizados para productos del bar (antes del descuento manual del bar)
+      if (cliente && clientCustomPrices[cliente] && clientCustomPrices[cliente][nombre]) {
+          precio = clientCustomPrices[cliente][nombre];
+          console.log(`Precio de ${nombre} ajustado para ${cliente}: ${precio}`);
+      }
+
+      productosBar.push({ nombre, precio }); // Guarda el precio base (o personalizado)
+      actualizarListaBar();
+      calcularTotal();
+      select.value = ""; // Resetea la selección del producto
+      document.getElementById('searchProductoBar').value = ''; // Clear search
+      populateBarSelect(); // Repopulate with all options
+    }
+  }
+
+  // Agrega un producto del bar ingresado manualmente a la lista de la venta actual
+  function agregarProductoManualBar() {
+    const nombre = document.getElementById("nombreProductoManualBar").value.trim();
+    const precio = parseFloat(document.getElementById("precioProductoManualBar").value) || 0;
+
+    if (nombre && precio > 0) {
+      productosBar.push({ nombre, precio });
+      actualizarListaBar();
+      calcularTotal();
+      document.getElementById("nombreProductoManualBar").value = "";
+      document.getElementById("precioProductoManualBar").value = "";
+    } else {
+      alert("Por favor, ingrese un nombre y un precio válido para el producto genérico del Bar.");
+    }
+  }
+
+  // Actualiza la lista visible de productos del bar y su total bruto
+  function actualizarListaBar() {
+    const lista = document.getElementById("listaProductos");
+    lista.innerHTML = ""; // Limpia la lista actual
+    productosBar.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${p.nombre} — ${formatMoney(p.precio)}`; // Muestra el precio base/personalizado
+      const btn = document.createElement("button");
+      btn.textContent = "×"; // Botón para eliminar producto
+      btn.onclick = () => {
+        productosBar.splice(i, 1); // Elimina el producto del array
+        actualizarListaBar(); // Vuelve a renderizar la lista
+        calcularTotal(); // Recalcula el total
+      };
+      li.appendChild(btn);
+      lista.appendChild(li);
+    });
+    // Calcula y muestra el total BRUTO de productos del bar
+    document.getElementById("precioBar").value = productosBar.reduce((a, p) => a + p.precio, 0).toFixed(2);
+  }
+
+  // Nuevo: Agrega un producto cosmético a la lista de la venta actual
+  function agregarProductoCosmetico() {
+    const select = document.getElementById("productoCosmetico");
+    let precio = parseFloat(select.value);
+    const nombreCompleto = select.options[select.selectedIndex].text; // Ej: "Aromatizante Walker (10 g) — $2164.00"
+    const nombre = nombreCompleto.split('—')[0].trim(); // Solo el nombre del producto
+    const cliente = document.getElementById("cliente").value.trim();
+
+    if (precio > 0 && nombre) {
+      // Aplica descuentos personalizados si el cliente tiene uno para este cosmético
+      if (cliente && clientCustomPrices[cliente] && clientCustomPrices[cliente][nombre]) {
+          precio = clientCustomPrices[cliente][nombre];
+          console.log(`Precio de ${nombre} ajustado para ${cliente}: ${precio}`);
+      }
+      productosCosmeticos.push({ nombre, precio });
+      actualizarListaCosmeticos();
+      calcularTotal();
+      select.value = "";
+      document.getElementById('searchProductoCosmetico').value = ''; // Clear search
+      populateCosmeticosSelect(); // Repopulate with all options
+    }
+  }
+
+  // Nuevo: Agrega un producto cosmético ingresado manualmente a la lista de la venta actual
+  function agregarProductoManualCosmetico() {
+    const nombre = document.getElementById("nombreProductoManualCosmetico").value.trim();
+    const precio = parseFloat(document.getElementById("precioProductoManualCosmetico").value) || 0;
+
+    if (nombre && precio > 0) {
+      productosCosmeticos.push({ nombre, precio });
+      actualizarListaCosmeticos();
+      calcularTotal();
+      document.getElementById("nombreProductoManualCosmetico").value = "";
+      document.getElementById("precioProductoManualCosmetico").value = "";
+    } else {
+      alert("Por favor, ingrese un nombre y un precio válido para el producto genérico de Cosméticos.");
+    }
+  }
+
+  // Nuevo: Actualiza la lista visible de productos cosméticos y su total bruto
+  function actualizarListaCosmeticos() {
+    const lista = document.getElementById("listaCosmeticos");
+    lista.innerHTML = "";
+    productosCosmeticos.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${p.nombre} — ${formatMoney(p.precio)}`;
+      const btn = document.createElement("button");
+      btn.textContent = "×";
+      btn.onclick = () => {
+        productosCosmeticos.splice(i, 1);
+        actualizarListaCosmeticos();
+        calcularTotal();
+      };
+      li.appendChild(btn);
+      lista.appendChild(li);
+    });
+    document.getElementById("precioCosmeticos").value = productosCosmeticos.reduce((a, p) => a + p.precio, 0).toFixed(2);
+  }
+
+  // Muestra u oculta los campos de pago mixto según la forma de pago seleccionada
+  function toggleMixed() {
+    const formaPago = document.getElementById("formaPago").value;
+    const mixedInputsDiv = document.getElementById("mixedInputs");
+    mixedInputsDiv.style.display = formaPago === "Mixto" ? 'flex' : 'none';
+
+    if (formaPago === "Mixto") {
+      updateDigitalPart(); // Si es mixto, auto-rellena la parte digital
+    } else {
+      // Si no es mixto, resetea los valores de las partes
+      document.getElementById("cashPart").value = "0.00";
+      document.getElementById("digitalPart").value = "0.00";
+    }
+    calcularTotal(); // Asegura que el total general se actualice
+  }
+
+  // Auto-rellena el campo de pago digital en modo mixto
+  function updateDigitalPart() {
+    const currentDisplayedTotal = parseFloat(document.getElementById("total").innerText) || 0; // Obtener el total actual de la pantalla
+    const cashPart = parseFloat(document.getElementById("cashPart").value) || 0;
+    const digitalPart = Math.max(0, currentDisplayedTotal - cashPart); // Asegura que no sea negativo
+    document.getElementById("digitalPart").value = digitalPart.toFixed(2);
+  }
+
+  // Valida la suma de los campos de pago mixto (opcional, ya que updateDigitalPart auto-ajusta)
+  function validateMixedInput() {
+    const expectedTotal = parseFloat(document.getElementById("total").innerText) || 0;
+    const cashPart = parseFloat(document.getElementById("cashPart").value) || 0;
+    const digitalPart = parseFloat(document.getElementById("digitalPart").value) || 0;
+    if (document.getElementById("formaPago").value === "Mixto" && Math.abs((cashPart + digitalPart) - expectedTotal) > 0.01) {
+        // Podrías añadir una alerta aquí si la validación manual es crítica
+    }
+  }
+
+  // Calcula el total de la venta (lavado + bar + cosmeticos - descuentos)
+  function calcularTotal() {
+    const lavadoBruto = parseFloat(document.getElementById("precioLavado").value) || 0;
+    const barBruto = productosBar.reduce((a, p) => a + p.precio, 0); // Suma de precios base/personalizados
+    const cosmeticosBruto = productosCosmeticos.reduce((a, p) => a + p.precio, 0); // Nuevo: Suma de precios cosméticos
+
+    // Descuento Lavado (10%)
+    const descuentoLavadoAplicado = document.getElementById("descuentoLavado").value === "si" ? lavadoBruto * 0.1 : 0;
+    const lavadoNeto = lavadoBruto - descuentoLavadoAplicado;
+
+    // Descuento Bar (Monto Fijo o Porcentaje)
+    let descuentoBarCantidad = parseFloat(document.getElementById("descuentoBarCantidad").value) || 0;
+    const tipoDescuentoBar = document.getElementById("tipoDescuentoBar").value;
+    let montoDescuentoBar = 0;
+    if (tipoDescuentoBar === "monto") {
+        montoDescuentoBar = descuentoBarCantidad;
+    } else if (tipoDescuentoBar === "porcentaje") {
+        montoDescuentoBar = barBruto * (descuentoBarCantidad / 100);
+    }
+    const barNeto = Math.max(0, barBruto - montoDescuentoBar);
+
+    // Nuevo: Descuento Cosméticos (Monto Fijo o Porcentaje)
+    let descuentoCosmeticosCantidad = parseFloat(document.getElementById("descuentoCosmeticosCantidad").value) || 0;
+    const tipoDescuentoCosmeticos = document.getElementById("tipoDescuentoCosmeticos").value;
+    let montoDescuentoCosmeticos = 0;
+    if (tipoDescuentoCosmeticos === "monto") {
+        montoDescuentoCosmeticos = descuentoCosmeticosCantidad;
+    } else if (tipoDescuentoCosmeticos === "porcentaje") {
+        montoDescuentoCosmeticos = cosmeticosBruto * (descuentoCosmeticosCantidad / 100);
+    }
+    const cosmeticosNeto = Math.max(0, cosmeticosBruto - montoDescuentoCosmeticos);
+
+    const total = lavadoNeto + barNeto + cosmeticosNeto; // Nuevo: Suma también cosméticos
+    document.getElementById("total").innerText = total.toFixed(2);
+
+    // Si la forma de pago es mixta, actualiza la parte digital
+    if (document.getElementById("formaPago").value === "Mixto") {
+        updateDigitalPart();
+    }
+    return total;
+  }
+
+  // Guarda la venta actual en el array de ventas
+  function guardarVenta() {
+    const expectedTotal = calcularTotal();
+    const formaPago = document.getElementById("formaPago").value;
+
+    let cashTotalVenta = 0;
+    let digitalTotalVenta = 0;
+
+    // Asigna los totales de efectivo y digital según la forma de pago
+    if (formaPago === "Mixto") {
+      cashTotalVenta = parseFloat(document.getElementById("cashPart").value) || 0;
+      digitalTotalVenta = parseFloat(document.getElementById("digitalPart").value) || 0;
+      if (Math.abs((cashTotalVenta + digitalTotalVenta) - expectedTotal) > 0.01) {
+        alert(`Error: La suma de Efectivo y Digital ($${(cashTotalVenta + digitalTotalVenta).toFixed(2)}) no coincide con el Total de la venta ($${expectedTotal.toFixed(2)}). Por favor, verifique.`);
+        return;
+      }
+    } else if (formaPago === "Cash") {
+      cashTotalVenta = expectedTotal;
+      digitalTotalVenta = 0;
+    } else if (formaPago === "Digital") {
+      cashTotalVenta = 0;
+      digitalTotalVenta = expectedTotal;
+    }
+
+    // Obtener valores de los campos
+    const hora = document.getElementById("hora").value;
+    const auto = document.getElementById("auto").value.trim();
+    const patente = document.getElementById("patente").value.trim().toUpperCase();
+    const telefono = document.getElementById("telefono").value.trim();
+
+    // Validar que la hora esté establecida (siempre debería estarlo automáticamente)
+    if (!hora) {
+        alert("La hora no se ha establecido automáticamente. Por favor, recargue la página o ingrese la hora manualmente.");
+        return;
+    }
+
+    const lavadoBrutoActual = parseFloat(document.getElementById("precioLavado").value) || 0;
+    const barBrutoActual = productosBar.reduce((a, p) => a + p.precio, 0);
+    const cosmeticosBrutoActual = productosCosmeticos.reduce((a, p) => a + p.precio, 0); // Nuevo: Bruto de cosméticos
+    const tipoVehiculoSeleccionado = document.getElementById("tipoVehiculo").value;
+
+    // Validar campos de datos de la venta si hay un lavado (es decir, si se seleccionó un tipo de vehículo diferente de "0" o "Promo")
+    if (tipoVehiculoSeleccionado !== "0") { // Si se seleccionó un tipo de vehículo real (no "Seleccione" ni "Promo")
+        if (!auto || !patente || !telefono) {
+            alert("Para ventas de lavado, por favor complete los campos 'Auto', 'Patente' y 'Teléfono'.");
+            return;
+        }
+    }
+
+    // Validar que haya al menos un servicio o producto vendido (permite lavados gratis sin otros items)
+    if (lavadoBrutoActual === 0 && barBrutoActual === 0 && cosmeticosBrutoActual === 0) { // Nuevo: Incluye cosméticos
+        alert("No hay servicios de lavado ni productos de bar/cosméticos seleccionados. Por favor, agregue al menos un servicio o producto para guardar la venta.");
+        return;
+    }
+
+
+    const descuentoLavadoSeleccionado = document.getElementById("descuentoLavado").value;
+    const descuentoLavadoMonto = descuentoLavadoSeleccionado === "si" ? lavadoBrutoActual * 0.1 : 0;
+    const lavadoNeto = lavadoBrutoActual - descuentoLavadoMonto;
+
+    // Obtener y calcular el descuento del bar para guardar
+    const descuentoBarCantidad = parseFloat(document.getElementById("descuentoBarCantidad").value) || 0;
+    const tipoDescuentoBar = document.getElementById("tipoDescuentoBar").value;
+    let montoDescuentoBar = 0;
+    if (tipoDescuentoBar === "monto") {
+        montoDescuentoBar = descuentoBarCantidad;
+    } else if (tipoDescuentoBar === "porcentaje") {
+        montoDescuentoBar = barBrutoActual * (descuentoBarCantidad / 100);
+    }
+    const barNeto = Math.max(0, barBrutoActual - montoDescuentoBar);
+
+    // Nuevo: Obtener y calcular el descuento de cosméticos para guardar
+    const descuentoCosmeticosCantidad = parseFloat(document.getElementById("descuentoCosmeticosCantidad").value) || 0;
+    const tipoDescuentoCosmeticos = document.getElementById("tipoDescuentoCosmeticos").value;
+    let montoDescuentoCosmeticos = 0;
+    if (tipoDescuentoCosmeticos === "monto") {
+        montoDescuentoCosmeticos = descuentoCosmeticosCantidad;
+    } else if (tipoDescuentoCosmeticos === "porcentaje") {
+        montoDescuentoCosmeticos = cosmeticosBrutoActual * (descuentoCosmeticosCantidad / 100);
+    }
+    const cosmeticosNeto = Math.max(0, cosmeticosBrutoActual - montoDescuentoCosmeticos);
+
+
+    // Determinar si es un lavado gratis por promoción (manual) o por 5+1
+    const isPromoWashManuallySelected = document.getElementById("tipoVehiculo").options[document.getElementById("tipoVehiculo").selectedIndex].text.includes("Promo (100% Desc.)");
+    const wasFreeWashBy5Plus1 = (lavadoBrutoActual === 0 && (washCounts[patente] || 0) === 5);
+    const isAnyFreeWash = isPromoWashManuallySelected || wasFreeWashBy5Plus1;
+
+    // Actualiza el contador de lavados para la promoción 5+1
+    if (lavadoBrutoActual > 0) { // Si es un lavado pagado (no promo manual, no 5+1 gratis)
+        washCounts[patente] = (washCounts[patente] || 0) + 1;
+    } else if (wasFreeWashBy5Plus1) { // Si fue el lavado gratis por 5+1
+        washCounts[patente] = 0; // Reinicia el contador para esa patente
+    }
+    // Si es una promo manual, no afecta el contador 5+1
+    localStorage.setItem('washCounts', JSON.stringify(washCounts));
+    console.log("Conteo de lavados actualizado:", washCounts);
+
+
+    let cashLavado = 0;
+    let digitalLavado = 0;
+    let cashBar = 0;
+    let digitalBar = 0;
+    let cashCosmeticos = 0; // Nuevo
+    let digitalCosmeticos = 0; // Nuevo
+
+    let remanenteCash = cashTotalVenta;
+    let remanenteDigital = digitalTotalVenta;
+
+    // Lógica de asignación de pagos a Lavado, Bar y Cosméticos Netos
+    // Prioridad: Lavado, luego Bar, luego Cosméticos
+    if (lavadoNeto > 0) {
+        cashLavado = Math.min(remanenteCash, lavadoNeto);
+        remanenteCash -= cashLavado;
+        digitalLavado = Math.min(remanenteDigital, lavadoNeto - cashLavado);
+        remanenteDigital -= digitalLavado;
+    }
+
+    if (barNeto > 0) {
+        cashBar = Math.min(remanenteCash, barNeto);
+        remanenteCash -= cashBar;
+        digitalBar = Math.min(remanenteDigital, barNeto - cashBar);
+        remanenteDigital -= digitalBar;
+    }
+
+    if (cosmeticosNeto > 0) { // Nuevo
+        cashCosmeticos = Math.min(remanenteCash, cosmeticosNeto);
+        remanenteCash -= cashCosmeticos;
+        digitalCosmeticos = Math.min(remanenteDigital, cosmeticosNeto - cashCosmeticos);
+        remanenteDigital -= digitalCosmeticos;
+    }
+
+    // Ajuste final para manejar pequeñas diferencias de redondeo o asignación
+    const totalCashAsignado = cashLavado + cashBar + cashCosmeticos;
+    const totalDigitalAsignado = digitalLavado + digitalBar + digitalCosmeticos;
+
+    const cashDiff = cashTotalVenta - totalCashAsignado;
+    const digitalDiff = digitalTotalVenta - totalDigitalAsignado;
+
+    // Distribuir diferencias restantes proporcionalmente o a una categoría específica
+    // Aquí, se añade a la última categoría (Cosméticos) o Bar si Cosméticos es 0
+    if (Math.abs(cashDiff) > 0.01) {
+        if (cosmeticosNeto > 0) {
+            cashCosmeticos = parseFloat((cashCosmeticos + cashDiff).toFixed(2));
+        } else {
+            cashBar = parseFloat((cashBar + cashDiff).toFixed(2));
+        }
+    }
+    if (Math.abs(digitalDiff) > 0.01) {
+        if (cosmeticosNeto > 0) {
+            digitalCosmeticos = parseFloat((digitalCosmeticos + digitalDiff).toFixed(2));
+        } else {
+            digitalBar = parseFloat((digitalBar + digitalDiff).toFixed(2));
+        }
+    }
+
+    // Redondeo final a 2 decimales para todas las asignaciones
+    cashLavado = parseFloat(cashLavado.toFixed(2));
+    digitalLavado = parseFloat(digitalLavado.toFixed(2));
+    cashBar = parseFloat(cashBar.toFixed(2));
+    digitalBar = parseFloat(digitalBar.toFixed(2));
+    cashCosmeticos = parseFloat(cashCosmeticos.toFixed(2)); // Nuevo
+    digitalCosmeticos = parseFloat(digitalCosmeticos.toFixed(2)); // Nuevo
+
+    // Determinar el tipo de venta
+    let tipoVenta = 'Mixta';
+    if (lavadoBrutoActual > 0 && barBrutoActual === 0 && cosmeticosBrutoActual === 0) {
+        tipoVenta = 'Lavado';
+    } else if (barBrutoActual > 0 && lavadoBrutoActual === 0 && cosmeticosBrutoActual === 0) {
+        tipoVenta = 'Bar';
+    } else if (cosmeticosBrutoActual > 0 && lavadoBrutoActual === 0 && barBrutoActual === 0) { // Nuevo
+        tipoVenta = 'Cosméticos';
+    } else {
+        tipoVenta = 'Mixta';
+    }
+
+
+    // Crea el objeto de venta y lo añade al array
+    const venta = {
+      hora: hora,
+      cliente: document.getElementById("cliente").value.trim(),
+      auto: auto,
+      patente: patente, // Usar la patente normalizada
+      telefono: telefono,
+      lavadoBruto: lavadoBrutoActual,
+      barBruto: barBrutoActual, // Guardamos el bruto del bar
+      cosmeticosBruto: cosmeticosBrutoActual, // Nuevo: Guardamos el bruto de cosméticos
+      descuentoBarMontoAplicado: montoDescuentoBar, // Guardar el monto de descuento aplicado al bar
+      descuentoBarTipoAplicado: tipoDescuentoBar, // Guardar el tipo de descuento del bar
+      descuentoCosmeticosMontoAplicado: montoDescuentoCosmeticos, // Nuevo: Descuento cosméticos
+      descuentoCosmeticosTipoAplicado: tipoDescuentoCosmeticos, // Nuevo: Descuento cosméticos
+      total: expectedTotal,
+      productos: productosBar.map(p => p.nombre).join(", "), // Texto de productos para visualización
+      productosArray: JSON.parse(JSON.stringify(productosBar)), // Array de objetos para edición
+      cosmeticos: productosCosmeticos.map(p => p.nombre).join(", "), // Nuevo: Texto de cosméticos para visualización
+      cosmeticosArray: JSON.parse(JSON.stringify(productosCosmeticos)), // Nuevo: Array de objetos para edición
+      formaPago: formaPago,
+      cashLavado: cashLavado,
+      digitalLavado: digitalLavado,
+      cashBar: cashBar,
+      digitalBar: digitalBar,
+      cashCosmeticos: cashCosmeticos, // Nuevo
+      digitalCosmeticos: digitalCosmeticos, // Nuevo
+      modificada: false, // Indica si la venta ha sido modificada
+      justificacion: "", // Justificación de modificación
+      tipoVenta: tipoVenta,
+      lavadoGratis: isAnyFreeWash, // Marca si fue un lavado gratis (sea por promo manual o 5+1)
+      isPromoWash: isPromoWashManuallySelected // Marca si fue una promo manual
+    };
+
+    ventas.push(venta);
+    console.log("Venta guardada. Array de ventas actual:", ventas); // Debugging
+    productosBar = []; // Resetea la lista de productos del bar para la próxima venta
+    productosCosmeticos = []; // Nuevo: Resetea la lista de productos cosméticos
+    actualizarListaBar(); // Actualiza la UI de la lista del bar
+    actualizarListaCosmeticos(); // Nuevo: Actualiza la UI de la lista de cosméticos
+    // Resetear campos manualmente ya que no hay un form.reset() global
+    setCurrentTime(); // Set current time for next sale
+    document.getElementById("cliente").value = ""; // Limpiar campo cliente
+    document.getElementById("auto").value = "";
+    document.getElementById("patente").value = "";
+    document.getElementById("telefono").value = "";
+    document.getElementById("tipoVehiculo").value = "0"; // Resetear selección de vehículo
+    document.getElementById("precioLavado").value = "0.00";
+    document.getElementById("descuentoLavado").value = "no";
+    document.getElementById("productoBar").value = "";
+    document.getElementById("nombreProductoManualBar").value = ""; // Limpiar campo manual bar
+    document.getElementById("precioProductoManualBar").value = ""; // Limpiar campo manual bar
+    document.getElementById("descuentoBarCantidad").value = "0"; // Resetear descuento bar
+    document.getElementById("tipoDescuentoBar").value = "monto"; // Resetear tipo descuento bar
+    document.getElementById("precioBar").value = "0.00";
+    document.getElementById("productoCosmetico").value = ""; // Nuevo
+    document.getElementById("nombreProductoManualCosmetico").value = ""; // Limpiar campo manual cosmetico
+    document.getElementById("precioProductoManualCosmetico").value = ""; // Limpiar campo manual cosmetico
+    document.getElementById("descuentoCosmeticosCantidad").value = "0"; // Nuevo
+    document.getElementById("tipoDescuentoCosmeticos").value = "monto"; // Nuevo
+    document.getElementById("precioCosmeticos").value = "0.00"; // Nuevo
+    document.getElementById("formaPago").value = "Cash"; // Resetear forma de pago
+    document.getElementById("cashPart").value = "0.00";
+    document.getElementById("digitalPart").value = "0.00";
+    document.getElementById("total").innerText = "0.00"; // Resetea el total en pantalla
+    toggleMixed(); // Resetea la visibilidad de los campos de pago mixto
+    mostrarVentas(); // Actualiza la tabla de ventas
+    mostrarCierreCaja(); // Actualiza el resumen del cierre de caja
+    alert("Venta guardada con éxito!"); // Mensaje de confirmación
+  }
+
+  // Revierte la última venta guardada
+  function revertirUltimaVenta() {
+      if (ventas.length === 0) {
+          alert("No hay ventas para revertir.");
+          return;
+      }
+      if (confirm("¿Estás seguro de que quieres revertir la última venta?")) {
+          const lastVenta = ventas.pop(); // Elimina la última venta del array
+
+          // Revertir el conteo de lavados si la venta revertida afectó el contador
+          if (lastVenta.lavadoBruto > 0 && lastVenta.patente) { // Si se pagó un lavado
+              const patente = lastVenta.patente;
+              if (washCounts[patente] > 0) {
+                  washCounts[patente]--;
+              }
+          } else if (lastVenta.lavadoGratis && lastVenta.patente && !lastVenta.isPromoWash) { // Si se revierte un lavado gratis por 5+1
+            washCounts[lastVenta.patente] = 5; // El contador debe volver a 5 para que el siguiente sea gratis
+          }
+          // Si fue una promo manual, no hay que revertir el contador 5+1
+          localStorage.setItem('washCounts', JSON.stringify(washCounts));
+          console.log("Conteo de lavados revertido:", washCounts);
+
+          mostrarVentas(); // Actualiza la tabla
+          mostrarCierreCaja(); // Actualiza el cierre de caja
+          alert("Última venta revertida con éxito.");
+      }
+  }
+
+  // Muestra todas las ventas en la tabla
+  function mostrarVentas() {
+    console.log("Calling mostrarVentas. Current ventas array:", ventas); // Debugging
+    const tbody = document.querySelector("#tablaVentas tbody");
+    tbody.innerHTML = ""; // Limpia la tabla
+    ventas.forEach((v, i) => {
+      const tr = document.createElement("tr");
+      if (v.modificada) {
+          tr.classList.add('modified-row'); // Añade clase si la fila fue modificada
+      }
+
+      // Calcular el valor neto del Bar para la tabla
+      let barNetoParaTabla = v.barBruto;
+      if (v.descuentoBarTipoAplicado === "monto") {
+          barNetoParaTabla = Math.max(0, v.barBruto - v.descuentoBarMontoAplicado);
+        } else if (v.descuentoBarTipoAplicado === "porcentaje") {
+            barNetoParaTabla = Math.max(0, v.barBruto * (1 - (v.descuentoBarMontoAplicado / 100)));
+        }
+
+        // Nuevo: Calcular el valor neto de Cosméticos para la tabla
+        let cosmeticosNetoParaTabla = v.cosmeticosBruto;
+        if (v.descuentoCosmeticosTipoAplicado === "monto") {
+            cosmeticosNetoParaTabla = Math.max(0, v.cosmeticosBruto - v.descuentoCosmeticosMontoAplicado);
+        } else if (v.descuentoCosmeticosTipoAplicado === "porcentaje") {
+            cosmeticosNetoParaTabla = Math.max(0, v.cosmeticosBruto * (1 - (v.descuentoCosmeticosMontoAplicado / 100)));
+        }
+
+        tr.innerHTML = `
+        <td>${i + 1} ${v.modificada ? '<span class="modified-label">(MOD)</span>' : ''}</td>
+        <td>${v.tipoVenta}</td>
+        <td>${v.hora}</td>
+        <td>${v.auto}</td>
+        <td>${v.patente}</td>
+        <td>${v.telefono}</td>
+        <td class="lavado-col">${formatMoney(v.lavadoBruto)} ${v.lavadoGratis ? '<span style="font-size:0.8em; color:red;">(GRATIS)</span>' : ''}</td>
+        <td class="bar-col">${formatMoney(barNetoParaTabla)}</td>
+        <td class="cosmeticos-col">${formatMoney(cosmeticosNetoParaTabla)}</td>
+        <td class="total-col">${formatMoney(v.total)}</td>
+        <td class="cash-lavado-col">${formatMoney(v.cashLavado)}</td>
+        <td class="digital-lavado-col">${formatMoney(v.digitalLavado)}</td>
+        <td class="cash-bar-col">${formatMoney(v.cashBar)}</td>
+        <td class="digital-bar-col">${formatMoney(v.digitalBar)}</td>
+        <td class="cash-cosmeticos-col">${formatMoney(v.cashCosmeticos)}</td>
+        <td class="digital-cosmeticos-col">${formatMoney(v.digitalCosmeticos)}</td>
+        <td><button onclick="openEditModal(${i})" class="secondary-action">Editar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Muestra el resumen del cierre de caja
+  function mostrarCierreCaja() {
+    let totalCashLavado = 0;
+    let totalDigitalLavado = 0;
+    let totalCashBar = 0;
+    let totalDigitalBar = 0;
+    let totalCashCosmeticos = 0; // Nuevo
+    let totalDigitalCosmeticos = 0; // Nuevo
+    let totalVentasLavadoBruto = 0;
+    let totalVentasBarBruto = 0; // Suma de barBruto (sin descuento manual de bar)
+    let totalVentasBarNeto = 0; // Suma de barBruto - descuento manual de bar
+    let totalVentasCosmeticosBruto = 0; // Nuevo
+    let totalVentasCosmeticosNeto = 0; // Nuevo
+    let totalGeneralVentasNeto = 0;
+
+    let countLavadoSales = 0; // New
+    let countBarSales = 0;    // New
+    let countCosmeticosSales = 0; // New
+
+    ventas.forEach(v => {
+      totalCashLavado += v.cashLavado;
+      totalDigitalLavado += v.digitalLavado;
+      totalCashBar += v.cashBar;
+      totalDigitalBar += v.digitalBar;
+      totalCashCosmeticos += v.cashCosmeticos; // Nuevo
+      totalDigitalCosmeticos += v.digitalCosmeticos; // Nuevo
+      totalVentasLavadoBruto += v.lavadoBruto;
+      totalVentasBarBruto += v.barBruto;
+      totalVentasCosmeticosBruto += v.cosmeticosBruto;
+
+      // Count sales
+      if (v.lavadoBruto > 0 || v.isPromoWash) { // Count if paid or a manual promo wash
+          countLavadoSales++;
+      }
+      if (v.barBruto > 0) {
+          countBarSales++;
+      }
+      if (v.cosmeticosBruto > 0) {
+          countCosmeticosSales++;
+      }
+
+      // Calcular el barNeto de cada venta para el total del cierre de caja
+      let barNetoIndividual = v.barBruto;
+      if (v.descuentoBarTipoAplicado === "monto") {
+          barNetoIndividual = Math.max(0, v.barBruto - v.descuentoBarMontoAplicado);
+      } else if (v.descuentoBarTipoAplicado === "porcentaje") {
+          barNetoIndividual = Math.max(0, v.barBruto * (1 - (v.descuentoBarMontoAplicado / 100)));
+      }
+      totalVentasBarNeto += barNetoIndividual;
+
+      // Nuevo: Calcular el cosmeticosNeto de cada venta para el total del cierre de caja
+      let cosmeticosNetoIndividual = v.cosmeticosBruto;
+      if (v.descuentoCosmeticosTipoAplicado === "monto") {
+          cosmeticosNetoIndividual = Math.max(0, v.cosmeticosBruto - v.descuentoCosmeticosMontoAplicado);
+      } else if (v.descuentoCosmeticosTipoAplicado === "porcentaje") {
+          cosmeticosNetoIndividual = Math.max(0, v.cosmeticosBruto * (1 - (v.descuentoCosmeticosMontoAplicado / 100)));
+      }
+      totalVentasCosmeticosNeto += cosmeticosNetoIndividual;
+
+      totalGeneralVentasNeto += v.total;
+    });
+
+    lastCashTotal = totalCashLavado + totalCashBar + totalCashCosmeticos; // Nuevo: Suma cosméticos al efectivo
+
+    const totalLavadoNeto = ventas.reduce((sum, v) => {
+        const descuentoLavadoAplicado = v.descuentoLavado === "si" ? v.lavadoBruto * 0.1 : 0;
+        return sum + (v.lavadoBruto - descuentoLavadoAplicado);
+    }, 0);
+
+    document.getElementById("cierreCaja").innerHTML = `
+      <h3>Resumen de Cierre de Caja</h3>
+      <h4>Lavadero</h4>
+      <p>Conteo de Ventas (Lavadero): ${countLavadoSales}</p>
+      <p>Total de Ventas Bruto (Lavado): ${formatMoney(totalVentasLavadoBruto)}</p>
+      <p>Total de Ventas Neto (Lavadero): ${formatMoney(totalLavadoNeto)}</p>
+      <p>Total Efectivo (Lavadero): ${formatMoney(totalCashLavado)}</p>
+      <p>Total Digital (Lavadero): ${formatMoney(totalDigitalLavado)}</p>
+      <h4>Bar</h4>
+      <p>Conteo de Ventas (Bar): ${countBarSales}</p>
+      <p>Total de Ventas Bruto (Bar): ${formatMoney(totalVentasBarBruto)}</p>
+      <p>Total de Ventas Neto (Bar): ${formatMoney(totalVentasBarNeto)}</p>
+      <p>Total Efectivo (Bar): ${formatMoney(totalCashBar)}</p>
+      <p>Total Digital (Bar): ${formatMoney(totalDigitalBar)}</p>
+      <h4>Cosméticos</h4>
+      <p>Conteo de Ventas (Cosméticos): ${countCosmeticosSales}</p>
+      <p>Total de Ventas Bruto (Cosméticos): ${formatMoney(totalVentasCosmeticosBruto)}</p>
+      <p>Total de Ventas Neto (Cosméticos): ${formatMoney(totalVentasCosmeticosNeto)}</p>
+      <p>Total Efectivo (Cosméticos): ${formatMoney(totalCashCosmeticos)}</p>
+      <p>Total Digital (Cosméticos): ${formatMoney(totalDigitalCosmeticos)}</p>
+      <hr style="border-top: 1px solid var(--border-color); margin: 15px 0;">
+      <h4>Bar y Cosméticos (Combinado)</h4>
+      <p>Total Neto (Bar y Cosméticos): ${formatMoney(totalVentasBarNeto + totalVentasCosmeticosNeto)}</p>
+      <p>Total Efectivo (Bar y Cosméticos): ${formatMoney(totalCashBar + totalCashCosmeticos)}</p>
+      <p>Total Digital (Bar y Cosméticos): ${formatMoney(totalDigitalBar + totalDigitalCosmeticos)}</p>
+      <hr style="border-top: 1px solid var(--border-color); margin: 15px 0;">
+      <p><strong>Total Efectivo General: ${formatMoney(lastCashTotal)}</strong></p>
+      <p><strong>Total Digital General: ${formatMoney(totalDigitalLavado + totalDigitalBar + totalDigitalCosmeticos)}</strong></p>
+      <p><strong>Total General de Ventas (Neto): ${formatMoney(totalGeneralVentasNeto)}</strong></p>
+    `;
+    // Actualiza el arqueo para que la diferencia sea correcta
+    calcularArqueo();
+  }
+
+  // --- Funciones del Arqueo de Caja ---
+
+  // Actualiza el subtotal de una denominación y recalcula el arqueo total
+  function updateSubtotal(d) {
+    const cnt = parseInt(document.getElementById(`cnt${d}`).value) || 0;
+    document.getElementById(`sub${d}`).innerText = formatMoney(cnt * d);
+    calcularArqueo();
+  }
+
+  // Calcula el total contado en el arqueo y la diferencia con el efectivo real
+  function calcularArqueo() {
+    let totalCounted = 0;
+    [50, 100, 200, 500, 1000, 2000, 10000, 20000].forEach(d => {
+        totalCounted += (parseInt(document.getElementById(`cnt${d}`).value) || 0) * d;
+    });
+    document.getElementById("totalArqueo").innerText = `Total contado: ${formatMoney(totalCounted)}`;
+
+    const difference = totalCounted - lastCashTotal;
+    const diffElement = document.getElementById("diffArqueo");
+    diffElement.innerText = `Diferencia con caja: ${formatMoney(difference)}`;
+
+    // Resalta la diferencia con colores
+    if (Math.abs(difference) > 0.01) { // Tolerancia para errores de flotante
+        diffElement.classList.remove('positive-diff', 'negative-diff');
+        if (difference > 0) {
+            diffElement.classList.add('positive-diff'); // Verde si sobra
+        } else {
+            diffElement.classList.add('negative-diff'); // Rojo si falta
+        }
+    } else {
+        diffElement.classList.remove('positive-diff', 'negative-diff');
+        diffElement.style.color = 'var(--text-color)'; // Color por defecto si no hay diferencia
+    }
+  }
+
+  // --- Funciones de Edición de Venta (Modal) ---
+
+  // Abre el modal de edición con los datos de la venta seleccionada
+  function openEditModal(index) {
+      const venta = ventas[index];
+      if (!venta) return;
+
+      document.getElementById("currentEditIndex").value = index;
+      document.getElementById("editVentaIndex").textContent = `#${index + 1}`;
+      document.getElementById("editHora").value = venta.hora;
+      document.getElementById("editCliente").value = venta.cliente || ""; // Cargar cliente
+      document.getElementById("editAuto").value = venta.auto;
+      document.getElementById("editPatente").value = venta.patente;
+      document.getElementById("editTelefono").value = venta.telefono;
+
+      // Carga datos de Lavado
+      const editTipoVehiculoSelect = document.getElementById("editTipoVehiculo");
+      const editPrecioLavadoInput = document.getElementById("editPrecioLavado");
+
+      // Si la venta original fue una promo manual, seleccionar la opción "Promo"
+      if (venta.isPromoWash) {
+          editTipoVehiculoSelect.value = "0"; // Valor de la opción Promo
+          editPrecioLavadoInput.setAttribute("readonly", true); // Asegurar que sea readonly para promo
+          editPrecioLavadoInput.value = "0.00"; // Asegurar que el precio sea 0
+      } else if (venta.lavadoBruto > 0 && !editTipoVehiculoSelect.querySelector(`option[value="${venta.lavadoBruto}"]`)) {
+          // Si el precio original no es 0 y no existe una opción con ese precio, asumimos que fue manual
+          editTipoVehiculoSelect.value = "manual";
+          editPrecioLavadoInput.value = venta.lavadoBruto.toFixed(2); // Cargar el precio original
+          editPrecioLavadoInput.removeAttribute("readonly"); // Habilitar edición
+      } else {
+          // Si el precio original existe como opción predefinida (o es 0 pero no promo manual)
+          editTipoVehiculoSelect.value = venta.lavadoBruto;
+          editPrecioLavadoInput.value = venta.lavadoBruto.toFixed(2); // Cargar el precio original
+          editPrecioLavadoInput.setAttribute("readonly", true); // Deshabilitar edición
+      }
+      setPrecioLavadoEdit(); // Para actualizar editPrecioLavado (y manejar 5+1 si aplica)
+
+
+      // Inferir si el descuento fue aplicado
+      const originalLavadoNeto = venta.total - (venta.barBruto - venta.descuentoBarMontoAplicado) - (venta.cosmeticosBruto - venta.descuentoCosmeticosMontoAplicado); // Nuevo: Resta también cosméticos
+      const lavadoBrutoOriginal = venta.lavadoBruto;
+      // Check if the original net total for lavado was approximately 90% of the gross lavado amount
+      const wasDiscountApplied = (lavadoBrutoOriginal > 0 && Math.abs(originalLavadoNeto - (lavadoBrutoOriginal * 0.9)) < 0.01);
+      document.getElementById("editDescuentoLavado").value = wasDiscountApplied ? "si" : "no";
+
+
+      // Carga productos del Bar
+      editProductosBar = JSON.parse(JSON.stringify(venta.productosArray || []));
+      populateBarSelectEdit(); // Populate with all options first
+      document.getElementById('editSearchProductoBar').value = ''; // Clear search field
+      actualizarListaBarEdit();
+
+      // Carga descuento del bar
+      document.getElementById("editDescuentoBarCantidad").value = venta.descuentoBarMontoAplicado || 0;
+      document.getElementById("editTipoDescuentoBar").value = venta.descuentoBarTipoAplicado || "monto";
+
+      // Nuevo: Carga productos de Cosméticos
+      editProductosCosmeticos = JSON.parse(JSON.stringify(venta.cosmeticosArray || []));
+      populateCosmeticosSelectEdit(); // Populate with all options first
+      document.getElementById('editSearchProductoCosmetico').value = ''; // Clear search field
+      actualizarListaCosmeticosEdit();
+
+      // Nuevo: Carga descuento de Cosméticos
+      document.getElementById("editDescuentoCosmeticosCantidad").value = venta.descuentoCosmeticosMontoAplicado || 0;
+      document.getElementById("editTipoDescuentoCosmeticos").value = venta.descuentoCosmeticosTipoAplicado || "monto";
+
+      // Carga forma de Pago
+      document.getElementById("editFormaPago").value = venta.formaPago;
+      document.getElementById("editCashPart").value = (venta.cashLavado + venta.cashBar + venta.cashCosmeticos).toFixed(2); // Nuevo: Suma cosméticos
+      document.getElementById("editDigitalPart").value = (venta.digitalLavado + venta.digitalBar + venta.digitalCosmeticos).toFixed(2); // Nuevo: Suma cosméticos
+      toggleMixedEdit();
+
+      // Calcula y muestra el total editado
+      calcularTotalEdit();
+
+      // Carga la justificación de modificación
+      document.getElementById("justificacionModificacion").value = venta.justificacion || "";
+
+      document.getElementById("editModal").style.display = "block"; // Muestra el modal
+  }
+
+  // Cierra el modal de edición
+  function closeEditModal() {
+      document.getElementById("editModal").style.display = "none";
+      editProductosBar = []; // Limpia la lista de productos del bar del modal
+      editProductosCosmeticos = []; // Nuevo: Limpia la lista de productos cosméticos del modal
+  }
+
+  // Establece el precio del lavado en el modal de edición
+  function setPrecioLavadoEdit() {
+      const tipoVehiculoSelect = document.getElementById("editTipoVehiculo");
+      const selectedValue = tipoVehiculoSelect.value;
+      const precioLavadoInput = document.getElementById("editPrecioLavado");
+      const cliente = document.getElementById("editCliente").value.trim();
+      const patente = document.getElementById("editPatente").value.trim().toUpperCase();
+      const tipoVehiculoText = tipoVehiculoSelect.options[tipoVehiculoSelect.selectedIndex].text;
+
+      let precio = 0;
+
+      if (selectedValue === "manual") {
+          precioLavadoInput.removeAttribute("readonly"); // Habilitar edición
+          // No limpiar el valor, ya que podría estar cargando un precio manual existente
+          // si el usuario selecciona "manual" después de cargar la venta en el modal.
+          // Si el input está vacío, el usuario lo ingresará.
+          precio = parseFloat(precioLavadoInput.value) || 0; // Usar el valor actual del input
+      } else {
+          precio = parseFloat(selectedValue) || 0;
+          precioLavadoInput.setAttribute("readonly", true); // Deshabilitar edición si no es manual
+      }
+
+      // Lógica para la opción "Promo (100% Desc.)" en edición
+      if (tipoVehiculoText.includes("Promo (100% Desc.)")) {
+          precio = 0; // Precio 0 para la promoción
+      } else if (patente && precio > 0 && selectedValue !== "manual") { // Lógica para la promoción "5 lavados y el 6to gratis"
+          const currentWashCount = washCounts[patente] || 0;
+          // Para la edición, necesitamos saber el estado del contador antes de esta venta
+          // Esto es complejo de manejar en edición, ya que la edición no debería alterar el historial de lavados.
+          // Por simplicidad, en edición, si el precio es 0 y no es "Promo", asumimos que fue 5+1 gratis.
+          // Si el usuario cambia el tipo de vehículo a uno pagado, el contador no se verá afectado hasta la próxima venta real.
+          if (currentWashCount === 5) { // Si el contador estaba en 5, el lavado original era gratis
+              // No cambiamos el precio aquí, ya que el precio ya es 0 si fue gratis.
+          }
+      }
+
+      // Aplica descuentos personalizados si el cliente tiene uno para este lavado en edición
+      if (cliente && clientCustomPrices[cliente] && clientCustomPrices[cliente]["Lavado"]) {
+          precio = clientCustomPrices[cliente]["Lavado"];
+      }
+
+      // Si el valor seleccionado no es "manual", actualiza el input con el precio calculado.
+      // Si es "manual", solo actualiza si el input está vacío o si el precio calculado es diferente (para evitar sobrescribir lo que el usuario está escribiendo).
+      if (selectedValue !== "manual" || precioLavadoInput.value === "" || parseFloat(precioLavadoInput.value) !== precio) {
+        precioLavadoInput.value = precio.toFixed(2);
+      }
+      calcularTotalEdit();
+  }
+
+  // Agrega un producto del bar en el modal de edición
+  function agregarProductoBarEdit() {
+      const select = document.getElementById("editProductoBar");
+      let precio = parseFloat(select.value);
+      const nombre = select.options[select.selectedIndex].text;
+      const cliente = document.getElementById("editCliente").value.trim(); // Obtener cliente del modal
+
+      if (precio > 0 && nombre) {
+          // Aplica descuentos personalizados para productos del bar en edición
+          if (cliente && clientCustomPrices[cliente] && clientCustomPrices[cliente][nombre]) {
+              precio = clientCustomPrices[cliente][nombre];
+              console.log(`Precio de ${nombre} ajustado para ${cliente} en edición: ${precio}`);
+          }
+          editProductosBar.push({ nombre, precio });
+          actualizarListaBarEdit();
+          calcularTotalEdit();
+          select.value = "";
+          document.getElementById('editSearchProductoBar').value = ''; // Clear search
+          populateBarSelectEdit(); // Repopulate with all options
+      }
+  }
+
+  // Agrega un producto del bar ingresado manualmente en el modal de edición
+  function agregarProductoManualBarEdit() {
+    const nombre = document.getElementById("nombreProductoManualBarEdit").value.trim();
+    const precio = parseFloat(document.getElementById("precioProductoManualBarEdit").value) || 0;
+
+    if (nombre && precio > 0) {
+      editProductosBar.push({ nombre, precio });
+      actualizarListaBarEdit();
+      calcularTotalEdit();
+      document.getElementById("nombreProductoManualBarEdit").value = "";
+      document.getElementById("precioProductoManualBarEdit").value = "";
+    } else {
+      alert("Por favor, ingrese un nombre y un precio válido para el producto genérico del Bar en edición.");
+    }
+  }
+
+  // Actualiza la lista visible de productos del bar en el modal de edición
+  function actualizarListaBarEdit() {
+      const lista = document.getElementById("editListaProductos");
+      lista.innerHTML = "";
+      editProductosBar.forEach((p, i) => {
+          const li = document.createElement("li");
+          li.textContent = `${p.nombre} — ${formatMoney(p.precio)}`;
+          const btn = document.createElement("button");
+          btn.textContent = "×";
+          btn.onclick = () => {
+              editProductosBar.splice(i, 1);
+              actualizarListaBarEdit();
+              calcularTotalEdit();
+          };
+          li.appendChild(btn);
+          lista.appendChild(li);
+      });
+      // Muestra el total BRUTO de productos del bar en el modal de edición
+      document.getElementById("editPrecioBar").value = editProductosBar.reduce((a, p) => a + p.precio, 0).toFixed(2);
+  }
+
+  // Nuevo: Rellena el select de cosméticos en el modal de edición
+  function populateCosmeticosSelectEdit(searchTerm = '') {
+    const select = document.getElementById("editProductoCosmetico");
+    select.innerHTML = `<option value="">-- Seleccionar Cosmético --</option>`; // Clear existing options
+    const filteredData = cosmeticosData.filter(p =>
+      p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.contenido && p.contenido.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = "Cosméticos del Automotor";
+    filteredData.forEach(p => {
+      const displayName = p.contenido ? `${p.nombre} (${p.contenido})` : p.nombre;
+      const option = document.createElement('option');
+      option.value = p.pvp;
+      option.textContent = `${displayName} — ${formatMoney(p.pvp)}`;
+      optgroup.appendChild(option);
+    });
+    select.appendChild(optgroup);
+  }
+
+  // Nuevo: Función para filtrar productos cosméticos en el modal de edición
+  function filterCosmeticosProductsEdit() {
+    const searchTerm = document.getElementById('editSearchProductoCosmetico').value;
+    populateCosmeticosSelectEdit(searchTerm);
+  }
+
+  // Nuevo: Rellena el select de productos del Bar en el modal de edición
+  function populateBarSelectEdit(searchTerm = '') {
+    const select = document.getElementById("editProductoBar");
+    select.innerHTML = `<option value="">-- Seleccionar Producto --</option>`; // Clear existing options
+
+    const filteredData = allBarProductsData.filter(p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const groupedOptions = filteredData.reduce((acc, product) => {
+      if (!acc[product.group]) {
+        acc[product.group] = [];
+      }
+      acc[product.group].push(product);
+      return acc;
+    }, {});
+
+    for (const groupName in groupedOptions) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = groupName;
+      groupedOptions[groupName].forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.value;
+        option.textContent = `${p.name}`;
+        optgroup.appendChild(option);
+      });
+      select.appendChild(optgroup);
+    }
+  }
+
+  // Nuevo: Función para filtrar productos del Bar en el modal de edición
+  function filterBarProductsEdit() {
+    const searchTerm = document.getElementById('editSearchProductoBar').value;
+    populateBarSelectEdit(searchTerm);
+  }
+
+  // Nuevo: Agrega un producto cosmético ingresado manualmente en el modal de edición
+  function agregarProductoManualCosmeticoEdit() {
+    const nombre = document.getElementById("nombreProductoManualCosmeticoEdit").value.trim();
+    const precio = parseFloat(document.getElementById("precioProductoManualCosmeticoEdit").value) || 0;
+
+    if (nombre && precio > 0) {
+      editProductosCosmeticos.push({ nombre, precio });
+      actualizarListaCosmeticosEdit();
+      calcularTotalEdit();
+      document.getElementById("nombreProductoManualCosmeticoEdit").value = "";
+      document.getElementById("precioProductoManualCosmeticoEdit").value = "";
+    } else {
+      alert("Por favor, ingrese un nombre y un precio válido para el producto genérico de Cosméticos en edición.");
+    }
+  }
+
+  // Nuevo: Actualiza la lista visible de productos cosméticos en el modal de edición
+  function actualizarListaCosmeticosEdit() {
+    const lista = document.getElementById("editListaCosmeticos");
+    lista.innerHTML = "";
+    editProductosCosmeticos.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${p.nombre} — ${formatMoney(p.precio)}`;
+      const btn = document.createElement("button");
+      btn.textContent = "×";
+      btn.onclick = () => {
+        editProductosCosmeticos.splice(i, 1);
+        actualizarListaCosmeticosEdit();
+        calcularTotalEdit();
+      };
+      li.appendChild(btn);
+      lista.appendChild(li);
+    });
+    document.getElementById("editPrecioCosmeticos").value = editProductosCosmeticos.reduce((a, p) => a + p.precio, 0).toFixed(2);
+  }
+
+
+  // Muestra u oculta los campos de pago mixto en el modal de edición
+  function toggleMixedEdit() {
+    const formaPago = document.getElementById("editFormaPago").value;
+    const mixedInputsDiv = document.getElementById("editMixedInputs");
+    mixedInputsDiv.style.display = formaPago === "Mixto" ? 'flex' : 'none';
+
+    if (formaPago === "Mixto") {
+      updateDigitalPartEdit();
+    } else {
+      document.getElementById("editCashPart").value = "0.00";
+      document.getElementById("editDigitalPart").value = "0.00";
+    }
+    calcularTotalEdit();
+  }
+
+  // Auto-rellena el campo de pago digital en el modal de edición
+  function updateDigitalPartEdit() {
+    const expectedTotal = parseFloat(document.getElementById("editTotal").innerText) || 0; // Obtener el total actual de la pantalla
+    const cashPart = parseFloat(document.getElementById("editCashPart").value) || 0;
+    const digitalPart = Math.max(0, expectedTotal - cashPart);
+    document.getElementById("editDigitalPart").value = digitalPart.toFixed(2);
+  }
+
+  // Valida la suma de los campos de pago mixto en el modal de edición
+  function validateMixedInputEdit() {
+      const expectedTotal = parseFloat(document.getElementById("editTotal").innerText) || 0;
+      const cashPart = parseFloat(document.getElementById("editCashPart").value) || 0;
+      const digitalPart = parseFloat(document.getElementById("editDigitalPart").value) || 0;
+      if (document.getElementById("editFormaPago").value === "Mixto" && Math.abs((cashPart + digitalPart) - expectedTotal) > 0.01) {
+          // Opcional: console.warn("La suma de efectivo y digital editada no coincide con el total.");
+      }
+  }
+
+  // Calcula el total de la venta en el modal de edición (lavado + bar + cosmeticos - descuentos)
+  function calcularTotalEdit() {
+    const lavadoBruto = parseFloat(document.getElementById("editPrecioLavado").value) || 0;
+    const barBruto = editProductosBar.reduce((a, p) => a + p.precio, 0);
+    const cosmeticosBruto = editProductosCosmeticos.reduce((a, p) => a + p.precio, 0); // Nuevo
+
+    // Descuento Lavado (10%)
+    const descuentoLavadoAplicado = document.getElementById("editDescuentoLavado").value === "si" ? lavadoBruto * 0.1 : 0;
+    const lavadoNeto = lavadoBruto - descuentoLavadoAplicado;
+
+    // Descuento Bar (Monto Fijo o Porcentaje) para edición
+    let descuentoBarCantidad = parseFloat(document.getElementById("editDescuentoBarCantidad").value) || 0;
+    const tipoDescuentoBar = document.getElementById("editTipoDescuentoBar").value;
+    let montoDescuentoBar = 0;
+    if (tipoDescuentoBar === "monto") {
+        montoDescuentoBar = descuentoBarCantidad;
+    } else if (tipoDescuentoBar === "porcentaje") {
+        montoDescuentoBar = barBruto * (descuentoBarCantidad / 100);
+    }
+    const barNeto = Math.max(0, barBruto - montoDescuentoBar);
+
+    // Nuevo: Descuento Cosméticos (Monto Fijo o Porcentaje) para edición
+    let descuentoCosmeticosCantidad = parseFloat(document.getElementById("editDescuentoCosmeticosCantidad").value) || 0;
+    const tipoDescuentoCosmeticos = document.getElementById("editTipoDescuentoCosmeticos").value;
+    let montoDescuentoCosmeticos = 0;
+    if (tipoDescuentoCosmeticos === "monto") {
+        montoDescuentoCosmeticos = descuentoCosmeticosCantidad;
+    } else if (tipoDescuentoCosmeticos === "porcentaje") {
+        montoDescuentoCosmeticos = cosmeticosBruto * (descuentoCosmeticosCantidad / 100);
+    }
+    const cosmeticosNeto = Math.max(0, cosmeticosBruto - montoDescuentoCosmeticos);
+
+    const total = lavadoNeto + barNeto + cosmeticosNeto; // Nuevo
+    document.getElementById("editTotal").innerText = total.toFixed(2);
+
+    const formaPago = document.getElementById("editFormaPago").value;
+    if (formaPago === "Cash") {
+        document.getElementById("editCashPart").value = total.toFixed(2);
+        document.getElementById("editDigitalPart").value = "0.00";
+    } else if (formaPago === "Digital") {
+        document.getElementById("editCashPart").value = "0.00";
+        document.getElementById("editDigitalPart").value = total.toFixed(2);
+    } else if (formaPago === "Mixto") {
+        updateDigitalPartEdit();
+    }
+    return total;
+  }
+
+  // Guarda los cambios realizados en la venta desde el modal de edición
+  function guardarCambiosVenta() {
+      const index = parseInt(document.getElementById("currentEditIndex").value);
+      const ventaOriginal = ventas[index];
+      const expectedTotal = calcularTotalEdit();
+
+      const justificacion = document.getElementById("justificacionModificacion").value.trim();
+      if (!justificacion) {
+          alert("Debe ingresar una justificación para modificar la venta.");
+          return;
+      }
+
+      let cashTotalVenta = 0;
+      let digitalTotalVenta = 0;
+      const formaPago = document.getElementById("editFormaPago").value;
+
+      if (formaPago === "Mixto") {
+        cashTotalVenta = parseFloat(document.getElementById("editCashPart").value) || 0;
+        digitalTotalVenta = parseFloat(document.getElementById("editDigitalPart").value) || 0;
+        if (Math.abs((cashTotalVenta + digitalTotalVenta) - expectedTotal) > 0.01) {
+          alert(`Error: La suma de Efectivo y Digital ($${(cashTotalVenta + digitalTotalVenta).toFixed(2)}) no coincide con el Total de la venta ($${expectedTotal.toFixed(2)}). Por favor, verifique.`);
+          return;
+        }
+      } else if (formaPago === "Cash") {
+        cashTotalVenta = expectedTotal;
+        digitalTotalVenta = 0;
+      } else if (formaPago === "Digital") {
+        cashTotalVenta = 0;
+        digitalTotalVenta = expectedTotal;
+      }
+
+      // Validaciones de campos de entrada para el modal
+      const editHora = document.getElementById("editHora").value;
+      const editAuto = document.getElementById("editAuto").value.trim();
+      const editPatente = document.getElementById("editPatente").value.trim().toUpperCase();
+      const editTelefono = document.getElementById("editTelefono").value.trim();
+      const editTipoVehiculoSeleccionado = document.getElementById("editTipoVehiculo").value;
+
+      // Validar que la hora esté establecida
+      if (!editHora) {
+          alert("La hora no se ha establecido automáticamente en la edición. Por favor, ingrese la hora manualmente.");
+          return;
+      }
+
+      const lavadoBruto = parseFloat(document.getElementById("editPrecioLavado").value) || 0;
+      const barBruto = editProductosBar.reduce((a, p) => a + p.precio, 0); // Bruto del bar
+      const cosmeticosBruto = editProductosCosmeticos.reduce((a, p) => a + p.precio, 0); // Nuevo: Bruto de cosméticos
+
+      // Validar campos de datos de la venta si hay un lavado en el modal
+      if (editTipoVehiculoSeleccionado !== "0") { // Si se seleccionó un tipo de vehículo real (no "Seleccione" ni "Promo")
+          if (!editAuto || !editPatente || !editTelefono) {
+              alert("Para ventas de lavado, por favor complete los campos 'Auto', 'Patente' y 'Teléfono' en la edición.");
+              return;
+          }
+      }
+
+      const descuentoLavadoAplicado = document.getElementById("editDescuentoLavado").value === "si" ? lavadoBruto * 0.1 : 0;
+      const lavadoNeto = lavadoBruto - descuentoLavadoAplicado;
+
+      // Obtener y calcular el descuento del bar para la edición
+      const descuentoBarCantidad = parseFloat(document.getElementById("editDescuentoBarCantidad").value) || 0;
+      const tipoDescuentoBar = document.getElementById("editTipoDescuentoBar").value;
+      let montoDescuentoBar = 0;
+      if (tipoDescuentoBar === "monto") {
+          montoDescuentoBar = descuentoBarCantidad;
+      } else if (tipoDescuentoBar === "porcentaje") {
+          montoDescuentoBar = barBruto * (descuentoBarCantidad / 100);
+      }
+      const barNeto = Math.max(0, barBruto - montoDescuentoBar); // Neto del bar
+
+      // Nuevo: Obtener y calcular el descuento de cosméticos para la edición
+      const descuentoCosmeticosCantidad = parseFloat(document.getElementById("editDescuentoCosmeticosCantidad").value) || 0;
+      const tipoDescuentoCosmeticos = document.getElementById("editTipoDescuentoCosmeticos").value;
+      let montoDescuentoCosmeticos = 0;
+      if (tipoDescuentoCosmeticos === "monto") {
+          montoDescuentoCosmeticos = descuentoCosmeticosCantidad;
+      } else if (tipoDescuentoCosmeticos === "porcentaje") {
+          montoDescuentoCosmeticos = cosmeticosBruto * (descuentoCosmeticosCantidad / 100);
+      }
+      const cosmeticosNeto = Math.max(0, cosmeticosBruto - montoDescuentoCosmeticos); // Neto del cosméticos
+
+      let cashLavado = 0;
+      let digitalLavado = 0;
+      let cashBar = 0;
+      let digitalBar = 0;
+      let cashCosmeticos = 0; // Nuevo
+      let digitalCosmeticos = 0; // Nuevo
+
+      let remanenteCash = cashTotalVenta;
+      let remanenteDigital = digitalTotalVenta;
+
+      // Lógica de asignación de pagos en el modal de edición
+      if (lavadoNeto > 0) {
+          cashLavado = Math.min(remanenteCash, lavadoNeto);
+          remanenteCash -= cashLavado;
+          digitalLavado = Math.min(remanenteDigital, lavadoNeto - cashLavado);
+          remanenteDigital -= digitalLavado;
+      }
+
+      if (barNeto > 0) {
+          cashBar = Math.min(remanenteCash, barNeto);
+          remanenteCash -= cashBar;
+          digitalBar = Math.min(remanenteDigital, barNeto - cashBar);
+          remanenteDigital -= digitalBar;
+      }
+
+      if (cosmeticosNeto > 0) { // Nuevo
+          cashCosmeticos = Math.min(remanenteCash, cosmeticosNeto);
+          remanenteCash -= cashCosmeticos;
+          digitalCosmeticos = Math.min(remanenteDigital, cosmeticosNeto - cashCosmeticos);
+          remanenteDigital -= digitalCosmeticos;
+      }
+
+      // Ajuste final para manejar pequeñas diferencias de redondeo o asignación
+      const totalCashAsignado = cashLavado + cashBar + cashCosmeticos;
+      const totalDigitalAsignado = digitalLavado + digitalBar + digitalCosmeticos;
+
+      const cashDiff = cashTotalVenta - totalCashAsignado;
+      const digitalDiff = digitalTotalVenta - totalDigitalAsignado;
+
+      if (Math.abs(cashDiff) > 0.01) {
+          if (cosmeticosNeto > 0) {
+            cashCosmeticos = parseFloat((cashCosmeticos + cashDiff).toFixed(2));
+          } else {
+            cashBar = parseFloat((cashBar + cashDiff).toFixed(2));
+          }
+      }
+      if (Math.abs(digitalDiff) > 0.01) {
+          if (cosmeticosNeto > 0) {
+            digitalCosmeticos = parseFloat((digitalCosmeticos + digitalDiff).toFixed(2));
+          } else {
+            digitalBar = parseFloat((digitalBar + digitalDiff).toFixed(2));
+          }
+      }
+
+
+      cashLavado = parseFloat(cashLavado.toFixed(2));
+      digitalLavado = parseFloat(digitalLavado.toFixed(2));
+      cashBar = parseFloat(cashBar.toFixed(2));
+      digitalBar = parseFloat(digitalBar.toFixed(2));
+      cashCosmeticos = parseFloat(cashCosmeticos.toFixed(2)); // Nuevo
+      digitalCosmeticos = parseFloat(digitalCosmeticos.toFixed(2)); // Nuevo
+
+      let tipoVenta = 'Mixta';
+      if (lavadoBruto > 0 && barBruto === 0 && cosmeticosBruto === 0) {
+          tipoVenta = 'Lavado';
+      } else if (barBruto > 0 && lavadoBruto === 0 && cosmeticosBruto === 0) {
+          tipoVenta = 'Bar';
+      } else if (cosmeticosBruto > 0 && lavadoBruto === 0 && barBruto === 0) { // Nuevo
+          tipoVenta = 'Cosméticos';
+      } else {
+          tipoVenta = 'Mixta';
+      }
+
+      const isPromoWashManuallySelected = document.getElementById("editTipoVehiculo").options[document.getElementById("editTipoVehiculo").selectedIndex].text.includes("Promo (100% Desc.)");
+      const wasFreeWashBy5Plus1 = (lavadoBruto === 0 && (washCounts[editPatente] || 0) === 5); // Re-evaluar si era 5+1
+      const isAnyFreeWash = isPromoWashManuallySelected || wasFreeWashBy5Plus1;
+
+
+      // Actualiza el objeto de venta en el array
+      ventas[index] = {
+          ...ventaOriginal,
+          hora: editHora,
+          cliente: document.getElementById("editCliente").value.trim(),
+          auto: editAuto,
+          patente: editPatente,
+          telefono: editTelefono,
+          lavadoBruto: lavadoBruto,
+          barBruto: barBruto, // Sigue siendo el bruto
+          cosmeticosBruto: cosmeticosBruto, // Nuevo
+          descuentoBarMontoAplicado: montoDescuentoBar, // Monto del descuento aplicado
+          descuentoBarTipoAplicado: tipoDescuentoBar, // Tipo de descuento aplicado
+          descuentoCosmeticosMontoAplicado: montoDescuentoCosmeticos, // Nuevo
+          descuentoCosmeticosTipoAplicado: tipoDescuentoCosmeticos, // Nuevo
+          total: expectedTotal,
+          productos: editProductosBar.map(p => p.nombre).join(", "),
+          productosArray: JSON.parse(JSON.stringify(editProductosBar)),
+          cosmeticos: editProductosCosmeticos.map(p => p.nombre).join(", "), // Nuevo
+          cosmeticosArray: JSON.parse(JSON.stringify(editProductosCosmeticos)), // Nuevo
+          formaPago: formaPago,
+          cashLavado: cashLavado,
+          digitalLavado: digitalLavado,
+          cashBar: cashBar,
+          digitalBar: digitalBar,
+          cashCosmeticos: cashCosmeticos, // Nuevo
+          digitalCosmeticos: digitalCosmeticos, // Nuevo
+          modificada: true, // Marca la venta como modificada
+          justificacion: justificacion,
+          tipoVenta: tipoVenta,
+          lavadoGratis: isAnyFreeWash, // Marca si fue un lavado gratis (sea por promo manual o 5+1)
+          isPromoWash: isPromoWashManuallySelected // Marca si fue una promo manual
+      };
+
+      mostrarVentas(); // Actualiza la tabla de ventas
+      mostrarCierreCaja(); // Actualiza el cierre de caja
+      closeEditModal(); // Cierra el modal
+      alert("Venta modificada con éxito y resaltada en la tabla.");
+  }
+
+
+  // --- Exportar a PDF ---
+
+  function exportPDF() {
+    // Cambia la orientación a 'landscape' (horizontal)
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const fecha = new Date().toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
+    doc.setFontSize(16);
+    doc.text('Reporte de Ventas Gowash', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Fecha: ${fecha}`, 14, 28);
+
+    doc.autoTable({
+      startY: 35,
+      head: [['#', 'Tipo', 'Hora', 'Auto', 'Patente', 'Tel.', 'Lavado (B)', 'Bar (B)', 'Cosméticos (B)', 'Total', 'Cash (L)', 'Dig (L)', 'Cash (B)', 'Dig (B)', 'Cash (C)', 'Dig (C)', 'Justif.']],
+      body: ventas.map((v, i) => {
+        let barNetoParaPDF = v.barBruto;
+        if (v.descuentoBarTipoAplicado === "monto") {
+            barNetoParaPDF = Math.max(0, v.barBruto - v.descuentoBarMontoAplicado);
+        } else if (v.descuentoBarTipoAplicado === "porcentaje") {
+            barNetoParaPDF = Math.max(0, v.barBruto * (1 - (v.descuentoBarMontoAplicado / 100)));
+        }
+
+        let cosmeticosNetoParaPDF = v.cosmeticosBruto;
+        if (v.descuentoCosmeticosTipoAplicado === "monto") {
+            cosmeticosNetoParaPDF = Math.max(0, v.cosmeticosBruto - v.descuentoCosmeticosMontoAplicado);
+        } else if (v.descuentoCosmeticosTipoAplicado === "porcentaje") {
+            cosmeticosNetoParaPDF = Math.max(0, v.cosmeticosBruto * (1 - (v.descuentoCosmeticosMontoAplicado / 100)));
+        }
+
+        return [
+          `${i + 1}${v.modificada ? ' (MOD)' : ''}`,
+          v.tipoVenta, v.hora, v.auto, v.patente, v.telefono,
+          `${v.lavadoBruto.toFixed(2)}${v.lavadoGratis ? ' (GRATIS)' : ''}`,
+          barNetoParaPDF.toFixed(2),
+          cosmeticosNetoParaPDF.toFixed(2),
+          v.total.toFixed(2),
+          v.cashLavado.toFixed(2), v.digitalLavado.toFixed(2),
+          v.cashBar.toFixed(2), v.digitalBar.toFixed(2),
+          v.cashCosmeticos.toFixed(2),
+          v.digitalCosmeticos.toFixed(2),
+          doc.splitTextToSize(v.justificacion || '', 20)
+        ];
+      }),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [44, 93, 159] },
+      columnStyles: {
+          0: { cellWidth: 7.5 }, // #
+          1: { cellWidth: 12 }, // Tipo
+          2: { cellWidth: 12 }, // Hora
+          3: { cellWidth: 15 }, // Auto
+          4: { cellWidth: 18 }, // Patente
+          5: { cellWidth: 18 }, // Tel.
+          6: { cellWidth: 13.5 }, // Lavado (B)
+          7: { cellWidth: 13.5 }, // Bar (B)
+          8: { cellWidth: 13.5 }, // Cosméticos (B)
+          9: { cellWidth: 13.5 }, // Total
+          10: { cellWidth: 12 }, // Cash (L)
+          11: { cellWidth: 12 }, // Dig (L)
+          12: { cellWidth: 12 }, // Cash (B)
+          13: { cellWidth: 12 }, // Dig (B)
+          14: { cellWidth: 12 }, // Cash (C)
+          15: { cellWidth: 12 }, // Dig (C)
+          16: { cellWidth: 30 }  // Justif.
+      }
+    });
+
+    let y = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(14);
+    doc.text('Resumen de Cierre de Caja', 14, y);
+    y += 8;
+
+    const cierreCajaHead = [['Categoría', 'Bruto', 'Neto', 'Efectivo', 'Digital', 'Conteo']]; // Added 'Conteo' column
+    const cierreCajaBody = [];
+
+    // Recalculate totals and counts for PDF to ensure consistency
+    let totalCashLavado = 0;
+    let totalDigitalLavado = 0;
+    let totalCashBar = 0;
+    let totalDigitalBar = 0;
+    let totalCashCosmeticos = 0;
+    let totalDigitalCosmeticos = 0;
+    let totalVentasLavadoBruto = 0;
+    let totalVentasBarBruto = 0;
+    let totalVentasBarNeto = 0;
+    let totalVentasCosmeticosBruto = 0;
+    let totalVentasCosmeticosNeto = 0;
+    let totalGeneralVentasNeto = 0;
+
+    let countLavadoSales = 0;
+    let countBarSales = 0;
+    let countCosmeticosSales = 0;
+
+    ventas.forEach(v => {
+      totalCashLavado += v.cashLavado;
+      totalDigitalLavado += v.digitalLavado;
+      totalCashBar += v.cashBar;
+      totalDigitalBar += v.digitalBar;
+      totalCashCosmeticos += v.cashCosmeticos;
+      totalDigitalCosmeticos += v.digitalCosmeticos;
+      totalVentasLavadoBruto += v.lavadoBruto;
+      totalVentasBarBruto += v.barBruto;
+      totalVentasCosmeticosBruto += v.cosmeticosBruto;
+
+      if (v.lavadoBruto > 0 || v.isPromoWash) {
+          countLavadoSales++;
+      }
+      if (v.barBruto > 0) {
+          countBarSales++;
+      }
+      if (v.cosmeticosBruto > 0) {
+          countCosmeticosSales++;
+      }
+
+      let barNetoIndividual = v.barBruto;
+      if (v.descuentoBarTipoAplicado === "monto") {
+          barNetoIndividual = Math.max(0, v.barBruto - v.descuentoBarMontoAplicado);
+      } else if (v.descuentoBarTipoAplicado === "porcentaje") {
+          barNetoIndividual = Math.max(0, v.barBruto * (1 - (v.descuentoBarMontoAplicado / 100)));
+      }
+      totalVentasBarNeto += barNetoIndividual;
+
+      let cosmeticosNetoIndividual = v.cosmeticosBruto;
+      if (v.descuentoCosmeticosTipoAplicado === "monto") {
+          cosmeticosNetoIndividual = Math.max(0, v.cosmeticosBruto - v.descuentoCosmeticosMontoAplicado);
+      } else if (v.descuentoCosmeticosTipoAplicado === "porcentaje") {
+          cosmeticosNetoIndividual = Math.max(0, v.cosmeticosBruto * (1 - (v.descuentoCosmeticosMontoAplicado / 100)));
+      }
+      totalVentasCosmeticosNeto += cosmeticosNetoIndividual;
+
+      totalGeneralVentasNeto += v.total;
+    });
+
+    const totalLavadoNeto = ventas.reduce((sum, v) => {
+        const descuentoLavadoAplicado = v.descuentoLavado === "si" ? v.lavadoBruto * 0.1 : 0;
+        return sum + (v.lavadoBruto - descuentoLavadoAplicado);
+    }, 0);
+
+    cierreCajaBody.push(['Lavadero', formatMoney(totalVentasLavadoBruto), formatMoney(totalLavadoNeto), formatMoney(totalCashLavado), formatMoney(totalDigitalLavado), countLavadoSales]);
+    cierreCajaBody.push(['Bar', formatMoney(totalVentasBarBruto), formatMoney(totalVentasBarNeto), formatMoney(totalCashBar), formatMoney(totalDigitalBar), countBarSales]);
+    cierreCajaBody.push(['Cosméticos', formatMoney(totalVentasCosmeticosBruto), formatMoney(totalVentasCosmeticosNeto), formatMoney(totalCashCosmeticos), formatMoney(totalDigitalCosmeticos), countCosmeticosSales]);
+
+    const combinedBarCosmeticosNeto = totalVentasBarNeto + totalVentasCosmeticosNeto;
+    const combinedBarCosmeticosCash = totalCashBar + totalCashCosmeticos;
+    const combinedBarCosmeticosDigital = totalDigitalBar + totalDigitalCosmeticos;
+    // No specific count for combined, so leave it empty or sum counts if meaningful
+    cierreCajaBody.push(['Bar y Cosméticos (Combinado)', '', formatMoney(combinedBarCosmeticosNeto), formatMoney(combinedBarCosmeticosCash), formatMoney(combinedBarCosmeticosDigital), '']);
+
+
+    const totalCashGeneral = totalCashLavado + totalCashBar + totalCashCosmeticos;
+    const totalDigitalGeneral = totalDigitalLavado + totalDigitalBar + totalDigitalCosmeticos;
+    cierreCajaBody.push(['Totales Generales', '', formatMoney(totalGeneralVentasNeto), formatMoney(totalCashGeneral), formatMoney(totalDigitalGeneral), '']);
+
+
+    doc.autoTable({
+      startY: y,
+      head: cierreCajaHead,
+      body: cierreCajaBody,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [44, 93, 159], textColor: 255, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 30 }, // Categoría
+        1: { cellWidth: 25, halign: 'right' }, // Bruto
+        2: { cellWidth: 25, halign: 'right' }, // Neto
+        3: { cellWidth: 25, halign: 'right' }, // Efectivo
+        4: { cellWidth: 25, halign: 'right' },  // Digital
+        5: { cellWidth: 15, halign: 'center' }  // Conteo
+      },
+      didDrawCell: (data) => {
+          // Add bold style to Totales Generales row
+          if (data.row.raw[0] === 'Totales Generales' && data.cell.section === 'body') {
+              doc.setFont(undefined, 'bold');
+          }
+      }
+    });
+
+    y = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.text('Arqueo de Caja', 14, y);
+    y += 6;
+    const rows = [50, 100, 200, 500, 1000, 2000, 10000, 20000].map(d => [`$${d}`, document.getElementById(`cnt${d}`).value, document.getElementById(`sub${d}`).innerText]);
+    doc.autoTable({
+      startY: y,
+      head: [['Denom.', 'Cant.', 'Subtotal']],
+      body: rows,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [44, 93, 159] }
+    });
+
+    doc.save(`reporte_${fecha.replace(/[: ]/g, '_')}.pdf`);
+  }
+
+  // --- Reset General ---
+
+  function confirmReset() {
+    if (!confirm('¿Seguro que deseas resetear TODO? Esto borrará todas las ventas y datos de arqueo.')) return;
+    ventas = []; // Vacía el array de ventas
+    productosBar = []; // Vacía la lista de productos del bar
+    productosCosmeticos = []; // Nuevo: Vacía la lista de productos cosméticos
+    lastCashTotal = 0; // Resetea el total de efectivo
+    washCounts = {}; // Resetea el conteo de lavados por patente
+    localStorage.removeItem('washCounts'); // Elimina del localStorage
+
+    // Resetear campos manualmente ya que no hay un form.reset() global
+    setCurrentTime(); // Set current time for next sale
+    document.getElementById("cliente").value = ""; // Limpiar campo cliente
+    document.getElementById("auto").value = "";
+    document.getElementById("patente").value = "";
+    document.getElementById("telefono").value = "";
+    document.getElementById("tipoVehiculo").value = "0"; // Resetear selección de vehículo
+    document.getElementById("precioLavado").value = "0.00";
+    document.getElementById("descuentoLavado").value = "no";
+    document.getElementById("productoBar").value = "";
+    document.getElementById("searchProductoBar").value = ""; // Clear search
+    document.getElementById("nombreProductoManualBar").value = ""; // Limpiar campo manual bar
+    document.getElementById("precioProductoManualBar").value = ""; // Limpiar campo manual bar
+    document.getElementById("descuentoBarCantidad").value = "0"; // Resetear descuento bar
+    document.getElementById("tipoDescuentoBar").value = "monto"; // Resetear tipo descuento bar
+    document.getElementById("precioBar").value = "0.00";
+    document.getElementById("productoCosmetico").value = ""; // Nuevo
+    document.getElementById("searchProductoCosmetico").value = ""; // Clear search
+    document.getElementById("nombreProductoManualCosmetico").value = ""; // Limpiar campo manual cosmetico
+    document.getElementById("precioProductoManualCosmetico").value = ""; // Limpiar campo manual cosmetico
+    document.getElementById("descuentoCosmeticosCantidad").value = "0"; // Nuevo
+    document.getElementById("tipoDescuentoCosmeticos").value = "monto"; // Nuevo
+    document.getElementById("precioCosmeticos").value = "0.00"; // Nuevo
+    document.getElementById("formaPago").value = "Cash"; // Resetear forma de pago
+    document.getElementById("cashPart").value = "0.00";
+    document.getElementById("digitalPart").value = "0.00";
+    document.getElementById("total").innerText = "0.00"; // Resetea el total en pantalla
+
+    document.querySelector('#tablaVentas tbody').innerHTML = ''; // Limpia la tabla de ventas
+    document.getElementById('cierreCaja').innerHTML = ''; // Limpia el cierre de caja
+    toggleMixed(); // Resetea la visibilidad del pago mixto
+    // Resetea los campos del arqueo
+    [50, 100, 200, 500, 1000, 2000, 10000, 20000].forEach(d => {
+      document.getElementById(`cnt${d}`).value = 0;
+      document.getElementById(`sub${d}`).innerText = '$0.00';
+    });
+    document.getElementById('totalArqueo').innerText = 'Total contado: $0.00';
+    document.getElementById('diffArqueo').innerText = 'Diferencia con caja: $0.00';
+    document.getElementById('diffArqueo').classList.remove('positive-diff', 'negative-diff');
+    document.getElementById('diffArqueo').style.color = 'var(--text-color)'; // Resetea el color de la diferencia
+    setPrecioLavado(); // Resetea el precio del lavado
+    setCurrentTime(); // Establece la hora actual después del reseteo
+    populateBarSelect(); // Repopulate bar select
+    populateCosmeticosSelect(); // Repopulate cosmeticos select
+    alert("Sistema reseteado correctamente.");
+  }
+
+  // --- Inicialización al cargar la página ---
+  window.onload = function() {
+    setCurrentTime(); // Establece la hora actual al cargar
+    toggleMixed(); // Inicializa la visibilidad del pago mixto
+    populateCosmeticosSelect(); // Nuevo: Rellena el select de cosméticos
+    populateBarSelect(); // Nuevo: Rellena el select de bar
+    populateCosmeticosSelectEdit(); // Nuevo: Rellena el select de cosméticos en el modal de edición
+    populateBarSelectEdit(); // Nuevo: Rellena el select de bar en el modal de edición
+    mostrarVentas(); // Muestra las ventas existentes (si las hubiera, por ejemplo, cargadas desde localStorage)
+    setPrecioLavado(); // Inicializa el precio del lavado
+    document.getElementById("editModal").style.display = "none"; // Asegura que el modal esté oculto
+    mostrarCierreCaja(); // Muestra el cierre de caja inicial
+    calcularArqueo(); // Calcula el arqueo inicial
+  };
+</script>
+
+</body>
+</html>
