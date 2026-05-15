@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Price } from '../App';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,6 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Car } from 'lucide-react';
+import { googleSheetsSync } from '../lib/googleSheetsSync';
+
+
+declare global {
+  interface Window {
+    electronAPI: {
+      getMachineId: () => Promise<string>;
+      validateLicense: (key: string) => Promise<boolean>;
+      selectImage: () => Promise<string | null>;
+    };
+  }
+}
 
 // Interfaces
 interface Venta {
@@ -34,6 +48,15 @@ interface Venta {
   descLavadero?: boolean;
   descBar?: boolean;
   descCosmetica?: boolean;
+  marca?: string;
+  modelo?: string;
+  tamano?: string;
+  imageUrl?: string;
+}
+
+interface VentaAnulada extends Venta {
+  motivoAnulacion: string;
+  fechaAnulacion: string;
 }
 
 interface ProductoVenta {
@@ -207,12 +230,13 @@ const DEFAULT_SERVICIOS_LAVADO: ServicioLavado[] = [
   { nombre: "Detailing Completo", precio: 80000 }
 ];
 
-export function POS() {
+export function POS({ prices = [] }: { prices?: Price[] }) {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<Venta[]>([]);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [productosBar, setProductosBar] = useState<ProductoVenta[]>([]);
   const [productosCosmeticos, setProductosCosmeticos] = useState<ProductoVenta[]>([]);
+  const [ventasAnuladas, setVentasAnuladas] = useState<VentaAnulada[]>([]);
   const [washCounts, setWashCounts] = useState<Record<string, number>>({});
 
   // Precios editables
@@ -256,8 +280,17 @@ export function POS() {
   const [searchBar, setSearchBar] = useState('');
   const [searchCosmeticos, setSearchCosmeticos] = useState('');
 
-  // Modal de detalle de venta
   const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(null);
+
+  // Estados para búsqueda de vehículos
+  const [searchVehiculo, setSearchVehiculo] = useState('');
+  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Price | null>(null);
+
+  // Estados para anulación
+  const [showAnulacionDialog, setShowAnulacionDialog] = useState(false);
+  const [motivoAnulacion, setMotivoAnulacion] = useState('');
+  const [itemAAnular, setItemAAnular] = useState<{ id: string, type: 'venta' | 'orden' } | null>(null);
+  const [editingVentaId, setEditingVentaId] = useState<string | null>(null);
 
   // Cargar datos desde localStorage
   useEffect(() => {
@@ -268,7 +301,9 @@ export function POS() {
     const savedLavado = localStorage.getItem('gowash-lavado-precios');
     const savedOrdenesAbiertas = localStorage.getItem('gowash-ordenes-abiertas');
 
+    const savedAnuladas = localStorage.getItem('gowash-ventas-anuladas');
     if (savedVentas) setVentas(JSON.parse(savedVentas));
+    if (savedAnuladas) setVentasAnuladas(JSON.parse(savedAnuladas));
     if (savedOrdenesAbiertas) setOrdenesAbiertas(JSON.parse(savedOrdenesAbiertas));
     if (savedWashCounts) setWashCounts(JSON.parse(savedWashCounts));
     if (savedCosmeticos) {
@@ -309,6 +344,10 @@ export function POS() {
   useEffect(() => {
     localStorage.setItem('gowash-ordenes-abiertas', JSON.stringify(ordenesAbiertas));
   }, [ordenesAbiertas]);
+
+  useEffect(() => {
+    localStorage.setItem('gowash-ventas-anuladas', JSON.stringify(ventasAnuladas));
+  }, [ventasAnuladas]);
 
   useEffect(() => {
     localStorage.setItem('gowash-washCounts', JSON.stringify(washCounts));
@@ -396,8 +435,11 @@ export function POS() {
     const total = calcularTotal();
 
     let newWashCounts = { ...washCounts };
-    if (patente && lavado > 0) {
-      newWashCounts[patente] = (newWashCounts[patente] || 0) + 1;
+    const currentCount = washCounts[patente] || 0;
+    const esGratis = patente && currentCount % 6 === 5;
+
+    if (patente && (lavado > 0 || esGratis)) {
+      newWashCounts[patente] = currentCount + 1;
     }
 
     const nuevaVenta: Venta = {
@@ -410,18 +452,22 @@ export function POS() {
       patente,
       cliente,
       numeroCliente,
-      lavado,
+      lavado: esGratis ? 0 : lavado,
       bar: totalBar,
       cosmeticos: totalCosmeticos,
-      total,
+      total: esGratis ? (totalBar + totalCosmeticos) : total,
       metodoPago,
       estadia: puedeEstadia() ? estadia : false,
       horasEstadia: puedeEstadia() && estadia ? horasEstadia : undefined,
       precioEstadia: puedeEstadia() && estadia ? precioEstadia : undefined,
-      descuento,
+      descuento: esGratis ? 0 : descuento,
       productosBar: [...productosBar],
       productosCosmeticos: [...productosCosmeticos],
-      servicio
+      servicio: esGratis ? `GRATIS - ${servicio}` : servicio,
+      marca: vehiculoSeleccionado?.brand,
+      modelo: vehiculoSeleccionado?.model,
+      tamano: vehiculoSeleccionado?.size,
+      imageUrl: vehiculoSeleccionado?.imageUrl
     };
 
     // Actualizar stock
@@ -446,8 +492,32 @@ export function POS() {
       setOrdenesAbiertas(ordenesAbiertas.filter(o => o.id !== activeOrderId));
     }
 
-    setVentas([...ventas, nuevaVenta]);
-    setWashCounts(newWashCounts);
+    if (editingVentaId) {
+      // Es una actualización
+      const nuevasVentas = ventas.map(v => v.id === editingVentaId ? nuevaVenta : v);
+      setVentas(nuevasVentas);
+      localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
+      
+      // Sincronizar actualización con Google Sheets
+      googleSheetsSync.syncUpdateVenta(nuevaVenta);
+    } else {
+      // Es una venta nueva
+      const nuevasVentas = [nuevaVenta, ...ventas];
+      setVentas(nuevasVentas);
+      localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
+
+      // Actualizar contador de lavados (solo en ventas nuevas)
+      if (patente) {
+        const currentCount = washCounts[patente] || 0;
+        const newCounts = { ...washCounts, [patente]: currentCount + 1 };
+        setWashCounts(newCounts);
+        localStorage.setItem('gowash-washCounts', JSON.stringify(newCounts));
+      }
+
+      // Sincronizar con Google Sheets
+      googleSheetsSync.syncVenta(nuevaVenta);
+    }
+
     limpiarFormulario();
   };
 
@@ -485,7 +555,11 @@ export function POS() {
       servicio,
       descLavadero,
       descBar,
-      descCosmetica
+      descCosmetica,
+      marca: vehiculoSeleccionado?.brand,
+      modelo: vehiculoSeleccionado?.model,
+      tamano: vehiculoSeleccionado?.size,
+      imageUrl: vehiculoSeleccionado?.imageUrl
     };
 
     if (activeOrderId) {
@@ -509,6 +583,16 @@ export function POS() {
     setNumeroCliente(orden.numeroCliente || '');
     setLavado(orden.lavado);
     setServicio(orden.servicio || '');
+    
+    // Buscar el vehículo en la lista de precios para restaurar la selección
+    if (orden.marca && orden.modelo) {
+      const v = prices.find(p => p.brand === orden.marca && p.model === orden.modelo && p.service === orden.servicio);
+      if (v) setVehiculoSeleccionado(v);
+      else setVehiculoSeleccionado(null);
+    } else {
+      setVehiculoSeleccionado(null);
+    }
+
     setDescuento(orden.descuento);
     setMetodoPago(orden.metodoPago);
     setEstadia(orden.estadia || false);
@@ -531,6 +615,7 @@ export function POS() {
     setHoraEntrada(timeString);
     setHoraSalida(timeString);
     setActiveOrderId(null);
+    setEditingVentaId(null);
     setPatente('');
     setCliente('');
     setLavado(0);
@@ -547,15 +632,101 @@ export function POS() {
     setPrecioEstadia(0);
     setProductosBar([]);
     setProductosCosmeticos([]);
+    setVehiculoSeleccionado(null);
+    setSearchVehiculo('');
+  };
+
+  const iniciarEdicionVenta = (venta: Venta) => {
+    setEditingVentaId(venta.id);
+    setFecha(venta.fecha);
+    setHora(venta.hora);
+    setHoraEntrada(venta.horaEntrada);
+    setHoraSalida(venta.horaSalida);
+    setEmpleado(venta.empleado);
+    setPatente(venta.patente);
+    setCliente(venta.cliente);
+    setLavado(venta.lavado);
+    setServicio(venta.servicio || '');
+    setDescuento(venta.descuento);
+    setMetodoPago(venta.metodoPago);
+    setNumeroCliente(venta.numeroCliente || '');
+    setEstadia(venta.estadia || false);
+    setHorasEstadia(venta.horasEstadia || 1);
+    setPrecioEstadia(venta.precioEstadia || 0);
+    setProductosBar(venta.productosBar);
+    setProductosCosmeticos(venta.productosCosmeticos);
+    setDescLavadero(venta.descLavadero ?? true);
+    setDescBar(venta.descBar ?? true);
+    setDescCosmetica(venta.descCosmetica ?? true);
+    
+    // Buscar el vehículo en la lista si existe
+    if (venta.marca && venta.modelo) {
+      const v = prices.find(p => p.brand === venta.marca && p.model === venta.modelo);
+      if (v) setVehiculoSeleccionado(v);
+    }
+
+    // Scroll al tope del formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const confirmarAnulacion = () => {
+    if (!motivoAnulacion) {
+      alert('Debe ingresar un motivo para la anulación');
+      return;
+    }
+
+    if (!itemAAnular) return;
+
+    let item: Venta | undefined;
+    if (itemAAnular.type === 'venta') {
+      item = ventas.find(v => v.id === itemAAnular.id);
+      if (item) {
+        setVentas(ventas.filter(v => v.id !== itemAAnular.id));
+      }
+    } else {
+      item = ordenesAbiertas.find(o => o.id === itemAAnular.id);
+      if (item) {
+        setOrdenesAbiertas(ordenesAbiertas.filter(o => o.id !== itemAAnular.id));
+        if (activeOrderId === itemAAnular.id) limpiarFormulario();
+      }
+    }
+
+    if (item) {
+      const anulada: VentaAnulada = {
+        ...item,
+        motivoAnulacion,
+        fechaAnulacion: new Date().toLocaleString('es-AR')
+      };
+      setVentasAnuladas([...ventasAnuladas, anulada]);
+      
+      // Sincronizar anulación con Google Sheets
+      googleSheetsSync.syncAnulacion(anulada);
+    }
+
+    setShowAnulacionDialog(false);
+    setMotivoAnulacion('');
+    setItemAAnular(null);
   };
 
   const eliminarVenta = (id: string) => {
-    setVentas(ventas.filter(v => v.id !== id));
+    setItemAAnular({ id, type: 'venta' });
+    setShowAnulacionDialog(true);
   };
 
   const productosFiltradosBar = barProductsData.filter(p =>
     p.name.toLowerCase().includes(searchBar.toLowerCase())
   );
+
+  const filteredPricesList = useMemo(() => {
+    if (!searchVehiculo) return [];
+    const searchLower = searchVehiculo.toLowerCase();
+    return prices.filter(p => {
+      const brandStr = p.brand || '';
+      const modelStr = p.model || '';
+      return brandStr.toLowerCase().includes(searchLower) || 
+             modelStr.toLowerCase().includes(searchLower);
+    }).slice(0, 10);
+  }, [prices, searchVehiculo]);
 
   const productosBarPorGrupo = productosFiltradosBar.reduce((acc, p) => {
     if (!acc[p.group]) {
@@ -956,18 +1127,32 @@ export function POS() {
               />
             </div>
             <div>
-              <Label htmlFor="patente">Patente</Label>
+              <Label htmlFor="patente" className="text-slate-700 font-bold">Patente</Label>
               <Input
                 id="patente"
                 value={patente}
                 onChange={(e) => setPatente(e.target.value.toUpperCase())}
-                placeholder="ABC123"
-                className="bg-white"
+                placeholder="ABC-123"
+                className="uppercase font-mono text-lg border-slate-300 focus:border-blue-500 bg-white"
               />
-              {patente && washCounts[patente] && (
-                <p className="text-sm text-blue-600 mt-1">
-                  Lavados: {washCounts[patente]} {washCounts[patente] >= 5 && '🎉 ¡GRATIS!'}
-                </p>
+              {patente && (
+                <div className="mt-1 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        (washCounts[patente] || 0) % 6 === 5 ? 'bg-green-500 animate-pulse' : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${(((washCounts[patente] || 0) % 6) / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    (washCounts[patente] || 0) % 6 === 5 ? 'text-green-600 animate-bounce' : 'text-slate-500'
+                  }`}>
+                    {(washCounts[patente] || 0) % 6 === 5 
+                      ? '¡Próximo Lavado Gratis!' 
+                      : `Lavados: ${(washCounts[patente] || 0) % 6} / 5`}
+                  </span>
+                </div>
               )}
             </div>
             <div>
@@ -1032,6 +1217,87 @@ export function POS() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Vehículo de Lista de Precios */}
+        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200">
+          <h3 className="font-bold mb-4 text-indigo-900">Seleccionar Vehículo (Lista de Precios)</h3>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="searchVehiculo">Buscar en Lista de Precios</Label>
+              <Input
+                id="searchVehiculo"
+                value={searchVehiculo}
+                onChange={(e) => setSearchVehiculo(e.target.value)}
+                placeholder="Buscar por marca o modelo..."
+                className="bg-white"
+              />
+            </div>
+
+            {filteredPricesList.length > 0 && (
+              <div className="max-h-40 overflow-y-auto border rounded-md bg-white p-2 space-y-1 shadow-inner">
+                {filteredPricesList.map((p) => (
+                  <Button
+                    key={p.id}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-left hover:bg-indigo-50 h-auto py-2 border-b last:border-0 border-gray-100"
+                    onClick={() => {
+                      setVehiculoSeleccionado(p);
+                      setServicio(p.service);
+                      setLavado(p.price);
+                      setSearchVehiculo('');
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      {p.imageUrl ? (
+                        <img src={p.imageUrl} alt={p.brand} className="w-10 h-10 object-cover rounded shadow-sm border border-indigo-200" />
+                      ) : (
+                        <div className="w-10 h-10 bg-indigo-100 rounded flex items-center justify-center text-indigo-400">
+                          <Car className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="font-bold text-indigo-900">{p.brand} {p.model}</span>
+                        <span className="text-xs text-gray-500">{p.size} - {p.service} - {formatMoney(p.price)}</span>
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {vehiculoSeleccionado && (
+              <div className="p-3 bg-indigo-100 border border-indigo-200 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-1">
+                <div className="flex items-center gap-4">
+                  {vehiculoSeleccionado.imageUrl ? (
+                    <img src={vehiculoSeleccionado.imageUrl} alt={vehiculoSeleccionado.brand} className="w-16 h-16 object-cover rounded-lg shadow-md border-2 border-white" />
+                  ) : (
+                    <div className="w-16 h-16 bg-white/50 rounded-lg flex items-center justify-center text-indigo-400">
+                      <Car className="w-8 h-8" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Vehículo Seleccionado</p>
+                    <p className="font-bold text-indigo-900">{vehiculoSeleccionado.brand} {vehiculoSeleccionado.model}</p>
+                    <p className="text-sm text-indigo-700">{vehiculoSeleccionado.size} - {vehiculoSeleccionado.service}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-indigo-400 hover:text-indigo-600"
+                  onClick={() => {
+                    setVehiculoSeleccionado(null);
+                    setServicio('');
+                    setLavado(0);
+                  }}
+                >
+                  Cambiar
+                </Button>
               </div>
             )}
           </div>
@@ -1337,13 +1603,24 @@ export function POS() {
                 <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                   {ordenesAbiertas.map((orden) => (
                     <Card key={orden.id} className={`p-4 hover:shadow-md transition-all border-l-4 ${activeOrderId === orden.id ? 'border-l-green-500 bg-green-50/30 ring-1 ring-green-200' : 'border-l-blue-500 bg-white'}`}>
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="font-bold text-lg text-slate-800">{orden.patente || 'S/P'}</div>
-                        <div className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{orden.horaEntrada}</div>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        {orden.cliente && <p className="truncate italic">👤 {orden.cliente}</p>}
-                        <p className="font-bold text-blue-800 mt-1">{formatMoney(orden.total)}</p>
+                      <div className="flex gap-3 mb-3">
+                        {orden.imageUrl ? (
+                          <img src={orden.imageUrl} alt="Vehículo" className="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200" />
+                        ) : (
+                          <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200">
+                            <Car className="w-8 h-8" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="font-bold text-lg text-slate-800 truncate">{orden.patente || 'S/P'}</div>
+                            <div className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium shrink-0">{orden.horaEntrada}</div>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {orden.cliente && <p className="truncate italic">👤 {orden.cliente}</p>}
+                            <p className="font-bold text-blue-800 mt-0.5">{formatMoney(orden.total)}</p>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -1375,8 +1652,8 @@ export function POS() {
                               <AlertDialogCancel>No, mantener</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => {
-                                  setOrdenesAbiertas(ordenesAbiertas.filter(o => o.id !== orden.id));
-                                  if (activeOrderId === orden.id) limpiarFormulario();
+                                  setItemAAnular({ id: orden.id, type: 'orden' });
+                                  setShowAnulacionDialog(true);
                                 }}
                                 className="bg-red-600 hover:bg-red-700"
                               >
@@ -1405,10 +1682,12 @@ export function POS() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-blue-600 text-white">
+                    <th className="border p-2">Foto</th>
                     <th className="border p-2">Fecha</th>
                     <th className="border p-2">Entrada</th>
                     <th className="border p-2">Salida</th>
                     <th className="border p-2">Patente</th>
+                    <th className="border p-2">Vehículo</th>
                     <th className="border p-2">Cliente</th>
                     <th className="border p-2">Nº Cliente</th>
                     <th className="border p-2 bg-cyan-500">Lavado</th>
@@ -1423,10 +1702,26 @@ export function POS() {
                 <tbody>
                   {ventas.map((venta) => (
                     <tr key={venta.id} className="hover:bg-gray-50">
+                      <td className="border p-2 text-center">
+                        {venta.imageUrl ? (
+                          <img src={venta.imageUrl} alt="Car" className="w-8 h-8 object-cover rounded shadow-sm mx-auto" />
+                        ) : (
+                          <Car className="w-5 h-5 text-gray-300 mx-auto" />
+                        )}
+                      </td>
                       <td className="border p-2 text-center">{venta.fecha}</td>
                       <td className="border p-2 text-center text-blue-600 font-medium">{venta.horaEntrada}</td>
                       <td className="border p-2 text-center text-green-600 font-medium">{venta.horaSalida}</td>
                       <td className="border p-2 text-center font-bold">{venta.patente}</td>
+                      <td className="border p-2">
+                        {venta.marca ? (
+                          <div className="text-xs">
+                            <span className="font-bold">{venta.marca}</span>
+                            <br />
+                            <span>{venta.modelo}</span>
+                          </div>
+                        ) : '-'}
+                      </td>
                       <td className="border p-2">{venta.cliente}</td>
                       <td className="border p-2">{venta.numeroCliente}</td>
                       <td className="border p-2 text-right bg-cyan-50">{formatMoney(venta.lavado)}</td>
@@ -1557,6 +1852,15 @@ export function POS() {
                             </DialogContent>
                           </Dialog>
 
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => iniciarEdicionVenta(venta)}
+                          >
+                            Editar
+                          </Button>
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="sm">
@@ -1612,6 +1916,39 @@ export function POS() {
       <TabsContent value="precios">
         <EditorPrecios />
       </TabsContent>
+      {/* Diálogo de Motivo de Anulación */}
+      <Dialog open={showAnulacionDialog} onOpenChange={setShowAnulacionDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Motivo de Anulación</DialogTitle>
+            <DialogDescription>
+              Por favor, indique el motivo por el cual se está dando de baja esta venta o pedido.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="motivo" className="text-right">
+                Motivo
+              </Label>
+              <Input
+                id="motivo"
+                value={motivoAnulacion}
+                onChange={(e) => setMotivoAnulacion(e.target.value)}
+                className="col-span-3"
+                placeholder="Ej: Error en carga, pedido cancelado por cliente..."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowAnulacionDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarAnulacion} className="bg-red-600 hover:bg-red-700 text-white">
+              Confirmar Anulación
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 }

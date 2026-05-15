@@ -4,7 +4,17 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Plus, Save, X, Car, Ruler, Sparkles, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Plus, Save, X, Car, Ruler, Sparkles, DollarSign, Image as ImageIcon, FolderOpen } from 'lucide-react';
+
+declare global {
+  interface Window {
+    electronAPI: {
+      getMachineId: () => Promise<string>;
+      validateLicense: (key: string) => Promise<boolean>;
+      selectImage: () => Promise<string | null>;
+    };
+  }
+}
 
 interface PriceFormProps {
   onSubmit: (price: Omit<Price, 'id'> | Price) => void;
@@ -87,6 +97,17 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSelectLocalImage = async () => {
+    if (window.electronAPI?.selectImage) {
+      const path = await window.electronAPI.selectImage();
+      if (path) {
+        setImageUrl(path);
+      }
+    } else {
+      alert('Esta función solo está disponible en la versión de escritorio.');
     }
   };
 
@@ -263,17 +284,41 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
             <ImageIcon className="w-4 h-4" />
             Imagen de Referencia
           </Label>
-          <div className="flex items-center gap-4">
-            <Input
-              id="imageUpload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="bg-white border-orange-300 file:bg-orange-100 file:text-orange-700 file:border-0 file:rounded file:px-2 file:py-1 hover:file:bg-orange-200"
-            />
-            {imageUrl && (
-              <img src={imageUrl} alt="Preview" className="w-12 h-12 object-cover rounded-md shadow-sm border border-orange-300" />
-            )}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <Input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="bg-white border-orange-300 file:bg-orange-100 file:text-orange-700 file:border-0 file:rounded file:px-2 file:py-1 hover:file:bg-orange-200"
+              />
+              {imageUrl && (
+                <img src={imageUrl} alt="Preview" className="w-12 h-12 object-cover rounded-md shadow-sm border border-orange-300" />
+              )}
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-orange-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-orange-50 px-2 text-orange-500 font-bold">O</span>
+              </div>
+            </div>
+
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleSelectLocalImage}
+              className="w-full bg-white border-orange-300 text-orange-700 hover:bg-orange-100 border-2"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Seleccionar Carpeta/Imagen de la PC
+            </Button>
+            <p className="text-[10px] text-orange-600 font-medium italic">
+              * Ideal para usar imágenes ya guardadas en tus carpetas locales.
+            </p>
           </div>
         </div>
       </div>

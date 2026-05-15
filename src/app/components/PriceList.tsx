@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { Pencil, Trash2, Search, Car, DollarSign } from 'lucide-react';
+import { Pencil, Trash2, Search, Car, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,7 @@ interface PriceListProps {
   prices: Price[];
   onEdit?: (price: Price) => void;
   onDelete?: (id: string) => void;
+  onMove?: (id: string, direction: 'up' | 'down') => void;
 }
 
 // Función para obtener color según el tamaño
@@ -37,7 +38,7 @@ const getSizeColor = (size: string) => {
   return colors[size] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
 
-export function PriceList({ prices, onEdit, onDelete }: PriceListProps) {
+export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSize, setFilterSize] = useState<string>('all');
   const [filterBrand, setFilterBrand] = useState<string>('all');
@@ -117,6 +118,7 @@ export function PriceList({ prices, onEdit, onDelete }: PriceListProps) {
         <Table>
           <TableHeader className="bg-gradient-to-r from-blue-500 to-purple-500">
             <TableRow className="border-0 hover:bg-transparent">
+              <TableHead className="text-white w-16">Orden</TableHead>
               <TableHead className="text-white w-16">Ref</TableHead>
               <TableHead className="text-white">Marca</TableHead>
               <TableHead className="text-white">Modelo</TableHead>
@@ -129,7 +131,7 @@ export function PriceList({ prices, onEdit, onDelete }: PriceListProps) {
           <TableBody>
             {filteredPrices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={8} className="text-center text-gray-500 py-8">
                   No se encontraron precios
                 </TableCell>
               </TableRow>
@@ -139,6 +141,30 @@ export function PriceList({ prices, onEdit, onDelete }: PriceListProps) {
                   key={price.id}
                   className={index % 2 === 0 ? 'bg-purple-50/30' : 'bg-white'}
                 >
+                  <TableCell>
+                    <div className="flex flex-col items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={!onMove || index === 0 && searchTerm === '' && filterSize === 'all' && filterBrand === 'all'}
+                        onClick={() => onMove && onMove(price.id, 'up')}
+                        className="h-6 w-6 p-0 hover:bg-blue-100"
+                        title="Subir"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={!onMove || index === filteredPrices.length - 1 && searchTerm === '' && filterSize === 'all' && filterBrand === 'all'}
+                        onClick={() => onMove && onMove(price.id, 'down')}
+                        className="h-6 w-6 p-0 hover:bg-blue-100"
+                        title="Bajar"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {price.imageUrl ? (
                       <div className="relative group w-fit cursor-zoom-in">
@@ -263,7 +289,7 @@ export function PriceList({ prices, onEdit, onDelete }: PriceListProps) {
         {/* Imagen 3D Animada/Premium */}
         <div className="rounded-lg shadow-lg overflow-hidden h-32 md:h-40 relative group bg-black">
           <img 
-            src="/car_wash_3d.png" 
+            src="./car_wash_3d.png" 
             alt="GoWash 3D Render" 
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
           />

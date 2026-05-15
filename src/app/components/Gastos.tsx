@@ -5,6 +5,10 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { AlertCircle, Trash2, FileText, History } from 'lucide-react';
+import { googleSheetsSync } from '../lib/googleSheetsSync';
+
 
 interface Gasto {
   id: string;
@@ -14,6 +18,17 @@ interface Gasto {
   descripcion: string;
   monto: number;
   metodoPago: 'efectivo' | 'digital';
+  empleado: string;
+}
+
+interface VentaAnulada {
+  id: string;
+  fecha: string;
+  patente: string;
+  cliente: string;
+  total: number;
+  motivoAnulacion: string;
+  fechaAnulacion: string;
   empleado: string;
 }
 
@@ -28,7 +43,7 @@ const CATEGORIAS_GASTOS = [
   'Otros'
 ];
 
-export function Gastos() {
+export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
@@ -41,12 +56,18 @@ export function Gastos() {
   const [filtroFechaInicio, setFiltroFechaInicio] = useState('');
   const [filtroFechaFin, setFiltroFechaFin] = useState('');
   const [editingGasto, setEditingGasto] = useState<Gasto | null>(null);
+  const [ventasAnuladas, setVentasAnuladas] = useState<VentaAnulada[]>([]);
 
   // Cargar gastos desde localStorage
   useEffect(() => {
     const savedGastos = localStorage.getItem('gowash-gastos');
     if (savedGastos) {
       setGastos(JSON.parse(savedGastos));
+    }
+
+    const savedAnuladas = localStorage.getItem('gowash-ventas-anuladas');
+    if (savedAnuladas) {
+      setVentasAnuladas(JSON.parse(savedAnuladas));
     }
 
     // Establecer fecha y hora actual
@@ -94,6 +115,9 @@ export function Gastos() {
         empleado
       };
       setGastos([...gastos, nuevoGasto]);
+      
+      // Sincronizar con Google Sheets
+      googleSheetsSync.syncGasto(nuevoGasto);
     }
     limpiarFormulario();
   };
@@ -151,7 +175,19 @@ export function Gastos() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="gastos" className="space-y-6">
+      <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-white shadow-lg">
+        <TabsTrigger value="gastos" className="flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          Gastos
+        </TabsTrigger>
+        <TabsTrigger value="anuladas" className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4" />
+          Ventas Anuladas
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="gastos" className="space-y-6">
       {/* Formulario de registro de gastos */}
       <Card id="formulario-gasto" className={`p-6 border-2 transition-all duration-300 ${
         editingGasto 
@@ -382,37 +418,39 @@ export function Gastos() {
                     </td>
                     <td className="border p-2">{gasto.empleado}</td>
                     <td className="border p-2 text-center">
-                      <div className="flex gap-2 justify-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                          onClick={() => prepararEdicion(gasto)}
-                        >
-                          Editar
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              Eliminar
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará el gasto de {formatMoney(gasto.monto)}.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => eliminarGasto(gasto.id)}>
+                      {isAdmin && (
+                        <div className="flex gap-2 justify-center">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => prepararEdicion(gasto)}
+                          >
+                            Editar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
                                 Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Se eliminará el gasto de {formatMoney(gasto.monto)}.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => eliminarGasto(gasto.id)}>
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -421,6 +459,97 @@ export function Gastos() {
           </div>
         )}
       </Card>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="anuladas">
+        <Card className="p-6 border-2 border-red-200 bg-red-50/30">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-bold text-xl text-red-900 flex items-center gap-2">
+              <History className="w-6 h-6" />
+              Control de Ventas y Pedidos Anulados
+            </h3>
+            <div className="text-sm text-red-600 font-medium bg-red-100 px-3 py-1 rounded-full">
+              {ventasAnuladas.length} registros
+            </div>
+          </div>
+
+          {ventasAnuladas.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-red-200">
+              <AlertCircle className="w-12 h-12 text-red-300 mx-auto mb-4" />
+              <p className="text-red-400 font-medium">No hay ventas anuladas registradas</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+                <thead>
+                  <tr className="bg-red-600 text-white">
+                    <th className="border-b p-3 text-left">Fecha Venta</th>
+                    <th className="border-b p-3 text-left">Vehículo / Cliente</th>
+                    <th className="border-b p-3 text-right">Monto</th>
+                    <th className="border-b p-3 text-left">Motivo de Anulación</th>
+                    <th className="border-b p-3 text-left">Fecha Anulación</th>
+                    <th className="border-b p-3 text-left">Empleado</th>
+                    <th className="border-b p-3 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...ventasAnuladas].reverse().map((venta) => (
+                    <tr key={venta.id} className="hover:bg-red-50 transition-colors border-b border-red-100">
+                      <td className="p-3 text-sm">{venta.fecha}</td>
+                      <td className="p-3">
+                        <div className="font-bold text-slate-800">{venta.patente || 'S/P'}</div>
+                        <div className="text-xs text-slate-500">{venta.cliente || '-'}</div>
+                      </td>
+                      <td className="p-3 text-right font-bold text-slate-700">{formatMoney(venta.total)}</td>
+                      <td className="p-3">
+                        <div className="bg-red-100 text-red-800 p-2 rounded text-sm italic border border-red-200">
+                          "{venta.motivoAnulacion}"
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs text-slate-600">{venta.fechaAnulacion}</td>
+                      <td className="p-3 text-sm">{venta.empleado}</td>
+                      <td className="p-3 text-center">
+                        {isAdmin ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600 hover:bg-red-100 p-2 h-8 w-8">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar registro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Se borrará definitivamente el registro de esta anulación.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => {
+                                    const nuevas = ventasAnuladas.filter(v => v.id !== venta.id);
+                                    setVentasAnuladas(nuevas);
+                                    localStorage.setItem('gowash-ventas-anuladas', JSON.stringify(nuevas));
+                                  }}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : (
+                          <span className="text-slate-300">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -10,8 +10,11 @@ import { Card } from './components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
-import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram } from 'lucide-react';
-const logoImage = "/logo.png";
+import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram, Settings } from 'lucide-react';
+import { LicenseLock } from './components/LicenseLock';
+import { googleSheetsSync } from './lib/googleSheetsSync';
+import { GoogleSheetsSettings } from './components/GoogleSheetsSettings';
+const logoImage = "./logo.png";
 
 export interface Price {
   id: string;
@@ -36,9 +39,14 @@ function App() {
   const [user, setUser] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('pos'); // Default to POS for workers
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLicensed, setIsLicensed] = useState(false);
 
   // Cargar datos desde localStorage
   useEffect(() => {
+    const savedLicense = localStorage.getItem('gowash-license-active');
+    if (savedLicense === 'true') {
+      setIsLicensed(true);
+    }
     const savedAuth = localStorage.getItem('gowash-auth');
     if (savedAuth) {
       const authData = JSON.parse(savedAuth);
@@ -77,6 +85,9 @@ function App() {
       setBrands(DEFAULT_BRANDS);
       localStorage.setItem('carwash-brands', JSON.stringify(DEFAULT_BRANDS));
     }
+
+    // Inicializar Google Sheets
+    googleSheetsSync.init();
   }, []);
 
   // Guardar en localStorage cuando cambian los datos
@@ -113,6 +124,18 @@ function App() {
 
   const handleDeletePrice = (id: string) => {
     setPrices(prices.filter(p => p.id !== id));
+  };
+
+  const handleMovePrice = (id: string, direction: 'up' | 'down') => {
+    const index = prices.findIndex(p => p.id === id);
+    if (index === -1) return;
+
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= prices.length) return;
+
+    const newPrices = [...prices];
+    [newPrices[index], newPrices[newIndex]] = [newPrices[newIndex], newPrices[index]];
+    setPrices(newPrices);
   };
 
   const handleEditPrice = (price: Price) => {
@@ -170,6 +193,10 @@ function App() {
   // Si no está autenticado, simplemente mostramos la app con restricciones
   // Eliminamos el bloqueo total anterior
   const handleOpenLogin = () => setShowLoginModal(true);
+
+  if (!isLicensed) {
+    return <LicenseLock onActivated={() => setIsLicensed(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0f1d] text-slate-100 p-4 md:p-8 selection:bg-cyan-500/30 relative overflow-x-hidden">
@@ -243,16 +270,18 @@ function App() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full max-w-5xl mx-auto ${isAuthenticated ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-2'} bg-white shadow-lg`}>
+          <TabsList className={`grid w-full max-w-5xl mx-auto ${isAuthenticated ? 'grid-cols-3 md:grid-cols-7' : 'grid-cols-3 md:grid-cols-6'} bg-white shadow-lg`}>
             <TabsTrigger value="pos">Punto de Venta</TabsTrigger>
             <TabsTrigger value="list">Lista de Precios</TabsTrigger>
+            <TabsTrigger value="add">Editar Precios</TabsTrigger>
+            <TabsTrigger value="sizes">Tamaños</TabsTrigger>
+            <TabsTrigger value="brands">Marcas</TabsTrigger>
+            <TabsTrigger value="gastos">Gastos</TabsTrigger>
             {isAuthenticated && (
-              <>
-                <TabsTrigger value="add">Editar Precios</TabsTrigger>
-                <TabsTrigger value="sizes">Tamaños</TabsTrigger>
-                <TabsTrigger value="brands">Marcas</TabsTrigger>
-                <TabsTrigger value="gastos">Gastos</TabsTrigger>
-              </>
+              <TabsTrigger value="settings" title="Configuración de Google Sheets" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                <span>Config</span>
+              </TabsTrigger>
             )}
           </TabsList>
 
@@ -262,6 +291,7 @@ function App() {
                 prices={prices}
                 onEdit={isAuthenticated ? handleEditPrice : undefined}
                 onDelete={isAuthenticated ? handleDeletePrice : undefined}
+                onMove={isAuthenticated ? handleMovePrice : undefined}
               />
             </Card>
           </TabsContent>
@@ -301,11 +331,15 @@ function App() {
           </TabsContent>
 
           <TabsContent value="pos">
-            <POS />
+            <POS prices={prices} />
           </TabsContent>
 
           <TabsContent value="gastos">
-            <Gastos />
+            <Gastos isAdmin={isAuthenticated} />
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <GoogleSheetsSettings />
           </TabsContent>
         </Tabs>
 
@@ -359,13 +393,13 @@ function App() {
           <div className="relative group">
             <div className="absolute inset-0 bg-yellow-400/20 blur-lg rounded-full group-hover:bg-yellow-400/40 transition-colors"></div>
             <img 
-              src="/copyright.png" 
+              src="./copyright.png" 
               alt="Copyright Seal" 
               className="w-10 h-10 relative z-10 mix-blend-screen brightness-125 contrast-125" 
             />
           </div>
           <p className="text-slate-400 text-xs md:text-sm font-medium tracking-widest uppercase">
-            copyright 2026 <span className="text-blue-400 font-bold">&lt;Gauna Agustin - Developer &gt;</span>
+            copyright 2026 <span className="text-blue-400 font-bold">&lt;Gauna Agustin-Developer- Randomvanish88@gmail.com &gt;</span>
           </p>
         </footer>
 
