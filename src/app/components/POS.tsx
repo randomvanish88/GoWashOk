@@ -292,6 +292,12 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
   const [itemAAnular, setItemAAnular] = useState<{ id: string, type: 'venta' | 'orden' } | null>(null);
   const [editingVentaId, setEditingVentaId] = useState<string | null>(null);
 
+  // Estados para Consumo de Empleados
+  const [listaEmpleados, setListaEmpleados] = useState<string[]>([]);
+  const [consumosEmpleados, setConsumosEmpleados] = useState<Record<string, ProductoVenta[]>>({});
+  const [empleadoConsumoSeleccionado, setEmpleadoConsumoSeleccionado] = useState<string | null>(null);
+  const [nuevoEmpleadoNombre, setNuevoEmpleadoNombre] = useState('');
+
   // Cargar datos desde localStorage
   useEffect(() => {
     const savedVentas = localStorage.getItem('gowash-ventas');
@@ -302,8 +308,13 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     const savedOrdenesAbiertas = localStorage.getItem('gowash-ordenes-abiertas');
 
     const savedAnuladas = localStorage.getItem('gowash-ventas-anuladas');
+    const savedListaEmpleados = localStorage.getItem('gowash-lista-empleados');
+    const savedConsumosEmpleados = localStorage.getItem('gowash-consumos-empleados');
+
     if (savedVentas) setVentas(JSON.parse(savedVentas));
     if (savedAnuladas) setVentasAnuladas(JSON.parse(savedAnuladas));
+    if (savedListaEmpleados) setListaEmpleados(JSON.parse(savedListaEmpleados));
+    if (savedConsumosEmpleados) setConsumosEmpleados(JSON.parse(savedConsumosEmpleados));
     if (savedOrdenesAbiertas) setOrdenesAbiertas(JSON.parse(savedOrdenesAbiertas));
     if (savedWashCounts) setWashCounts(JSON.parse(savedWashCounts));
     if (savedCosmeticos) {
@@ -370,6 +381,14 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
       localStorage.setItem('gowash-lavado-precios', JSON.stringify(serviciosLavado));
     }
   }, [serviciosLavado]);
+
+  useEffect(() => {
+    localStorage.setItem('gowash-lista-empleados', JSON.stringify(listaEmpleados));
+  }, [listaEmpleados]);
+
+  useEffect(() => {
+    localStorage.setItem('gowash-consumos-empleados', JSON.stringify(consumosEmpleados));
+  }, [consumosEmpleados]);
 
   // Recalcular descuento dinámicamente si hay porcentaje y cambian los items o alcances
   useEffect(() => {
@@ -706,6 +725,51 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     setShowAnulacionDialog(false);
     setMotivoAnulacion('');
     setItemAAnular(null);
+  };
+
+  // Funciones para Consumo de Empleados
+  const agregarEmpleado = () => {
+    if (!nuevoEmpleadoNombre) return;
+    if (listaEmpleados.includes(nuevoEmpleadoNombre)) {
+      alert('El empleado ya existe');
+      return;
+    }
+    setListaEmpleados([...listaEmpleados, nuevoEmpleadoNombre]);
+    setNuevoEmpleadoNombre('');
+  };
+
+  const eliminarEmpleado = (nombre: string) => {
+    setListaEmpleados(listaEmpleados.filter(e => e !== nombre));
+    const nuevosConsumos = { ...consumosEmpleados };
+    delete nuevosConsumos[nombre];
+    setConsumosEmpleados(nuevosConsumos);
+    if (empleadoConsumoSeleccionado === nombre) setEmpleadoConsumoSeleccionado(null);
+  };
+
+  const agregarConsumoAEmpleado = (producto: ProductoBar) => {
+    if (!empleadoConsumoSeleccionado) return;
+    const actuales = consumosEmpleados[empleadoConsumoSeleccionado] || [];
+    setConsumosEmpleados({
+      ...consumosEmpleados,
+      [empleadoConsumoSeleccionado]: [...actuales, { nombre: producto.name, precio: producto.value }]
+    });
+  };
+
+  const eliminarConsumoEmpleado = (index: number) => {
+    if (!empleadoConsumoSeleccionado) return;
+    const actuales = [...(consumosEmpleados[empleadoConsumoSeleccionado] || [])];
+    actuales.splice(index, 1);
+    setConsumosEmpleados({
+      ...consumosEmpleados,
+      [empleadoConsumoSeleccionado]: actuales
+    });
+  };
+
+  const liquidarConsumoEmpleado = (nombre: string) => {
+    setConsumosEmpleados({
+      ...consumosEmpleados,
+      [nombre]: []
+    });
   };
 
   const eliminarVenta = (id: string) => {
@@ -1064,8 +1128,9 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
 
   return (
     <Tabs defaultValue="ventas" className="space-y-6">
-      <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-white shadow-lg">
+      <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 bg-white shadow-lg">
         <TabsTrigger value="ventas">Ventas</TabsTrigger>
+        <TabsTrigger value="consumo">Consumo Empleados</TabsTrigger>
         <TabsTrigger value="precios">Editar Precios</TabsTrigger>
       </TabsList>
 
@@ -1909,6 +1974,160 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
           <Card className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-400">
             <h3 className="font-bold text-gray-900 mb-1 text-sm">Total General</h3>
             <p className="text-2xl font-bold text-gray-800">{formatMoney(totalGeneral)}</p>
+          </Card>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="consumo">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Lista de Empleados */}
+          <Card className="lg:col-span-1 p-4 bg-slate-50 h-fit">
+            <h3 className="font-bold text-lg mb-4 text-slate-800">Equipo GoWash</h3>
+            <div className="space-y-2 mb-4">
+              {listaEmpleados.map((emp) => (
+                <div 
+                  key={emp}
+                  className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${
+                    empleadoConsumoSeleccionado === emp 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-white hover:bg-blue-50 text-slate-700 border border-slate-200'
+                  }`}
+                  onClick={() => setEmpleadoConsumoSeleccionado(emp)}
+                >
+                  <span className="font-medium">{emp}</span>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); eliminarEmpleado(emp); }}
+                      className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded hover:bg-red-200"
+                    >
+                      Borrar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 pt-4 border-t border-slate-200">
+              <Input 
+                placeholder="Nombre empleado..." 
+                value={nuevoEmpleadoNombre}
+                onChange={(e) => setNuevoEmpleadoNombre(e.target.value)}
+                className="bg-white text-sm"
+              />
+              <Button onClick={agregarEmpleado} className="w-full bg-slate-800 hover:bg-slate-900 text-xs">
+                Añadir Empleado
+              </Button>
+            </div>
+          </Card>
+
+          {/* Panel de Consumo */}
+          <Card className="lg:col-span-3 p-6 bg-white min-h-[500px]">
+            {empleadoConsumoSeleccionado ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center border-b pb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-800">Cuenta de {empleadoConsumoSeleccionado}</h3>
+                    <p className="text-slate-500 text-sm">Registro de consumos del bar</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-500 font-medium">Deuda Acumulada</p>
+                    <p className="text-3xl font-black text-red-600">
+                      {formatMoney((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0))}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Buscador de Bar */}
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-slate-700 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                      Añadir Producto
+                    </h4>
+                    <Input
+                      placeholder="Buscar producto..."
+                      value={searchBar}
+                      onChange={(e) => setSearchBar(e.target.value)}
+                      className="bg-slate-50"
+                    />
+                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-2">
+                      {barProductsData
+                        .filter(p => p.name.toLowerCase().includes(searchBar.toLowerCase()))
+                        .map(p => (
+                          <Button
+                            key={p.name}
+                            variant="outline"
+                            className="justify-between h-auto py-2 text-left hover:bg-amber-50 hover:border-amber-200"
+                            onClick={() => agregarConsumoAEmpleado(p)}
+                          >
+                            <span className="text-xs font-medium">{p.name}</span>
+                            <span className="text-xs font-bold text-amber-700">{formatMoney(p.value)}</span>
+                          </Button>
+                        ))
+                      }
+                    </div>
+                  </div>
+
+                  {/* Lista de Consumos */}
+                  <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <h4 className="font-bold text-slate-700">Detalle de Consumo</h4>
+                    <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                      {(consumosEmpleados[empleadoConsumoSeleccionado] || []).length === 0 ? (
+                        <p className="text-center text-slate-400 py-8 text-sm italic">Sin consumos pendientes</p>
+                      ) : (
+                        (consumosEmpleados[empleadoConsumoSeleccionado] || []).map((p, idx) => (
+                          <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border shadow-sm">
+                            <span className="text-xs text-slate-700">{p.nombre}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold">{formatMoney(p.precio)}</span>
+                              <button 
+                                onClick={() => eliminarConsumoEmpleado(idx)}
+                                className="text-red-400 hover:text-red-600"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {(consumosEmpleados[empleadoConsumoSeleccionado] || []).length > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="w-full bg-green-600 hover:bg-green-700 text-white mt-4">
+                            Liquidar Cuenta
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Confirmar liquidación?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Se marcará la cuenta de {empleadoConsumoSeleccionado} como pagada y se pondrá en cero.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => liquidarConsumoEmpleado(empleadoConsumoSeleccionado!)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Confirmar Pago
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+                  👤
+                </div>
+                <p className="text-center italic">Selecciona un empleado de la lista para ver o registrar su consumo.</p>
+              </div>
+            )}
           </Card>
         </div>
       </TabsContent>
