@@ -297,6 +297,7 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
   const [consumosEmpleados, setConsumosEmpleados] = useState<Record<string, ProductoVenta[]>>({});
   const [empleadoConsumoSeleccionado, setEmpleadoConsumoSeleccionado] = useState<string | null>(null);
   const [nuevoEmpleadoNombre, setNuevoEmpleadoNombre] = useState('');
+  const [descuentoEmpleadoConsumo, setDescuentoEmpleadoConsumo] = useState(0);
 
   // Cargar datos desde localStorage
   useEffect(() => {
@@ -770,6 +771,7 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
       ...consumosEmpleados,
       [nombre]: []
     });
+    setDescuentoEmpleadoConsumo(0);
   };
 
   const eliminarVenta = (id: string) => {
@@ -2029,11 +2031,22 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
                     <h3 className="text-2xl font-bold text-slate-800">Cuenta de {empleadoConsumoSeleccionado}</h3>
                     <p className="text-slate-500 text-sm">Registro de consumos del bar</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-500 font-medium">Deuda Acumulada</p>
-                    <p className="text-3xl font-black text-red-600">
-                      {formatMoney((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0))}
-                    </p>
+                  <div className="flex gap-6 items-end">
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Subtotal</p>
+                      <p className="text-lg font-bold text-slate-400 line-through">
+                        {formatMoney((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0))}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500 font-medium uppercase tracking-wider">Total con Descuento</p>
+                      <p className="text-4xl font-black text-red-600">
+                        {formatMoney(
+                          ((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0)) * 
+                          (1 - descuentoEmpleadoConsumo / 100)
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -2070,8 +2083,27 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
 
                   {/* Lista de Consumos */}
                   <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <h4 className="font-bold text-slate-700">Detalle de Consumo</h4>
-                    <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-bold text-slate-700">Detalle de Consumo</h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500">Descuento:</span>
+                        <Select 
+                          value={descuentoEmpleadoConsumo.toString()} 
+                          onValueChange={(val) => setDescuentoEmpleadoConsumo(parseInt(val))}
+                        >
+                          <SelectTrigger className="w-24 h-8 text-xs bg-white">
+                            <SelectValue placeholder="0%" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Sin Desc.</SelectItem>
+                            {[5, 10, 15, 20, 25, 30, 40, 50, 75, 100].map(pct => (
+                              <SelectItem key={pct} value={pct.toString()}>{pct}%</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                       {(consumosEmpleados[empleadoConsumoSeleccionado] || []).length === 0 ? (
                         <p className="text-center text-slate-400 py-8 text-sm italic">Sin consumos pendientes</p>
                       ) : (
@@ -2092,30 +2124,44 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
                       )}
                     </div>
                     {(consumosEmpleados[empleadoConsumoSeleccionado] || []).length > 0 && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button className="w-full bg-green-600 hover:bg-green-700 text-white mt-4">
-                            Liquidar Cuenta
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Confirmar liquidación?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Se marcará la cuenta de {empleadoConsumoSeleccionado} como pagada y se pondrá en cero.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => liquidarConsumoEmpleado(empleadoConsumoSeleccionado!)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Confirmar Pago
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <div className="pt-4 border-t border-slate-200">
+                        <div className="flex justify-between text-sm mb-4">
+                          <span className="text-slate-500">Descuento aplicado ({descuentoEmpleadoConsumo}%):</span>
+                          <span className="text-green-600 font-bold">
+                            -{formatMoney(
+                              ((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0)) * 
+                              (descuentoEmpleadoConsumo / 100)
+                            )}
+                          </span>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                              Liquidar Cuenta Final
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Confirmar liquidación?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se cobrarán {formatMoney(
+                                  ((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0)) * 
+                                  (1 - descuentoEmpleadoConsumo / 100)
+                                )} a {empleadoConsumoSeleccionado} (con {descuentoEmpleadoConsumo}% de descuento).
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => liquidarConsumoEmpleado(empleadoConsumoSeleccionado!)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Confirmar Pago
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
                 </div>
