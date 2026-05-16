@@ -70,23 +70,23 @@ export function BrandEditor({ brands, onAddBrand, onEditBrand, onDeleteBrand }: 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-block bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full p-3 mb-2">
-          <Car className="w-6 h-6" />
+      <div className="text-center space-y-1 mb-2">
+        <div className="inline-block bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full p-1.5 mb-1">
+          <Car className="w-4 h-4" />
         </div>
-        <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent leading-none uppercase tracking-tight">
           Editor de Marcas
         </h2>
-        <p className="text-gray-600">
-          Gestiona las marcas de vehículos disponibles para tu lavadero
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+          Gestiona las marcas disponibles
         </p>
       </div>
 
       {/* Formulario para agregar nueva marca */}
-      <Card className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200">
-        <form onSubmit={handleAddBrand} className="flex gap-3">
+      <Card className="p-2 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200">
+        <form onSubmit={handleAddBrand} className="flex gap-2">
           <div className="flex-1">
             <Label htmlFor="newBrand" className="sr-only">Nueva marca</Label>
             <Input
@@ -95,84 +95,85 @@ export function BrandEditor({ brands, onAddBrand, onEditBrand, onDeleteBrand }: 
               placeholder="Ej: Tesla, Subaru, Jeep..."
               value={newBrand}
               onChange={(e) => setNewBrand(e.target.value)}
-              className="bg-white border-blue-300"
+              className="bg-white border-blue-300 h-7 text-xs px-2"
             />
           </div>
           <Button 
             type="submit"
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white h-7 text-xs px-3"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-3 h-3 mr-1" />
             Agregar
           </Button>
         </form>
       </Card>
 
       {/* Lista de marcas */}
-      <div className="space-y-3">
-        <h3 className="font-semibold text-gray-700">Marcas Disponibles ({brands.length})</h3>
+      <div className="space-y-2">
+        <h3 className="font-bold text-[10px] text-gray-500 uppercase tracking-wider">Marcas Disponibles ({brands.length})</h3>
         {brands.length === 0 ? (
-          <Card className="p-8 text-center text-gray-500">
+          <Card className="p-4 text-center text-xs text-gray-500">
             No hay marcas configuradas. Agrega la primera arriba.
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {brands.map((brand, index) => (
               <Card
                 key={brand}
-                className="p-4 flex items-center justify-between hover:shadow-lg transition-shadow border-2 border-blue-100"
+                className="p-1.5 flex items-center justify-between hover:shadow-sm transition-shadow border border-blue-100"
               >
                 {editingBrand === brand ? (
                   // Modo edición
-                  <div className="flex items-center gap-2 flex-1">
+                  <div className="flex items-center gap-1 flex-1">
                     <Input
                       type="text"
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
-                      className="flex-1"
+                      className="flex-1 h-6 text-[10px] px-1"
                       autoFocus
                     />
                     <Button
                       size="sm"
                       onClick={handleSaveEdit}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white h-6 w-6 p-0"
                     >
-                      <Save className="w-4 h-4" />
+                      <Save className="w-3 h-3" />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={handleCancelEdit}
+                      className="h-6 w-6 p-0"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </Button>
                   </div>
                 ) : (
                   // Modo vista
                   <>
-                    <div className="flex items-center gap-3">
-                      <Car className="w-5 h-5 text-blue-500" />
-                      <Badge className={`${getBrandColor(index)} text-base px-3 py-1`}>
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <Car className="w-3 h-3 text-blue-500 shrink-0" />
+                      <Badge className={`${getBrandColor(index)} text-[9px] px-1.5 py-0 truncate max-w-[80px]`}>
                         {brand}
                       </Badge>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 shrink-0">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleStartEdit(brand)}
-                        className="hover:bg-blue-100 hover:text-blue-700"
+                        className="hover:bg-blue-100 hover:text-blue-700 h-5 w-5 p-0"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-3 h-3" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="hover:bg-red-100 hover:text-red-700"
+                            className="hover:bg-red-100 hover:text-red-700 h-5 w-5 p-0"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -205,16 +206,15 @@ export function BrandEditor({ brands, onAddBrand, onEditBrand, onDeleteBrand }: 
       </div>
 
       {/* Información útil */}
-      <Card className="p-4 bg-cyan-50 border-cyan-200">
-        <div className="flex gap-3">
+      <Card className="p-2.5 bg-cyan-50 border-cyan-200">
+        <div className="flex gap-2 items-center">
           <div className="text-cyan-600">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
           </div>
-          <div className="flex-1 text-sm text-cyan-800">
-            <strong>Consejo:</strong> Agrega las marcas de vehículos que más atiendas en tu lavadero
-            para facilitar la creación de precios personalizados.
+          <div className="flex-1 text-[10px] text-cyan-800 leading-tight">
+            <strong>Consejo:</strong> Agrega las marcas más comunes para agilizar.
           </div>
         </div>
       </Card>

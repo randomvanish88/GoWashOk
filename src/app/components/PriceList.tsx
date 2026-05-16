@@ -72,66 +72,66 @@ export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) 
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row gap-4">
+    <div className="space-y-2">
+      <div className="flex flex-col md:flex-row gap-2">
         {/* Búsqueda */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-purple-400 w-3 h-3" />
           <Input
             type="text"
             placeholder="Buscar por marca, servicio o tamaño..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-purple-200 focus:border-purple-400"
+            className="pl-7 border-purple-200 focus:border-purple-400 h-7 text-xs"
           />
         </div>
 
         {/* Filtro por Marca */}
         <Select value={filterBrand} onValueChange={setFilterBrand}>
-          <SelectTrigger className="w-full md:w-48 border-blue-200 focus:border-blue-400">
+          <SelectTrigger className="w-full md:w-40 border-blue-200 focus:border-blue-400 h-7 text-xs">
             <SelectValue placeholder="Filtrar por marca" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas las marcas</SelectItem>
+            <SelectItem value="all" className="text-xs">Todas las marcas</SelectItem>
             {uniqueBrands.map(brand => (
-              <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+              <SelectItem key={brand} value={brand} className="text-xs">{brand}</SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {/* Filtro por Tamaño */}
         <Select value={filterSize} onValueChange={setFilterSize}>
-          <SelectTrigger className="w-full md:w-48 border-pink-200 focus:border-pink-400">
+          <SelectTrigger className="w-full md:w-40 border-pink-200 focus:border-pink-400 h-7 text-xs">
             <SelectValue placeholder="Filtrar por tamaño" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los tamaños</SelectItem>
+            <SelectItem value="all" className="text-xs">Todos los tamaños</SelectItem>
             {uniqueSizes.map(size => (
-              <SelectItem key={size} value={size}>{size}</SelectItem>
+              <SelectItem key={size} value={size} className="text-xs">{size}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
       {/* Tabla de precios */}
-      <div className="rounded-lg border border-purple-200 overflow-hidden shadow-md">
-        <Table>
+      <div className="rounded border border-purple-200 overflow-hidden shadow-sm">
+        <Table className="text-xs">
           <TableHeader className="bg-gradient-to-r from-blue-500 to-purple-500">
             <TableRow className="border-0 hover:bg-transparent">
-              <TableHead className="text-white w-16">Orden</TableHead>
-              <TableHead className="text-white w-16">Ref</TableHead>
-              <TableHead className="text-white">Marca</TableHead>
-              <TableHead className="text-white">Modelo</TableHead>
-              <TableHead className="text-white">Tamaño</TableHead>
-              <TableHead className="text-white">Servicio</TableHead>
-              <TableHead className="text-right text-white">Precio</TableHead>
-              <TableHead className="text-right text-white">Acciones</TableHead>
+              <TableHead className="text-white w-8 py-1.5 px-2 h-8">Ord.</TableHead>
+              <TableHead className="text-white w-10 py-1.5 px-2 h-8">Ref</TableHead>
+              <TableHead className="text-white py-1.5 px-2 h-8">Marca</TableHead>
+              <TableHead className="text-white py-1.5 px-2 h-8">Modelo</TableHead>
+              <TableHead className="text-white py-1.5 px-2 h-8">Tamaño</TableHead>
+              <TableHead className="text-white py-1.5 px-2 h-8">Servicio</TableHead>
+              <TableHead className="text-right text-white py-1.5 px-2 h-8">Precio</TableHead>
+              <TableHead className="text-right text-white py-1.5 px-2 h-8">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredPrices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={8} className="text-center text-gray-500 py-4">
                   No se encontraron precios
                 </TableCell>
               </TableRow>
@@ -141,97 +141,95 @@ export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) 
                   key={price.id}
                   className={index % 2 === 0 ? 'bg-purple-50/30' : 'bg-white'}
                 >
-                  <TableCell>
-                    <div className="flex flex-col items-center gap-1">
+                  <TableCell className="py-1 px-2">
+                    <div className="flex flex-col items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="sm"
                         disabled={!onMove || index === 0 && searchTerm === '' && filterSize === 'all' && filterBrand === 'all'}
                         onClick={() => onMove && onMove(price.id, 'up')}
-                        className="h-6 w-6 p-0 hover:bg-blue-100"
+                        className="h-4 w-4 p-0 hover:bg-blue-100"
                         title="Subir"
                       >
-                        <ArrowUp className="w-3 h-3" />
+                        <ArrowUp className="w-2 h-2" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         disabled={!onMove || index === filteredPrices.length - 1 && searchTerm === '' && filterSize === 'all' && filterBrand === 'all'}
                         onClick={() => onMove && onMove(price.id, 'down')}
-                        className="h-6 w-6 p-0 hover:bg-blue-100"
+                        className="h-4 w-4 p-0 hover:bg-blue-100"
                         title="Bajar"
                       >
-                        <ArrowDown className="w-3 h-3" />
+                        <ArrowDown className="w-2 h-2" />
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1 px-2">
                     {price.imageUrl ? (
                       <div className="relative group w-fit cursor-zoom-in">
                         <img 
                           src={price.imageUrl} 
                           alt={price.brand} 
-                          className="w-10 h-10 object-cover rounded shadow-sm border border-gray-200 transition-transform hover:scale-110" 
+                          className="w-7 h-7 object-cover rounded border border-gray-200" 
                         />
                         {/* Previsualización grande al pasar el cursor */}
-                        <div className="absolute left-14 top-0 z-[100] hidden group-hover:block animate-in fade-in zoom-in duration-200 origin-left">
-                          <div className="p-1 bg-white rounded-xl shadow-2xl border border-gray-200">
+                        <div className="absolute left-10 top-0 z-[100] hidden group-hover:block animate-in fade-in zoom-in duration-200 origin-left">
+                          <div className="p-1 bg-white rounded-lg shadow-xl border border-gray-200">
                             <img 
                               src={price.imageUrl} 
                               alt="Previsualización" 
-                              className="w-64 h-auto min-h-[200px] max-h-80 object-contain rounded-lg" 
+                              className="w-48 h-auto min-h-[150px] max-h-60 object-contain rounded" 
                             />
-                            <div className="p-2 text-xs font-bold text-gray-500 bg-gray-50 rounded-b-lg border-t text-center">
+                            <div className="p-1 text-[10px] font-bold text-gray-500 bg-gray-50 rounded-b border-t text-center">
                               Vista Previa: {price.brand} {price.model}
                             </div>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                        <Car className="w-5 h-5" />
+                      <div className="w-7 h-7 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                        <Car className="w-4 h-4" />
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {price.brand}
-                    </div>
+                  <TableCell className="py-1 px-2 font-bold text-slate-800">
+                    {price.brand}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <Badge variant="outline" className="bg-white text-indigo-700 border-indigo-200 w-fit">
+                  <TableCell className="py-1 px-2">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-indigo-700">
                         {price.model}
-                      </Badge>
+                      </span>
                       {price.year && (
-                        <span className="text-[10px] text-gray-400 font-bold ml-1 italic">
-                          Año: {price.year}
+                        <span className="text-[10px] text-gray-400 font-bold italic">
+                          {price.year}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={getSizeColor(price.size)}>
+                  <TableCell className="py-1 px-2">
+                    <Badge className={`${getSizeColor(price.size)} text-[11px] px-1.5 py-0`}>
                       {price.size}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-700">{price.service}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <DollarSign className="w-4 h-4 text-green-600" />
-                      <span className="font-semibold text-green-700">{price.price.toFixed(2)}</span>
+                  <TableCell className="py-1 px-2 text-gray-700 font-medium">{price.service}</TableCell>
+                  <TableCell className="py-1 px-2 text-right">
+                    <div className="flex items-center justify-end gap-0.5">
+                      <DollarSign className="w-3 h-3 text-green-600" />
+                      <span className="font-bold text-green-700 text-sm">{price.price.toFixed(2)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <TableCell className="py-1 px-2 text-right">
+                    <div className="flex justify-end gap-1">
                       {onEdit && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onEdit(price)}
-                          className="hover:bg-blue-100 hover:text-blue-700"
+                          className="hover:bg-blue-100 hover:text-blue-700 h-6 w-6 p-0"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-3 h-3" />
                         </Button>
                       )}
                       {onDelete && (
@@ -240,9 +238,9 @@ export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) 
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              className="hover:bg-red-100 hover:text-red-700"
+                              className="hover:bg-red-100 hover:text-red-700 h-6 w-6 p-0"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -275,29 +273,7 @@ export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) 
         </Table>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Vehículos Lavados Hoy */}
-        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg p-6 shadow-lg flex flex-col justify-center items-center relative overflow-hidden">
-          <Car className="absolute w-24 h-24 text-white opacity-20 -right-4 -bottom-4" />
-          <div className="text-lg font-medium opacity-90 z-10">Vehículos Ingresados Hoy</div>
-          <div className="text-5xl font-extrabold z-10 mt-2">
-            {vehiclesToday}
-          </div>
-        </div>
 
-        {/* Imagen 3D Animada/Premium */}
-        <div className="rounded-lg shadow-lg overflow-hidden h-32 md:h-40 relative group bg-black">
-          <img 
-            src="./car_wash_3d.png" 
-            alt="GoWash 3D Render" 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4 pointer-events-none">
-             <span className="text-white font-bold text-lg drop-shadow-md tracking-wide">Servicio Premium</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

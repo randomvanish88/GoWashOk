@@ -3,23 +3,30 @@
  */
 
 const SPREADSHEET_ID_KEY = 'gowash-google-sheet-id';
+const TEST_SPREADSHEET_ID_KEY = 'gowash-google-sheet-id-test';
+const TEST_MODE_KEY = 'gowash-test-mode';
 
 export const googleSheetsSync = {
   /**
-   * Inicializa la conexión con el ID guardado
+   * Inicializa la conexión con el ID guardado (y el de prueba si aplica)
    */
   async init() {
-    const sheetId = localStorage.getItem(SPREADSHEET_ID_KEY);
-    if (!sheetId) {
+    const isTest = this.isTestMode();
+    const prodId = localStorage.getItem(SPREADSHEET_ID_KEY);
+    const testId = localStorage.getItem(TEST_SPREADSHEET_ID_KEY);
+    
+    const activeId = isTest ? (testId || prodId) : prodId;
+
+    if (!activeId) {
       console.warn('[GoogleSheetsSync] No hay ID de Spreadsheet configurado.');
       return false;
     }
 
     try {
       // @ts-ignore (electronAPI is injected via preload)
-      const result = await window.electronAPI.googleSheets.init(sheetId);
+      const result = await window.electronAPI.googleSheets.init(activeId);
       if (result.success) {
-        console.log('[GoogleSheetsSync] Conexión establecida correctamente.');
+        console.log(`[GoogleSheetsSync] Conexión establecida (${isTest ? 'MODO PRUEBA' : 'MODO PROD'}).`);
         return { success: true };
       } else {
         console.error('[GoogleSheetsSync] Error:', result.error);
@@ -32,10 +39,20 @@ export const googleSheetsSync = {
   },
 
   /**
+   * Obtiene el nombre de la hoja (pestaña) con prefijo si está en modo prueba
+   */
+  getSheetName(baseName: string) {
+    if (this.isTestMode()) {
+      return `PRUEBA-${baseName}`;
+    }
+    return baseName;
+  },
+
+  /**
    * Sincroniza una venta
    */
   async syncVenta(venta: any) {
-    if (!localStorage.getItem(SPREADSHEET_ID_KEY)) return;
+    if (!this.getSpreadsheetId()) return;
 
     const data = {
       Fecha: venta.fecha || new Date().toLocaleString(),
@@ -50,7 +67,7 @@ export const googleSheetsSync = {
 
     try {
       // @ts-ignore
-      await window.electronAPI.googleSheets.addRow('Ventas', data);
+      await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas'), data);
     } catch (error) {
       console.error('[GoogleSheetsSync] Error sincronizando venta:', error);
     }
@@ -60,7 +77,7 @@ export const googleSheetsSync = {
    * Sincroniza la actualización de una venta
    */
   async syncUpdateVenta(venta: any) {
-    if (!localStorage.getItem(SPREADSHEET_ID_KEY)) return;
+    if (!this.getSpreadsheetId()) return;
 
     try {
       const data = {
@@ -84,7 +101,7 @@ export const googleSheetsSync = {
       };
 
       // @ts-ignore
-      await window.electronAPI.googleSheets.updateRow('Ventas', 'ID', venta.id, data);
+      await window.electronAPI.googleSheets.updateRow(this.getSheetName('Ventas'), 'ID', venta.id, data);
       console.log('[GoogleSheetsSync] Venta actualizada en Sheets.');
     } catch (error) {
       console.error('[GoogleSheetsSync] Error actualizando venta:', error);
@@ -95,7 +112,7 @@ export const googleSheetsSync = {
    * Sincroniza un gasto
    */
   async syncGasto(gasto: any) {
-    if (!localStorage.getItem(SPREADSHEET_ID_KEY)) return;
+    if (!this.getSpreadsheetId()) return;
 
     const data = {
       Fecha: gasto.fecha || new Date().toLocaleString(),
@@ -107,7 +124,7 @@ export const googleSheetsSync = {
 
     try {
       // @ts-ignore
-      await window.electronAPI.googleSheets.addRow('Gastos', data);
+      await window.electronAPI.googleSheets.addRow(this.getSheetName('Gastos'), data);
     } catch (error) {
       console.error('[GoogleSheetsSync] Error sincronizando gasto:', error);
     }
@@ -117,12 +134,12 @@ export const googleSheetsSync = {
    * Sincroniza una anulación (Borra de Ventas y mueve a Ventas Anuladas)
    */
   async syncAnulacion(anulada: any) {
-    if (!localStorage.getItem(SPREADSHEET_ID_KEY)) return;
+    if (!this.getSpreadsheetId()) return;
 
     try {
       // 1. Borrar de la pestaña "Ventas" buscando por el ID
       // @ts-ignore
-      await window.electronAPI.googleSheets.deleteRow('Ventas', 'ID', anulada.id);
+      await window.electronAPI.googleSheets.deleteRow(this.getSheetName('Ventas'), 'ID', anulada.id);
 
       // 2. Añadir a la pestaña "Ventas Anuladas"
       const data = {
@@ -137,7 +154,7 @@ export const googleSheetsSync = {
       };
       
       // @ts-ignore
-      await window.electronAPI.googleSheets.addRow('Ventas Anuladas', data);
+      await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas Anuladas'), data);
       console.log('[GoogleSheetsSync] Anulación sincronizada.');
     } catch (error) {
       console.error('[GoogleSheetsSync] Error sincronizando anulación:', error);
@@ -145,28 +162,45 @@ export const googleSheetsSync = {
   },
 
   /**
-   * Guarda el ID del Spreadsheet (limpia la URL si el usuario pega todo)
+   * Manejo de IDs
    */
   setSpreadsheetId(id: string) {
-    let cleanId = id.trim();
-    
-    // Si el usuario pegó la URL completa, extraemos solo el ID
-    if (cleanId.includes('/d/')) {
-      const match = cleanId.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (match && match[1]) {
-        cleanId = match[1];
-      }
-    }
-    
+    const cleanId = this.cleanId(id);
     localStorage.setItem(SPREADSHEET_ID_KEY, cleanId);
     return this.init();
   },
 
-  /**
-   * Obtiene el ID actual
-   */
   getSpreadsheetId() {
     return localStorage.getItem(SPREADSHEET_ID_KEY);
+  },
+
+  setTestSpreadsheetId(id: string) {
+    const cleanId = this.cleanId(id);
+    localStorage.setItem(TEST_SPREADSHEET_ID_KEY, cleanId);
+    if (this.isTestMode()) return this.init();
+    return Promise.resolve({ success: true });
+  },
+
+  getTestSpreadsheetId() {
+    return localStorage.getItem(TEST_SPREADSHEET_ID_KEY) || '';
+  },
+
+  isTestMode() {
+    return localStorage.getItem(TEST_MODE_KEY) === 'true';
+  },
+
+  setTestMode(active: boolean) {
+    localStorage.setItem(TEST_MODE_KEY, active ? 'true' : 'false');
+    return this.init();
+  },
+
+  cleanId(id: string) {
+    let clean = id.trim();
+    if (clean.includes('/d/')) {
+      const match = clean.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) clean = match[1];
+    }
+    return clean;
   },
 
   /**
@@ -182,3 +216,4 @@ export const googleSheetsSync = {
     }
   }
 };
+

@@ -14,6 +14,8 @@ import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram, Settin
 import { LicenseLock } from './components/LicenseLock';
 import { googleSheetsSync } from './lib/googleSheetsSync';
 import { GoogleSheetsSettings } from './components/GoogleSheetsSettings';
+import { VirtualAssistant } from './components/VirtualAssistant';
+import { Toaster } from 'sonner';
 const logoImage = "./logo.png";
 
 export interface Price {
@@ -207,66 +209,76 @@ function App() {
         <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-cyan-500/5 rounded-full blur-[100px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="mb-10 relative bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl py-10 shadow-xl overflow-hidden">
-          {/* Logout & User Info */}
-          <div className="absolute top-4 right-4 flex items-center gap-4 z-10">
+      <div className="max-w-7xl mx-auto relative z-10 px-4 md:px-6">
+        {/* Header Compacto y Profesional con contraste mejorado */}
+        <header className="mb-4 relative bg-slate-800/50 backdrop-blur-2xl rounded-2xl py-2 px-6 border border-white/10 border-t-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row items-center justify-between gap-3">
+          {/* Decorative Gradient Line */}
+          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 group cursor-default transition-transform duration-500 hover:scale-105">
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full blur opacity-20 group-hover:opacity-60 transition duration-1000"></div>
+                <img 
+                  src={logoImage} 
+                  alt="GoWash Logo"
+                  className="relative h-10 w-auto object-contain transition-transform duration-500 group-hover:rotate-12"
+                />
+              </div>
+              <div className="flex flex-col -space-y-1">
+                <h1 className="text-xl md:text-2xl font-black tracking-tighter bg-gradient-to-b from-white via-white to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                  GOWASH
+                </h1>
+                <span className="text-[7px] font-black text-blue-500 uppercase tracking-[0.3em] pl-0.5">
+                  Lavadero Artesanal
+                </span>
+              </div>
+            </div>
+            
+            <div className="hidden lg:flex items-center gap-2">
+              <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/5 border border-blue-500/10 rounded-full text-[9px] font-bold text-blue-400/80 uppercase tracking-widest">
+                <Sparkles className="w-2.5 h-2.5" /> Lavado Artesanal
+              </span>
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/5 border border-purple-500/10 rounded-full text-[9px] font-bold text-purple-400/80 uppercase tracking-widest">
+                <Award className="w-2.5 h-2.5" /> Premium
+              </span>
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/5 border border-amber-500/10 rounded-full text-[9px] font-bold text-amber-400/80 uppercase tracking-widest">
+                <Coffee className="w-2.5 h-2.5" /> Bar
+              </span>
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/5 border border-emerald-500/10 rounded-full text-[9px] font-bold text-emerald-400/80 uppercase tracking-widest">
+                <Users className="w-2.5 h-2.5" /> Cosmetica Vehicular
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
             {isAuthenticated ? (
-              <>
-                <div className="hidden md:flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-white border border-white/30">
-                  <User className="w-4 h-4" />
-                  <span className="text-sm font-medium">{user}</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/5 px-3 py-1.5 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">{user}</span>
                 </div>
                 <Button 
                   onClick={handleLogout} 
-                  variant="destructive" 
+                  variant="ghost" 
                   size="sm" 
-                  className="rounded-full shadow-lg hover:scale-105 transition-transform"
+                  className="text-slate-400 hover:text-red-400 hover:bg-red-400/5 h-8 px-3 text-[10px] font-bold uppercase tracking-wider transition-colors"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
+                  <LogOut className="w-3 h-3 mr-2" />
                   Salir
                 </Button>
-              </>
+              </div>
             ) : (
               <Button 
                 onClick={handleOpenLogin} 
-                variant="secondary" 
-                size="sm" 
-                className="rounded-full shadow-lg hover:scale-105 transition-transform bg-white text-blue-600 hover:bg-blue-50 font-bold"
+                className="bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-6 h-9 text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all hover:shadow-blue-500/20 active:scale-95"
               >
                 Acceso Admin
               </Button>
             )}
           </div>
-
-          <div className="flex flex-col md:flex-row items-center justify-start gap-8 md:gap-16 relative px-4 md:px-12">
-            <img 
-              src={logoImage} 
-              alt="GoWash Logo"
-              className="w-80 md:w-[500px] lg:w-[650px] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 z-10 animate-float"
-            />
-            
-            <div className="hidden md:flex flex-col space-y-10 text-white text-2xl lg:text-4xl font-black z-10 ml-auto items-end">
-              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '0s' }}>
-                <Sparkles className="w-12 h-12 lg:w-16 lg:h-16 text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)]" /> 
-                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Lavado Artesanal</span>
-              </div>
-              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '0.4s' }}>
-                <Award className="w-12 h-12 lg:w-16 lg:h-16 text-blue-300 drop-shadow-[0_0_15px_rgba(147,197,253,0.8)]" /> 
-                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Productos Premium</span>
-              </div>
-              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '0.8s' }}>
-                <Users className="w-12 h-12 lg:w-16 lg:h-16 text-green-300 drop-shadow-[0_0_15px_rgba(134,239,172,0.8)]" /> 
-                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Atención Personalizada</span>
-              </div>
-              <div className="flex items-center gap-6 hover:scale-110 transition-transform cursor-default animate-gentle-bounce" style={{ animationDelay: '1.2s' }}>
-                <Coffee className="w-12 h-12 lg:w-16 lg:h-16 text-amber-300 drop-shadow-[0_0_15px_rgba(252,211,77,0.8)]" /> 
-                <span className="drop-shadow-[0_5px_15px_rgba(0,0,0,0.6)] tracking-tight">Bar - Cafeteria</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        </header>
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -331,7 +343,7 @@ function App() {
           </TabsContent>
 
           <TabsContent value="pos">
-            <POS prices={prices} />
+            <POS prices={prices} isAdmin={isAuthenticated} />
           </TabsContent>
 
           <TabsContent value="gastos">
@@ -409,6 +421,10 @@ function App() {
             <Login onLogin={onLoginSuccess} />
           </DialogContent>
         </Dialog>
+        {/* Asistente Virtual */}
+        <VirtualAssistant />
+        {/* Notificaciones Fluídas */}
+        <Toaster position="top-right" richColors closeButton />
       </div>
     </div>
   );

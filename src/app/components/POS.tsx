@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Car } from 'lucide-react';
+import { Car, Check, Trash2, ShieldCheck, RotateCcw } from 'lucide-react';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
+import { toast } from 'sonner';
 
 
 declare global {
@@ -52,6 +53,26 @@ interface Venta {
   modelo?: string;
   tamano?: string;
   imageUrl?: string;
+}
+
+interface VentaEmpleado {
+  id: string;
+  fecha: string;
+  hora: string;
+  empleado: string;
+  productos: ProductoVenta[];
+  subtotal: number;
+  descuentoPorcentaje: number;
+  total: number;
+}
+
+interface AuditLog {
+  id: string;
+  fecha: string;
+  accion: 'EDICION' | 'ELIMINACION';
+  tipo: 'VENTA_LAVADO' | 'CONSUMO_EMPLEADO';
+  detalles: string;
+  registroId: string;
 }
 
 interface VentaAnulada extends Venta {
@@ -230,7 +251,7 @@ const DEFAULT_SERVICIOS_LAVADO: ServicioLavado[] = [
   { nombre: "Detailing Completo", precio: 80000 }
 ];
 
-export function POS({ prices = [] }: { prices?: Price[] }) {
+export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmin?: boolean }) {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<Venta[]>([]);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
@@ -238,6 +259,13 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
   const [productosCosmeticos, setProductosCosmeticos] = useState<ProductoVenta[]>([]);
   const [ventasAnuladas, setVentasAnuladas] = useState<VentaAnulada[]>([]);
   const [washCounts, setWashCounts] = useState<Record<string, number>>({});
+
+  // Estados nuevos para Consumo Empleados
+  const [historialConsumosEmpleados, setHistorialConsumosEmpleados] = useState<VentaEmpleado[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [editingConsumoId, setEditingConsumoId] = useState<string | null>(null);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editingLogText, setEditingLogText] = useState('');
 
   // Precios editables
   const [cosmeticosData, setCosmeticosData] = useState<Cosmetico[]>([]);
@@ -257,6 +285,9 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
   const [descuento, setDescuento] = useState(0);
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [metodosPago, setMetodosPago] = useState<string[]>(['Efectivo', 'Transferencia', 'Billetera Virtual', 'Cupón de descuento']);
+  const [showNewMetodoPagoDialog, setShowNewMetodoPagoDialog] = useState(false);
+  const [newMetodoPagoName, setNewMetodoPagoName] = useState('');
   const [numeroCliente, setNumeroCliente] = useState('');
   const [estadia, setEstadia] = useState(false);
   const [horasEstadia, setHorasEstadia] = useState(1);
@@ -316,6 +347,15 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     if (savedAnuladas) setVentasAnuladas(JSON.parse(savedAnuladas));
     if (savedListaEmpleados) setListaEmpleados(JSON.parse(savedListaEmpleados));
     if (savedConsumosEmpleados) setConsumosEmpleados(JSON.parse(savedConsumosEmpleados));
+    
+    const savedHistorialConsumos = localStorage.getItem('gowash-historial-consumos-empleados');
+    const savedAuditLogs = localStorage.getItem('gowash-audit-logs');
+    const savedMetodosPago = localStorage.getItem('gowash-metodos-pago-ventas');
+
+    if (savedHistorialConsumos) setHistorialConsumosEmpleados(JSON.parse(savedHistorialConsumos));
+    if (savedAuditLogs) setAuditLogs(JSON.parse(savedAuditLogs));
+    if (savedMetodosPago) setMetodosPago(JSON.parse(savedMetodosPago));
+    
     if (savedOrdenesAbiertas) setOrdenesAbiertas(JSON.parse(savedOrdenesAbiertas));
     if (savedWashCounts) setWashCounts(JSON.parse(savedWashCounts));
     if (savedCosmeticos) {
@@ -391,6 +431,14 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     localStorage.setItem('gowash-consumos-empleados', JSON.stringify(consumosEmpleados));
   }, [consumosEmpleados]);
 
+  useEffect(() => {
+    localStorage.setItem('gowash-historial-consumos-empleados', JSON.stringify(historialConsumosEmpleados));
+  }, [historialConsumosEmpleados]);
+
+  useEffect(() => {
+    localStorage.setItem('gowash-audit-logs', JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
   // Recalcular descuento dinámicamente si hay porcentaje y cambian los items o alcances
   useEffect(() => {
     if (descuentoPorcentaje > 0) {
@@ -444,26 +492,25 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     if (porcentaje === 0) setDescuento(0);
   };
 
-  const registrarVenta = () => {
-    if (!fecha || !hora || !empleado) {
-      alert('Por favor completa Fecha, Hora y Empleado');
+  const agregarMetodoPago = () => {
+    if (!newMetodoPagoName.trim()) return;
+    if (metodosPago.includes(newMetodoPagoName.trim())) {
+      toast.warning('El método de pago ya existe.');
       return;
     }
+    const nuevosMetodos = [...metodosPago, newMetodoPagoName.trim()];
+    setMetodosPago(nuevosMetodos);
+    localStorage.setItem('gowash-metodos-pago-ventas', JSON.stringify(nuevosMetodos));
+    setMetodoPago(newMetodoPagoName.trim());
+    setNewMetodoPagoName('');
+    setShowNewMetodoPagoDialog(false);
+    toast.success('Método de pago agregado exitosamente.');
+  };
 
-    const totalBar = calcularTotalBar();
-    const totalCosmeticos = calcularTotalCosmeticos();
-    const total = calcularTotal();
-
-    let newWashCounts = { ...washCounts };
-    const currentCount = washCounts[patente] || 0;
-    const esGratis = patente && currentCount % 6 === 5;
-
-    if (patente && (lavado > 0 || esGratis)) {
-      newWashCounts[patente] = currentCount + 1;
-    }
-
-    const nuevaVenta: Venta = {
-      id: Date.now().toString(),
+  const registrarVenta = (ordenDirecta?: Venta) => {
+    // Si viene una ordenDirecta, usamos sus datos. Si no, usamos el estado actual.
+    const vBase = ordenDirecta || {
+      id: editingVentaId || Date.now().toString(),
       fecha,
       hora,
       horaEntrada,
@@ -472,34 +519,66 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
       patente,
       cliente,
       numeroCliente,
-      lavado: esGratis ? 0 : lavado,
-      bar: totalBar,
-      cosmeticos: totalCosmeticos,
-      total: esGratis ? (totalBar + totalCosmeticos) : total,
+      lavado,
+      bar: calcularTotalBar(),
+      cosmeticos: calcularTotalCosmeticos(),
+      total: calcularTotal(),
       metodoPago,
       estadia: puedeEstadia() ? estadia : false,
       horasEstadia: puedeEstadia() && estadia ? horasEstadia : undefined,
       precioEstadia: puedeEstadia() && estadia ? precioEstadia : undefined,
-      descuento: esGratis ? 0 : descuento,
+      descuento,
       productosBar: [...productosBar],
       productosCosmeticos: [...productosCosmeticos],
-      servicio: esGratis ? `GRATIS - ${servicio}` : servicio,
+      servicio,
       marca: vehiculoSeleccionado?.brand,
       modelo: vehiculoSeleccionado?.model,
       tamano: vehiculoSeleccionado?.size,
       imageUrl: vehiculoSeleccionado?.imageUrl
     };
 
+    // Fallback de emergencia
+    if (!vBase.empleado) {
+      vBase.empleado = 'Sin Empleado';
+    }
+
+    const faltantes = [];
+    if (!vBase.fecha) faltantes.push("Fecha");
+    if (!vBase.hora) faltantes.push("Hora");
+
+    if (faltantes.length > 0) {
+      toast.error('Datos incompletos', { description: `Falta completar: ${faltantes.join(', ')}` });
+      setTimeout(() => document.getElementById('patente')?.focus(), 100);
+      return;
+    }
+
+    if (!vBase.patente && !vBase.cliente) {
+      toast.warning('Identificación requerida', { description: 'Ingresa Patente o Cliente para registrar la venta.' });
+      setTimeout(() => document.getElementById('patente')?.focus(), 100);
+      return;
+    }
+
+    const currentCount = washCounts[vBase.patente] || 0;
+    const esGratis = vBase.patente && currentCount % 6 === 5;
+
+    const nuevaVenta: Venta = {
+      ...vBase,
+      lavado: esGratis ? 0 : vBase.lavado,
+      total: esGratis ? (vBase.bar + vBase.cosmeticos) : vBase.total,
+      servicio: esGratis ? `GRATIS - ${vBase.servicio}` : vBase.servicio,
+      descuento: esGratis ? 0 : vBase.descuento
+    };
+
     // Actualizar stock
     const newBarData = [...barProductsData];
-    productosBar.forEach(p => {
+    nuevaVenta.productosBar.forEach(p => {
       const prod = newBarData.find(bp => bp.name === p.nombre);
       if (prod) prod.stock = (prod.stock || 0) - 1;
     });
     setBarProductsData(newBarData);
 
     const newCosmeticosData = [...cosmeticosData];
-    productosCosmeticos.forEach(p => {
+    nuevaVenta.productosCosmeticos.forEach(p => {
       const prod = newCosmeticosData.find(c => {
          const displayName = c.contenido ? `${c.nombre} (${c.contenido})` : c.nombre;
          return displayName === p.nombre;
@@ -508,42 +587,55 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     });
     setCosmeticosData(newCosmeticosData);
 
-    if (activeOrderId) {
-      setOrdenesAbiertas(ordenesAbiertas.filter(o => o.id !== activeOrderId));
-    }
+    // Si es una orden que estaba abierta, la quitamos
+    const idABuscar = ordenDirecta ? ordenDirecta.id : (activeOrderId || editingVentaId);
+    setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
 
     if (editingVentaId) {
-      // Es una actualización
+      const log: AuditLog = {
+        id: Date.now().toString(),
+        fecha: new Date().toLocaleString('es-AR'),
+        accion: 'EDICION',
+        tipo: 'VENTA_LAVADO',
+        detalles: `Venta editada (Patente: ${nuevaVenta.patente || 'S/P'}). Nuevo total: ${formatMoney(nuevaVenta.total)}`,
+        registroId: editingVentaId
+      };
+      setAuditLogs(prev => [log, ...prev]);
+      
       const nuevasVentas = ventas.map(v => v.id === editingVentaId ? nuevaVenta : v);
       setVentas(nuevasVentas);
-      localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
-      
-      // Sincronizar actualización con Google Sheets
       googleSheetsSync.syncUpdateVenta(nuevaVenta);
     } else {
-      // Es una venta nueva
       const nuevasVentas = [nuevaVenta, ...ventas];
       setVentas(nuevasVentas);
-      localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
 
-      // Actualizar contador de lavados (solo en ventas nuevas)
-      if (patente) {
-        const currentCount = washCounts[patente] || 0;
-        const newCounts = { ...washCounts, [patente]: currentCount + 1 };
+      if (nuevaVenta.patente) {
+        const newCounts = { ...washCounts, [nuevaVenta.patente]: currentCount + 1 };
         setWashCounts(newCounts);
-        localStorage.setItem('gowash-washCounts', JSON.stringify(newCounts));
       }
 
-      // Sincronizar con Google Sheets
       googleSheetsSync.syncVenta(nuevaVenta);
     }
 
     limpiarFormulario();
   };
 
+  const cobrarOrdenEnProgreso = (orden: Venta) => {
+    const ordenCobrada = {
+      ...orden,
+      fecha: orden.fecha || fecha,
+      hora: orden.hora || hora,
+      empleado: orden.empleado || empleado || 'Sin Empleado',
+      horaSalida: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+      total: orden.total || (orden.lavado + orden.bar + orden.cosmeticos),
+    };
+    registrarVenta(ordenCobrada);
+  };
+
   const guardarOrdenEnProgreso = () => {
     if (!patente && !cliente) {
-      alert('Por favor ingresa al menos la Patente o el nombre del Cliente para guardar la orden.');
+      toast.warning('Faltan datos', { description: 'Ingresa Patente o Cliente para guardar la orden.' });
+      setTimeout(() => document.getElementById('patente')?.focus(), 100);
       return;
     }
 
@@ -691,7 +783,7 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
 
   const confirmarAnulacion = () => {
     if (!motivoAnulacion) {
-      alert('Debe ingresar un motivo para la anulación');
+      toast.error('Motivo requerido', { description: 'Debe ingresar un motivo para la anulación' });
       return;
     }
 
@@ -717,9 +809,18 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
         motivoAnulacion,
         fechaAnulacion: new Date().toLocaleString('es-AR')
       };
-      setVentasAnuladas([...ventasAnuladas, anulada]);
       
-      // Sincronizar anulación con Google Sheets
+      const log: AuditLog = {
+        id: Date.now().toString(),
+        fecha: new Date().toLocaleString('es-AR'),
+        accion: 'ELIMINACION',
+        tipo: 'VENTA_LAVADO',
+        detalles: `Venta ANULADA (Patente: ${item.patente || 'S/P'}). Motivo: ${motivoAnulacion}`,
+        registroId: item.id
+      };
+      setAuditLogs(prev => [log, ...prev]);
+      
+      setVentasAnuladas([...ventasAnuladas, anulada]);
       googleSheetsSync.syncAnulacion(anulada);
     }
 
@@ -731,8 +832,8 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
   // Funciones para Consumo de Empleados
   const agregarEmpleado = () => {
     if (!nuevoEmpleadoNombre) return;
-    if (listaEmpleados.includes(nuevoEmpleadoNombre)) {
-      alert('El empleado ya existe');
+    if (listaEmpleados.includes(nuevoEmpleadoNombre.trim())) {
+      toast.error('Error', { description: 'El empleado ya existe' });
       return;
     }
     setListaEmpleados([...listaEmpleados, nuevoEmpleadoNombre]);
@@ -767,11 +868,95 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
   };
 
   const liquidarConsumoEmpleado = (nombre: string) => {
+    const actuales = consumosEmpleados[nombre] || [];
+    if (actuales.length === 0) return;
+
+    const subtotal = actuales.reduce((sum, p) => sum + p.precio, 0);
+    const total = subtotal * (1 - descuentoEmpleadoConsumo / 100);
+
+    const nuevaLiquidacion: VentaEmpleado = {
+      id: editingConsumoId || Date.now().toString(),
+      fecha: new Date().toLocaleDateString('es-AR'),
+      hora: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+      empleado: nombre,
+      productos: [...actuales],
+      subtotal,
+      descuentoPorcentaje: descuentoEmpleadoConsumo,
+      total
+    };
+
+    if (editingConsumoId) {
+      const log: AuditLog = {
+        id: Date.now().toString(),
+        fecha: new Date().toLocaleString('es-AR'),
+        accion: 'EDICION',
+        tipo: 'CONSUMO_EMPLEADO',
+        detalles: `Liquidación de ${nombre} editada. Nuevo total: ${formatMoney(total)}`,
+        registroId: editingConsumoId
+      };
+      setAuditLogs([log, ...auditLogs]);
+      setHistorialConsumosEmpleados(historialConsumosEmpleados.map(h => h.id === editingConsumoId ? nuevaLiquidacion : h));
+      setEditingConsumoId(null);
+    } else {
+      setHistorialConsumosEmpleados([nuevaLiquidacion, ...historialConsumosEmpleados]);
+    }
+
     setConsumosEmpleados({
       ...consumosEmpleados,
       [nombre]: []
     });
     setDescuentoEmpleadoConsumo(0);
+  };
+
+  const eliminarHistorialConsumo = (id: string) => {
+    const item = historialConsumosEmpleados.find(h => h.id === id);
+    if (!item) return;
+
+    const log: AuditLog = {
+      id: Date.now().toString(),
+      fecha: new Date().toLocaleString('es-AR'),
+      accion: 'ELIMINACION',
+      tipo: 'CONSUMO_EMPLEADO',
+      detalles: `Liquidación de ${item.empleado} eliminada. Monto: ${formatMoney(item.total)}`,
+      registroId: id
+    };
+    setAuditLogs([log, ...auditLogs]);
+    setHistorialConsumosEmpleados(historialConsumosEmpleados.filter(h => h.id !== id));
+  };
+
+  const cargarConsumoParaEditar = (consumo: VentaEmpleado) => {
+    // 1. Registrar el movimiento en la auditoría antes de quitarlo
+    const log: AuditLog = {
+      id: Date.now().toString(),
+      fecha: new Date().toLocaleString('es-AR'),
+      accion: 'EDICION',
+      tipo: 'CONSUMO_EMPLEADO',
+      detalles: `Registro de ${consumo.empleado} retirado del historial para re-edición. Monto original: ${formatMoney(consumo.total)}`,
+      registroId: consumo.id
+    };
+    setAuditLogs([log, ...auditLogs]);
+
+    // 2. Cargar los datos al panel de edición
+    setEmpleadoConsumoSeleccionado(consumo.empleado);
+    setConsumosEmpleados({
+      ...consumosEmpleados,
+      [consumo.empleado]: [...consumo.productos]
+    });
+    setDescuentoEmpleadoConsumo(consumo.descuentoPorcentaje);
+    setEditingConsumoId(consumo.id);
+
+    // 3. Quitarlo del historial (para que no figure duplicado mientras se edita)
+    setHistorialConsumosEmpleados(historialConsumosEmpleados.filter(h => h.id !== consumo.id));
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const guardarEdicionLog = (id: string) => {
+    setAuditLogs(auditLogs.map(log => 
+      log.id === id ? { ...log, detalles: editingLogText } : log
+    ));
+    setEditingLogId(null);
+    setEditingLogText('');
   };
 
   const eliminarVenta = (id: string) => {
@@ -807,9 +992,9 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
     c.contenido.toLowerCase().includes(searchCosmeticos.toLowerCase())
   );
 
-  const totalEfectivo = ventas.filter(v => v.metodoPago === 'Efectivo').reduce((sum, v) => sum + v.total, 0);
-  const totalTransferencia = ventas.filter(v => v.metodoPago === 'Transferencia').reduce((sum, v) => sum + v.total, 0);
-  const totalBilletera = ventas.filter(v => v.metodoPago === 'Billetera Virtual').reduce((sum, v) => sum + v.total, 0);
+  const totalEfectivo = ventas.filter(v => v.metodoPago.toLowerCase() === 'efectivo').reduce((sum, v) => sum + v.total, 0);
+  const totalTransferencia = ventas.filter(v => v.metodoPago.toLowerCase() === 'transferencia').reduce((sum, v) => sum + v.total, 0);
+  const totalBilletera = ventas.filter(v => v.metodoPago.toLowerCase() !== 'efectivo' && v.metodoPago.toLowerCase() !== 'transferencia').reduce((sum, v) => sum + v.total, 0);
   const totalGeneral = ventas.reduce((sum, v) => sum + v.total, 0);
 
   // Componente de edición de precios
@@ -1140,8 +1325,8 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 space-y-6">
             {/* Datos de Venta */}
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
-          <h3 className="font-bold mb-4 text-blue-900">Datos de Venta</h3>
+        <Card className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
+          <h3 className="font-bold mb-3 text-sm text-blue-900">Datos de Venta</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="fecha">Fecha</Label>
@@ -1289,93 +1474,91 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
           </div>
         </Card>
 
-        {/* Vehículo de Lista de Precios */}
-        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200">
-          <h3 className="font-bold mb-4 text-indigo-900">Seleccionar Vehículo (Lista de Precios)</h3>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="searchVehiculo">Buscar en Lista de Precios</Label>
+        {/* Vehículo y Lavadero Unificado */}
+        <Card className="p-3 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200">
+          <h3 className="font-bold mb-3 text-indigo-900 text-xs uppercase tracking-tight flex items-center gap-1">
+            <span className="w-2 h-2 bg-indigo-500 rounded-full"></span> Lavadero
+          </h3>
+          
+          <div className="space-y-3">
+            {/* Buscador de Vehículo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="searchVehiculo" className="text-[10px] font-bold text-indigo-800 uppercase block">Vehículo / Modelo</Label>
               <Input
                 id="searchVehiculo"
                 value={searchVehiculo}
                 onChange={(e) => setSearchVehiculo(e.target.value)}
                 placeholder="Buscar por marca o modelo..."
-                className="bg-white"
+                className="bg-white h-7 text-xs"
               />
-            </div>
 
-            {filteredPricesList.length > 0 && (
-              <div className="max-h-40 overflow-y-auto border rounded-md bg-white p-2 space-y-1 shadow-inner">
-                {filteredPricesList.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-left hover:bg-indigo-50 h-auto py-2 border-b last:border-0 border-gray-100"
+              {filteredPricesList.length > 0 && (
+                <div className="max-h-32 overflow-y-auto border rounded bg-white p-1.5 space-y-1 shadow-inner custom-scrollbar">
+                  {filteredPricesList.map((p) => (
+                    <Button
+                      key={p.id}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-left hover:bg-indigo-50 h-auto py-1 px-2 border-b last:border-0 border-indigo-50"
+                      onClick={() => {
+                        setVehiculoSeleccionado(p);
+                        setServicio(p.service);
+                        setLavado(p.price);
+                        setSearchVehiculo('');
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {p.imageUrl ? (
+                          <img src={p.imageUrl} alt={p.brand} className="w-8 h-8 object-cover rounded border border-indigo-200" />
+                        ) : (
+                          <div className="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center text-indigo-400">
+                            <Car className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[10px] text-indigo-900 leading-none">{p.brand} {p.model}</span>
+                          <span className="text-[9px] text-indigo-500 font-medium">{p.size} - {p.service} - <span className="font-black text-indigo-700">{formatMoney(p.price)}</span></span>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {vehiculoSeleccionado && (
+                <div className="p-2 bg-indigo-100/50 border border-indigo-200 rounded flex justify-between items-center animate-in fade-in mt-2">
+                  <div className="flex items-center gap-3">
+                    {vehiculoSeleccionado.imageUrl ? (
+                      <img src={vehiculoSeleccionado.imageUrl} alt={vehiculoSeleccionado.brand} className="w-10 h-10 object-cover rounded shadow-sm border border-white" />
+                    ) : (
+                      <div className="w-10 h-10 bg-white/80 rounded flex items-center justify-center text-indigo-400 shadow-sm">
+                        <Car className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-black text-[10px] text-indigo-900 leading-none">{vehiculoSeleccionado.brand} {vehiculoSeleccionado.model}</p>
+                      <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">{vehiculoSeleccionado.service}</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-[9px] font-black uppercase text-indigo-500 hover:text-indigo-700 hover:bg-indigo-200"
                     onClick={() => {
-                      setVehiculoSeleccionado(p);
-                      setServicio(p.service);
-                      setLavado(p.price);
-                      setSearchVehiculo('');
+                      setVehiculoSeleccionado(null);
+                      setServicio('');
+                      setLavado(0);
                     }}
                   >
-                    <div className="flex items-center gap-3">
-                      {p.imageUrl ? (
-                        <img src={p.imageUrl} alt={p.brand} className="w-10 h-10 object-cover rounded shadow-sm border border-indigo-200" />
-                      ) : (
-                        <div className="w-10 h-10 bg-indigo-100 rounded flex items-center justify-center text-indigo-400">
-                          <Car className="w-6 h-6" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="font-bold text-indigo-900">{p.brand} {p.model}</span>
-                        <span className="text-xs text-gray-500">{p.size} - {p.service} - {formatMoney(p.price)}</span>
-                      </div>
-                    </div>
+                    Quitar
                   </Button>
-                ))}
-              </div>
-            )}
-
-            {vehiculoSeleccionado && (
-              <div className="p-3 bg-indigo-100 border border-indigo-200 rounded-lg flex justify-between items-center animate-in fade-in slide-in-from-top-1">
-                <div className="flex items-center gap-4">
-                  {vehiculoSeleccionado.imageUrl ? (
-                    <img src={vehiculoSeleccionado.imageUrl} alt={vehiculoSeleccionado.brand} className="w-16 h-16 object-cover rounded-lg shadow-md border-2 border-white" />
-                  ) : (
-                    <div className="w-16 h-16 bg-white/50 rounded-lg flex items-center justify-center text-indigo-400">
-                      <Car className="w-8 h-8" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Vehículo Seleccionado</p>
-                    <p className="font-bold text-indigo-900">{vehiculoSeleccionado.brand} {vehiculoSeleccionado.model}</p>
-                    <p className="text-sm text-indigo-700">{vehiculoSeleccionado.size} - {vehiculoSeleccionado.service}</p>
-                  </div>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-indigo-400 hover:text-indigo-600"
-                  onClick={() => {
-                    setVehiculoSeleccionado(null);
-                    setServicio('');
-                    setLavado(0);
-                  }}
-                >
-                  Cambiar
-                </Button>
-              </div>
-            )}
-          </div>
-        </Card>
+              )}
+            </div>
 
-        {/* Lavado */}
-        <Card className="p-6 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200">
-          <h3 className="font-bold mb-4 text-cyan-900">Lavado</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="servicioSelect">Servicio Predefinido</Label>
+            {/* Selector de Servicio */}
+            <div className="pt-2 border-t border-indigo-200/50">
+              <Label htmlFor="servicioSelect" className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Tipo de Lavado / Servicio</Label>
               <Select
                 value={servicio}
                 onValueChange={(val) => {
@@ -1386,62 +1569,52 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
                   }
                 }}
               >
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Seleccionar servicio" />
+                <SelectTrigger className="bg-white h-8 text-xs font-bold border-indigo-200">
+                  <SelectValue placeholder="Seleccionar servicio..." />
                 </SelectTrigger>
                 <SelectContent>
                   {serviciosLavado.map((s, idx) => (
-                    <SelectItem key={idx} value={s.nombre}>
-                      {s.nombre} - {formatMoney(s.precio)}
+                    <SelectItem key={idx} value={s.nombre} className="text-xs font-bold text-slate-800">
+                      {s.nombre} <span className="font-black text-indigo-700 ml-1">({formatMoney(s.precio)})</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="lavado">Precio Lavado (o personalizado)</Label>
-              <Input
-                id="lavado"
-                type="number"
-                value={lavado || ''}
-                onChange={(e) => setLavado(parseFloat(e.target.value) || 0)}
-                placeholder="0"
-                className="bg-white"
-              />
-            </div>
           </div>
         </Card>
 
         {/* Bar */}
-        <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
-          <h3 className="font-bold mb-4 text-amber-900">Bar / Cafetería</h3>
-          <div className="mb-4">
-            <Label htmlFor="searchBar">Buscar Producto</Label>
+        <Card className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
+          <h3 className="font-bold mb-2 text-amber-900 text-xs uppercase tracking-tight flex items-center gap-1">
+            <span className="w-2 h-2 bg-amber-500 rounded-full"></span> Bar / Cafetería
+          </h3>
+          <div className="mb-2">
             <Input
               id="searchBar"
               value={searchBar}
               onChange={(e) => setSearchBar(e.target.value)}
-              placeholder="Buscar..."
-              className="bg-white mb-4"
+              placeholder="Buscar producto..."
+              className="bg-white mb-2 h-7 text-xs"
             />
 
-            <div className="max-h-60 overflow-y-auto space-y-2 bg-white p-4 rounded-lg border">
+            <div className="max-h-32 overflow-y-auto space-y-1.5 bg-white p-2 rounded border custom-scrollbar">
               {Object.entries(productosBarPorGrupo).map(([grupo, productos]) => (
                 <div key={grupo}>
-                  <h4 className="font-semibold text-amber-800 mb-2">{grupo}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                  <h4 className="font-bold text-[10px] text-amber-800 uppercase tracking-widest mb-1">{grupo}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mb-2">
                     {productos.map((p, idx) => (
                       <Button
                         key={`${p.name}-${idx}`}
                         variant="outline"
                         size="sm"
                         onClick={() => agregarProductoBar(p.name, p.value)}
-                        className="justify-between text-left h-auto py-2"
+                        className="justify-between text-left h-auto py-1.5 px-2 border-amber-100 hover:border-amber-300 hover:bg-amber-50"
                       >
-                        <span className="whitespace-normal flex-1">{p.name}</span>
+                        <span className="text-xs whitespace-normal flex-1 font-bold text-gray-800">{p.name}</span>
                         <div className="flex flex-col items-end ml-2">
-                          <span className="font-semibold">{formatMoney(p.value)}</span>
-                          <span className={`text-xs font-bold ${(p.stock || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <span className="font-black text-xs text-amber-700">{formatMoney(p.value)}</span>
+                          <span className={`text-[9px] font-bold ${(p.stock || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             Stock: {p.stock || 0}
                           </span>
                         </div>
@@ -1454,23 +1627,24 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
           </div>
 
           {productosBar.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-semibold mb-2">Productos Seleccionados:</h4>
-              <ul className="space-y-2">
+            <div className="mt-2 pt-2 border-t border-amber-200/50">
+              <h4 className="font-bold text-[10px] mb-1.5 text-amber-800 uppercase">Seleccionados:</h4>
+              <ul className="space-y-1.5">
                 {productosBar.map((p, idx) => (
-                  <li key={idx} className="flex justify-between items-center bg-white p-3 rounded border">
-                    <span>{p.nombre} - {formatMoney(p.precio)}</span>
+                  <li key={idx} className="flex justify-between items-center bg-white/60 p-2 rounded border border-amber-100/50">
+                    <span className="text-xs font-bold text-gray-800">{p.nombre} - <span className="text-amber-700">{formatMoney(p.precio)}</span></span>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
+                      className="h-6 px-2 text-[10px] bg-red-100 text-red-600 hover:bg-red-200 uppercase font-black"
                       onClick={() => eliminarProductoBar(idx)}
                     >
-                      Eliminar
+                      X
                     </Button>
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 text-right font-bold text-lg text-amber-900">
+              <div className="mt-1.5 text-right font-black text-sm text-amber-900">
                 Total Bar: {formatMoney(calcularTotalBar())}
               </div>
             </div>
@@ -1478,19 +1652,20 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
         </Card>
 
         {/* Cosméticos */}
-        <Card className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200">
-          <h3 className="font-bold mb-4 text-teal-900">Cosméticos del Automotor</h3>
-          <div className="mb-4">
-            <Label htmlFor="searchCosmeticos">Buscar Cosmético</Label>
+        <Card className="p-3 bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200">
+          <h3 className="font-bold mb-2 text-teal-900 text-xs uppercase tracking-tight flex items-center gap-1">
+            <span className="w-2 h-2 bg-teal-500 rounded-full"></span> Cosméticos
+          </h3>
+          <div className="mb-2">
             <Input
               id="searchCosmeticos"
               value={searchCosmeticos}
               onChange={(e) => setSearchCosmeticos(e.target.value)}
-              placeholder="Buscar..."
-              className="bg-white mb-4"
+              placeholder="Buscar cosmético..."
+              className="bg-white mb-2 h-7 text-xs"
             />
 
-            <div className="max-h-60 overflow-y-auto space-y-1 bg-white p-4 rounded-lg border">
+            <div className="max-h-32 overflow-y-auto space-y-1 bg-white p-2 rounded border custom-scrollbar">
               {cosmeticosFiltrados.map((c, idx) => {
                 const displayName = c.contenido ? `${c.nombre} (${c.contenido})` : c.nombre;
                 return (
@@ -1499,12 +1674,12 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
                     variant="outline"
                     size="sm"
                     onClick={() => agregarCosmetico(displayName, c.pvp)}
-                    className="w-full justify-between text-left h-auto py-2"
+                    className="w-full justify-between text-left h-auto py-1.5 px-2 border-teal-100 hover:border-teal-300 hover:bg-teal-50"
                   >
-                    <span className="text-sm whitespace-normal flex-1">{displayName}</span>
+                    <span className="text-xs whitespace-normal flex-1 font-bold text-gray-800">{displayName}</span>
                     <div className="flex flex-col items-end ml-2">
-                      <span className="font-semibold text-sm">{formatMoney(c.pvp)}</span>
-                      <span className={`text-xs font-bold ${(c.stock || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className="font-black text-xs text-teal-700">{formatMoney(c.pvp)}</span>
+                      <span className={`text-[9px] font-bold ${(c.stock || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         Stock: {c.stock || 0}
                       </span>
                     </div>
@@ -1515,156 +1690,193 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
           </div>
 
           {productosCosmeticos.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-semibold mb-2">Cosméticos Seleccionados:</h4>
-              <ul className="space-y-2">
+            <div className="mt-2 pt-2 border-t border-teal-200/50">
+              <h4 className="font-bold text-[10px] mb-1.5 text-teal-800 uppercase">Seleccionados:</h4>
+              <ul className="space-y-1.5">
                 {productosCosmeticos.map((p, idx) => (
-                  <li key={idx} className="flex justify-between items-center bg-white p-3 rounded border">
-                    <span className="text-sm">{p.nombre} - {formatMoney(p.precio)}</span>
+                  <li key={idx} className="flex justify-between items-center bg-white/60 p-2 rounded border border-teal-100/50">
+                    <span className="text-xs font-bold text-gray-800">{p.nombre} - <span className="text-teal-700">{formatMoney(p.precio)}</span></span>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
+                      className="h-6 px-2 text-[10px] bg-red-100 text-red-600 hover:bg-red-200 uppercase font-black"
                       onClick={() => eliminarCosmetico(idx)}
                     >
-                      Eliminar
+                      X
                     </Button>
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 text-right font-bold text-lg text-teal-900">
+              <div className="mt-1.5 text-right font-black text-sm text-teal-900">
                 Total Cosméticos: {formatMoney(calcularTotalCosmeticos())}
               </div>
             </div>
           )}
         </Card>
 
-        {/* Descuento */}
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
-          <h3 className="font-bold mb-4 text-purple-900">Descuento</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="descuentoPorcentaje">Descuento (%)</Label>
-              <Select
-                value={descuentoPorcentaje.toString()}
-                onValueChange={(value) => actualizarDescuentoPorcentaje(parseFloat(value))}
-              >
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Seleccionar descuento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">0%</SelectItem>
-                  <SelectItem value="5">5%</SelectItem>
-                  <SelectItem value="10">10%</SelectItem>
-                  <SelectItem value="15">15%</SelectItem>
-                  <SelectItem value="20">20%</SelectItem>
-                  <SelectItem value="25">25%</SelectItem>
-                  <SelectItem value="50">50%</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Liquidación y Pago */}
+        <Card className="p-4 bg-slate-50 border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Sección Descuento */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-xs uppercase tracking-tight text-purple-900 flex items-center gap-2">
+                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                Descuento
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="descuentoPorcentaje" className="text-[10px]">Porcentaje (%)</Label>
+                  <Select
+                    value={descuentoPorcentaje.toString()}
+                    onValueChange={(value) => actualizarDescuentoPorcentaje(parseFloat(value))}
+                  >
+                    <SelectTrigger className="bg-white h-8 text-xs">
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="5">5%</SelectItem>
+                      <SelectItem value="10">10%</SelectItem>
+                      <SelectItem value="15">15%</SelectItem>
+                      <SelectItem value="20">20%</SelectItem>
+                      <SelectItem value="25">25%</SelectItem>
+                      <SelectItem value="50">50%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="descuento" className="text-[10px]">Monto Fijo</Label>
+                  <Input
+                    id="descuento"
+                    type="number"
+                    value={descuento || ''}
+                    onChange={(e) => {
+                      setDescuento(parseFloat(e.target.value) || 0);
+                      setDescuentoPorcentaje(0);
+                    }}
+                    className="bg-white h-8 text-xs"
+                    placeholder="$0"
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <Label className="mb-2 block text-[10px] font-bold text-purple-800 uppercase">Aplicar a:</Label>
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
+                    <input type="checkbox" checked={descLavadero} onChange={(e) => setDescLavadero(e.target.checked)} className="text-purple-600 rounded w-3.5 h-3.5" />
+                    <span className="text-xs font-bold text-gray-800">Lavadero</span>
+                  </label>
+                  <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
+                    <input type="checkbox" checked={descBar} onChange={(e) => setDescBar(e.target.checked)} className="text-purple-600 rounded w-3.5 h-3.5" />
+                    <span className="text-xs font-bold text-gray-800">Bar</span>
+                  </label>
+                  <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
+                    <input type="checkbox" checked={descCosmetica} onChange={(e) => setDescCosmetica(e.target.checked)} className="text-purple-600 rounded w-3.5 h-3.5" />
+                    <span className="text-xs font-bold text-gray-800">Cosmética</span>
+                  </label>
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="descuento">Monto Descuento Manual</Label>
-              <Input
-                id="descuento"
-                type="number"
-                value={descuento || ''}
-                onChange={(e) => {
-                  setDescuento(parseFloat(e.target.value) || 0);
-                  setDescuentoPorcentaje(0);
-                }}
-                className="bg-white"
-              />
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-purple-200">
-            <Label className="mb-3 block text-sm font-semibold text-purple-800">Aplicar descuento a:</Label>
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-purple-100 shadow-sm hover:bg-purple-50 transition-colors">
-                <input type="checkbox" checked={descLavadero} onChange={(e) => setDescLavadero(e.target.checked)} className="text-purple-600 rounded w-4 h-4 focus:ring-purple-500" />
-                <span className="text-sm font-medium text-gray-700">Lavadero</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-purple-100 shadow-sm hover:bg-purple-50 transition-colors">
-                <input type="checkbox" checked={descBar} onChange={(e) => setDescBar(e.target.checked)} className="text-purple-600 rounded w-4 h-4 focus:ring-purple-500" />
-                <span className="text-sm font-medium text-gray-700">Bar</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-purple-100 shadow-sm hover:bg-purple-50 transition-colors">
-                <input type="checkbox" checked={descCosmetica} onChange={(e) => setDescCosmetica(e.target.checked)} className="text-purple-600 rounded w-4 h-4 focus:ring-purple-500" />
-                <span className="text-sm font-medium text-gray-700">Cosmética</span>
-              </label>
-            </div>
-          </div>
-        </Card>
 
-        {/* Pago */}
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
-          <h3 className="font-bold mb-4 text-green-900">Método de Pago</h3>
+            {/* Sección Pago */}
+            <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-slate-200 pt-4 lg:pt-0 lg:pl-6">
+              <h3 className="font-bold text-xs uppercase tracking-tight text-green-900 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Método de Pago
+              </h3>
+              <div className="max-w-xs">
+                <Label htmlFor="metodoPago" className="text-[10px] block mb-1">Seleccionar Método de Pago General</Label>
+                <Select 
+                  value={metodoPago} 
+                  onValueChange={(val) => {
+                    if (val === 'NEW_METODO_PAGO') {
+                      setShowNewMetodoPagoDialog(true);
+                    } else {
+                      setMetodoPago(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-white h-8 text-xs font-bold text-green-800 border-green-200">
+                    <SelectValue placeholder="Seleccionar método" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {metodosPago.map(m => (
+                      <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
+                    ))}
+                    <SelectItem value="NEW_METODO_PAGO" className="text-blue-600 font-bold border-t">
+                      + Nuevo Método
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Total Informativo Rápido */}
+              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
+                <p className="text-[10px] font-bold text-green-800 uppercase tracking-wider mb-1">Monto a Cobrar</p>
+                <p className="text-2xl font-black text-green-600 leading-none">{formatMoney(calcularTotal())}</p>
+              </div>
+            </div>
 
-          <div className="max-w-md">
-            <Label htmlFor="metodoPago">Seleccionar Método de Pago General</Label>
-            <Select value={metodoPago} onValueChange={setMetodoPago}>
-              <SelectTrigger className="bg-white mt-2">
-                <SelectValue placeholder="Seleccionar método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Efectivo">Efectivo</SelectItem>
-                <SelectItem value="Transferencia">Transferencia</SelectItem>
-                <SelectItem value="Billetera Virtual">Billetera Virtual</SelectItem>
-                <SelectItem value="Cupón de descuento">Cupón de descuento</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </Card>
 
         {/* Total y Acciones */}
-        <Card className="p-6 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300">
-          <div className="text-right mb-6">
-            <div className="text-3xl font-bold text-green-700">
-              TOTAL: {formatMoney(calcularTotal())}
-            </div>
-            {descuento > 0 && (
-              <div className="text-sm text-gray-600">
-                Subtotal: {formatMoney(calcularSubtotal())} - Descuento: {formatMoney(descuento)}
+        <Card className="p-3 bg-gradient-to-r from-green-100 to-emerald-100 border border-green-300 shadow-sm">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            
+            <div className="text-center md:text-left">
+              <div className="text-xl md:text-2xl font-black text-green-800 leading-none">
+                TOTAL: {formatMoney(calcularTotal())}
               </div>
-            )}
-          </div>
+              {descuento > 0 && (
+                <div className="text-[10px] font-bold text-green-700 mt-1 uppercase tracking-tight">
+                  Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)}
+                </div>
+              )}
+            </div>
 
-          <div className="flex gap-4">
-            <Button
-              onClick={registrarVenta}
-              className="flex-2 bg-green-600 hover:bg-green-700 text-white"
-              size="lg"
-            >
-              Registrar Venta
-            </Button>
-            <Button
-              onClick={guardarOrdenEnProgreso}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-              size="lg"
-            >
-              En Progreso
-            </Button>
-            <Button
-              onClick={limpiarFormulario}
-              variant="outline"
-              className="flex-1"
-              size="lg"
-            >
-              Limpiar
-            </Button>
+            <div className="flex gap-2 w-full md:w-auto">
+              {editingVentaId && (
+                <Button
+                  onClick={() => registrarVenta()}
+                  className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-xs font-bold uppercase tracking-tight shadow-sm"
+                  size="sm"
+                >
+                  Guardar
+                </Button>
+              )}
+              <Button
+                onClick={guardarOrdenEnProgreso}
+                className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs font-bold uppercase tracking-tight shadow-sm"
+                size="sm"
+              >
+                En Progreso
+              </Button>
+              <Button
+                onClick={limpiarFormulario}
+                variant="outline"
+                className="flex-none h-8 px-3 text-xs font-bold uppercase tracking-tight text-slate-600 border-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                size="sm"
+              >
+                Limpiar
+              </Button>
+            </div>
+            
           </div>
         </Card>
           </div>
 
           {/* Panel Lateral de Órdenes Abiertas */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="sticky top-6">
-              <h3 className="font-bold text-xl text-white mb-4 flex items-center gap-2">
-                <span className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></span>
+          <div className="lg:col-span-1 space-y-3">
+            <div className="sticky top-4">
+              <h3 className="font-bold text-sm text-white mb-3 flex items-center gap-2 uppercase tracking-tighter">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                 Vehículos en Lavadero
               </h3>
               {ordenesAbiertas.length === 0 ? (
-                <Card className="p-6 text-center text-gray-500 border-dashed border-2 bg-gray-50/50">
-                  <p className="text-sm">No hay vehículos siendo atendidos</p>
+                <Card className="p-4 text-center text-gray-500 border-dashed border-2 bg-gray-50/50">
+                  <p className="text-[10px]">No hay vehículos en lavadero</p>
                 </Card>
               ) : (
                 <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
@@ -1693,10 +1905,17 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
                         <Button
                           variant={activeOrderId === orden.id ? "outline" : "default"}
                           size="sm"
-                          className={`flex-1 h-8 text-xs ${activeOrderId === orden.id ? 'border-green-500 text-green-700 hover:bg-green-50' : 'bg-blue-600 hover:bg-blue-700'}`}
+                          className={`flex-1 h-8 text-[10px] ${activeOrderId === orden.id ? 'border-blue-500 text-blue-700 hover:bg-blue-50' : 'bg-blue-600 hover:bg-blue-700'}`}
                           onClick={() => cargarOrden(orden)}
                         >
                           {activeOrderId === orden.id ? 'Editando...' : 'Retomar'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 h-8 text-[10px] bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => registrarVenta(orden)}
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Cobrar
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -1936,15 +2155,18 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar esta venta?</AlertDialogTitle>
+                                <AlertDialogTitle>¿Está seguro de eliminar esta venta?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción no se puede deshacer.
+                                  Si confirma, se le solicitará el motivo de la anulación para el registro de auditoría.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => eliminarVenta(venta.id)}>
-                                  Eliminar
+                                <AlertDialogAction 
+                                  onClick={() => eliminarVenta(venta.id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  Confirmar y Proceder
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -1959,50 +2181,92 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
           )}
         </Card>
 
-        {/* Resumen de Caja */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300">
-            <h3 className="font-bold text-green-900 mb-1 text-sm">Total Efectivo</h3>
-            <p className="text-2xl font-bold text-green-700">{formatMoney(totalEfectivo)}</p>
+        {/* Auditoría de Ventas (Solo Admin) Compacta */}
+        {isAdmin && (
+          <Card className="p-3 border border-indigo-200 bg-indigo-50/20 mt-3">
+            <h3 className="font-bold text-xs mb-2 text-indigo-900 flex items-center gap-2 uppercase tracking-tighter">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              Cambios y Registro
+            </h3>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {auditLogs.filter(l => l.tipo === 'VENTA_LAVADO').length === 0 ? (
+                <p className="text-slate-400 text-center py-2 italic text-[10px]">Sin modificaciones hoy</p>
+              ) : (
+                auditLogs.filter(l => l.tipo === 'VENTA_LAVADO').map((log) => (
+                  <div key={log.id} className="bg-white p-2 rounded border border-indigo-100 flex justify-between items-center shadow-sm">
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className={`px-1.5 py-0 rounded text-[8px] font-black ${log.accion === 'ELIMINACION' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {log.accion}
+                      </span>
+                      <div className="flex-1">
+                        {editingLogId === log.id ? (
+                          <div className="flex gap-1">
+                            <Input 
+                              value={editingLogText} 
+                              onChange={(e) => setEditingLogText(e.target.value)}
+                              className="h-6 text-[10px] py-0"
+                            />
+                            <Button size="sm" className="h-6 px-1.5 bg-green-600" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-bold text-slate-800">{log.detalles}</p>
+                            <p className="text-[9px] text-slate-400">{log.fecha}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </Card>
-          <Card className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300">
-            <h3 className="font-bold text-blue-900 mb-1 text-sm">Total Transferencia</h3>
-            <p className="text-2xl font-bold text-blue-700">{formatMoney(totalTransferencia)}</p>
+        )}
+
+        {/* Resumen de Caja Ultra-Compacto */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+          <Card className="p-2 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
+            <h3 className="font-bold text-green-900 mb-0.5 text-[10px] uppercase">Efectivo</h3>
+            <p className="text-lg font-black text-green-700">{formatMoney(totalEfectivo)}</p>
           </Card>
-          <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300">
-            <h3 className="font-bold text-purple-900 mb-1 text-sm">Total Billetera Virtual</h3>
-            <p className="text-2xl font-bold text-purple-700">{formatMoney(totalBilletera)}</p>
+          <Card className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
+            <h3 className="font-bold text-blue-900 mb-0.5 text-[10px] uppercase">Transferencia</h3>
+            <p className="text-lg font-black text-blue-700">{formatMoney(totalTransferencia)}</p>
           </Card>
-          <Card className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-400">
-            <h3 className="font-bold text-gray-900 mb-1 text-sm">Total General</h3>
-            <p className="text-2xl font-bold text-gray-800">{formatMoney(totalGeneral)}</p>
+          <Card className="p-2 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
+            <h3 className="font-bold text-purple-900 mb-0.5 text-[10px] uppercase">Digital / Otros</h3>
+            <p className="text-lg font-black text-purple-700">{formatMoney(totalBilletera)}</p>
+          </Card>
+          <Card className="p-2 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300">
+            <h3 className="font-bold text-gray-900 mb-0.5 text-[10px] uppercase">Total</h3>
+            <p className="text-lg font-black text-gray-800">{formatMoney(totalGeneral)}</p>
           </Card>
         </div>
       </TabsContent>
 
       <TabsContent value="consumo">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Lista de Empleados */}
-          <Card className="lg:col-span-1 p-4 bg-slate-50 h-fit">
-            <h3 className="font-bold text-lg mb-4 text-slate-800">Equipo GoWash</h3>
-            <div className="space-y-2 mb-4">
+          {/* Lista de Empleados Compacta */}
+          <Card className="lg:col-span-1 p-3 bg-slate-50 h-fit">
+            <h3 className="font-bold text-sm mb-3 text-slate-800 uppercase tracking-tight">Equipo GoWash</h3>
+            <div className="space-y-1.5 mb-3">
               {listaEmpleados.map((emp) => (
                 <div 
                   key={emp}
-                  className={`flex justify-between items-center p-2 rounded-lg cursor-pointer transition-all ${
+                  className={`flex justify-between items-center p-1.5 rounded transition-all ${
                     empleadoConsumoSeleccionado === emp 
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'bg-white hover:bg-blue-50 text-slate-700 border border-slate-200'
                   }`}
                   onClick={() => setEmpleadoConsumoSeleccionado(emp)}
                 >
-                  <span className="font-medium">{emp}</span>
+                  <span className="text-xs font-bold">{emp}</span>
                   <div className="flex gap-1">
                     <button 
                       onClick={(e) => { e.stopPropagation(); eliminarEmpleado(emp); }}
-                      className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded hover:bg-red-200"
+                      className="text-[8px] bg-red-100 text-red-600 px-1 py-0.5 rounded hover:bg-red-200 font-black uppercase"
                     >
-                      Borrar
+                      X
                     </button>
                   </div>
                 </div>
@@ -2176,6 +2440,138 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
             )}
           </Card>
         </div>
+
+        {/* Historial de Consumos Liquidados */}
+        <div className="mt-8 space-y-6">
+          <Card className="p-6">
+            <h3 className="font-bold text-xl mb-4 flex items-center gap-2 text-slate-800">
+              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+              Historial de Consumos Liquidados
+            </h3>
+            {historialConsumosEmpleados.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No hay consumos liquidados recientemente</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800 text-white text-xs uppercase tracking-wider">
+                      <th className="border p-3">Fecha/Hora</th>
+                      <th className="border p-3">Empleado</th>
+                      <th className="border p-3">Productos</th>
+                      <th className="border p-3">Subtotal</th>
+                      <th className="border p-3">Desc.</th>
+                      <th className="border p-3">Total</th>
+                      <th className="border p-3">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historialConsumosEmpleados.map((h) => (
+                      <tr key={h.id} className="hover:bg-slate-50 border-b">
+                        <td className="p-3 text-center text-xs">
+                          <span className="block font-bold">{h.fecha}</span>
+                          <span className="text-slate-400">{h.hora}</span>
+                        </td>
+                        <td className="p-3 font-bold text-slate-700">{h.empleado}</td>
+                        <td className="p-3 text-xs">
+                          <ul className="list-disc list-inside">
+                            {h.productos.map((p, i) => (
+                              <li key={i} className="truncate max-w-[200px]">{p.nombre}</li>
+                            ))}
+                          </ul>
+                        </td>
+                        <td className="p-3 text-right text-slate-400 italic line-through">{formatMoney(h.subtotal)}</td>
+                        <td className="p-3 text-center text-xs font-bold text-green-600">{h.descuentoPorcentaje}%</td>
+                        <td className="p-3 text-right font-black text-red-600">{formatMoney(h.total)}</td>
+                        <td className="p-3 text-center">
+                          <div className="flex gap-2 justify-center">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="h-8 text-[10px]"
+                              onClick={() => cargarConsumoParaEditar(h)}
+                            >
+                              Editar
+                            </Button>
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm" className="h-8 text-[10px]">Eliminar</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar registro?</AlertDialogTitle>
+                                    <AlertDialogDescription>Esta acción quedará registrada en el log de auditoría.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => eliminarHistorialConsumo(h.id)} className="bg-red-600">Confirmar</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Cambios y Registro (Solo Admin) */}
+          {isAdmin && (
+            <Card className="p-6 border-2 border-amber-200 bg-amber-50/30">
+              <h3 className="font-bold text-xl mb-4 text-amber-900 flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6 text-amber-600" />
+                Cambios y Registro (Empleados)
+              </h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {auditLogs.filter(l => l.tipo === 'CONSUMO_EMPLEADO').length === 0 ? (
+                  <p className="text-slate-400 text-center py-4 italic text-sm">No hay actividad sospechosa registrada</p>
+                ) : (
+                  auditLogs.filter(l => l.tipo === 'CONSUMO_EMPLEADO').map((log) => (
+                    <div key={log.id} className="bg-white p-3 rounded-lg border border-amber-100 flex justify-between items-center shadow-sm">
+                      <div className="flex items-center gap-4 flex-1">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.accion === 'ELIMINACION' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                          {log.accion}
+                        </span>
+                        <div className="flex-1">
+                          {editingLogId === log.id ? (
+                            <div className="flex gap-2">
+                              <Input 
+                                value={editingLogText} 
+                                onChange={(e) => setEditingLogText(e.target.value)}
+                                className="h-7 text-xs"
+                              />
+                              <Button size="sm" className="h-7 px-2 bg-green-600 text-white" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-xs font-bold text-slate-800">{log.detalles}</p>
+                              <p className="text-[10px] text-slate-400">{log.fecha}</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 p-0 text-slate-400 hover:text-amber-600"
+                          onClick={() => { setEditingLogId(log.id); setEditingLogText(log.detalles); }}
+                        >
+                          ✎
+                        </Button>
+                        <span className="text-[9px] font-mono text-slate-300">ID: {log.registroId}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
       </TabsContent>
 
       <TabsContent value="precios">
@@ -2211,6 +2607,28 @@ export function POS({ prices = [] }: { prices?: Price[] }) {
             <Button onClick={confirmarAnulacion} className="bg-red-600 hover:bg-red-700 text-white">
               Confirmar Anulación
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showNewMetodoPagoDialog} onOpenChange={setShowNewMetodoPagoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Método de Pago</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="newMetodoPagoName">Nombre del Método de Pago</Label>
+            <Input 
+              id="newMetodoPagoName" 
+              value={newMetodoPagoName} 
+              onChange={(e) => setNewMetodoPagoName(e.target.value)}
+              placeholder="Ej: BNA+, MercadoPago..."
+              className="mt-2"
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowNewMetodoPagoDialog(false)}>Cancelar</Button>
+            <Button onClick={agregarMetodoPago} className="bg-blue-600 text-white">Guardar Método</Button>
           </div>
         </DialogContent>
       </Dialog>

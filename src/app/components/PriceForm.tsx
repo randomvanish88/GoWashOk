@@ -117,7 +117,8 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
     const finalBrand = brand === 'Otro' ? customBrand : brand;
     const finalService = service === 'Otro' ? customService : service;
 
-    if (!finalBrand || !size || !finalService || !price) {
+    if (!finalBrand || !model) {
+      alert("Por favor completa al menos la Marca y el Modelo del vehículo.");
       return;
     }
 
@@ -125,9 +126,9 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
       brand: finalBrand,
       model,
       year: year || undefined,
-      size,
-      service: finalService,
-      price: parseFloat(price),
+      size: size || 'No especificado',
+      service: finalService || 'Sin especificar',
+      price: price ? parseFloat(price) : 0,
       imageUrl: imageUrl || undefined,
     };
 
@@ -216,9 +217,9 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         <div className="space-y-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
           <Label htmlFor="size" className="flex items-center gap-2 text-purple-700">
             <Ruler className="w-4 h-4" />
-            Tamaño del Vehículo
+            Tamaño del Vehículo (Opcional)
           </Label>
-          <Select value={size} onValueChange={setSize} required>
+          <Select value={size} onValueChange={setSize}>
             <SelectTrigger id="size" className="bg-white border-purple-300">
               <SelectValue placeholder="Seleccionar tamaño" />
             </SelectTrigger>
@@ -234,9 +235,9 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         <div className="space-y-2 bg-pink-50 p-4 rounded-lg border-2 border-pink-200">
           <Label htmlFor="service" className="flex items-center gap-2 text-pink-700">
             <Sparkles className="w-4 h-4" />
-            Tipo de Servicio
+            Tipo de Servicio (Opcional)
           </Label>
-          <Select value={service} onValueChange={setService} required>
+          <Select value={service} onValueChange={setService}>
             <SelectTrigger id="service" className="bg-white border-pink-300">
               <SelectValue placeholder="Seleccionar servicio" />
             </SelectTrigger>
@@ -253,7 +254,6 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
               placeholder="Especificar servicio"
               value={customService}
               onChange={(e) => setCustomService(e.target.value)}
-              required
               className="bg-white"
             />
           )}
@@ -263,7 +263,7 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         <div className="space-y-2 bg-green-50 p-4 rounded-lg border-2 border-green-200">
           <Label htmlFor="price" className="flex items-center gap-2 text-green-700">
             <DollarSign className="w-4 h-4" />
-            Precio ($)
+            Precio ($) (Opcional)
           </Label>
           <Input
             id="price"
@@ -273,7 +273,6 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
             placeholder="0.00"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            required
             className="bg-white border-green-300"
           />
         </div>
