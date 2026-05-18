@@ -8,7 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Car, Check, Trash2, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil } from 'lucide-react';
+import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
+import { EditableNumberInput } from './EditableNumberInput';
+import {
+  PAGO_MIXTO,
+  PagoParcial,
+  desglosePagosVenta,
+  formatMetodoPagoDisplay,
+  metodosParaPagoMixto,
+} from './pagoMixto';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
 import { toast } from 'sonner';
 
@@ -38,6 +48,7 @@ interface Venta {
   cosmeticos: number;
   total: number;
   metodoPago: string;
+  pagosMixtos?: PagoParcial[];
   numeroCliente?: string;
   estadia?: boolean;
   horasEstadia?: number;
@@ -46,6 +57,7 @@ interface Venta {
   productosBar: ProductoVenta[];
   productosCosmeticos: ProductoVenta[];
   servicio?: string;
+  extrasLavado?: ProductoVenta[];
   descLavadero?: boolean;
   descBar?: boolean;
   descCosmetica?: boolean;
@@ -251,6 +263,25 @@ const DEFAULT_SERVICIOS_LAVADO: ServicioLavado[] = [
   { nombre: "Detailing Completo", precio: 80000 }
 ];
 
+const DEFAULT_EXTRAS_LAVADO: ServicioLavado[] = [
+  { nombre: "Embarrado", precio: 5000 },
+];
+
+const DEFAULT_EMPLEADOS = ['Recepción', 'Lavador 1', 'Lavador 2'];
+
+const crearConteoBilletesVacio = (denoms: number[]) =>
+  Object.fromEntries(denoms.map((d) => [String(d), 0])) as Record<string, number>;
+
+const crearPagosMixtosInicial = (): PagoParcial[] => [
+  { metodo: 'Efectivo', monto: 0 },
+  { metodo: 'Transferencia', monto: 0 },
+];
+
+const getCurrentTimeString = () => {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
+
 export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmin?: boolean }) {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<Venta[]>([]);
@@ -274,9 +305,24 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
   // Form fields
   const [fecha, setFecha] = useState('');
-  const [hora, setHora] = useState('');
   const [horaEntrada, setHoraEntrada] = useState('');
   const [horaSalida, setHoraSalida] = useState('');
+  const [precioServicioLavado, setPrecioServicioLavado] = useState(0);
+  const [extrasLavadoOpciones, setExtrasLavadoOpciones] = useState<ServicioLavado[]>([]);
+  const [extrasSeleccionados, setExtrasSeleccionados] = useState<string[]>([]);
+  const [extrasOpen, setExtrasOpen] = useState(false);
+  const [nuevoExtraNombre, setNuevoExtraNombre] = useState('');
+  const [nuevoExtraPrecio, setNuevoExtraPrecio] = useState('');
+  const [empleadoVentaOpen, setEmpleadoVentaOpen] = useState(false);
+  const [nuevoEmpleadoVentaNombre, setNuevoEmpleadoVentaNombre] = useState('');
+  const [empleadoEditando, setEmpleadoEditando] = useState<string | null>(null);
+  const [empleadoEditandoNombre, setEmpleadoEditandoNombre] = useState('');
+  const [fechaCierre, setFechaCierre] = useState(() => new Date().toISOString().split('T')[0]);
+  const [denominacionesBilletes, setDenominacionesBilletes] = useState<number[]>(DEFAULT_DENOMINACIONES_ARS);
+  const [conteoBilletes, setConteoBilletes] = useState<Record<string, number>>(() =>
+    crearConteoBilletesVacio(DEFAULT_DENOMINACIONES_ARS)
+  );
+  const [cierreEnProceso, setCierreEnProceso] = useState(false);
   const [empleado, setEmpleado] = useState('');
   const [patente, setPatente] = useState('');
   const [cliente, setCliente] = useState('');
@@ -285,7 +331,14 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const [descuento, setDescuento] = useState(0);
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
-  const [metodosPago, setMetodosPago] = useState<string[]>(['Efectivo', 'Transferencia', 'Billetera Virtual', 'Cupón de descuento']);
+  const [metodosPago, setMetodosPago] = useState<string[]>([
+    'Efectivo',
+    PAGO_MIXTO,
+    'Transferencia',
+    'Billetera Virtual',
+    'Cupón de descuento',
+  ]);
+  const [pagosMixtos, setPagosMixtos] = useState<PagoParcial[]>(crearPagosMixtosInicial);
   const [showNewMetodoPagoDialog, setShowNewMetodoPagoDialog] = useState(false);
   const [newMetodoPagoName, setNewMetodoPagoName] = useState('');
   const [numeroCliente, setNumeroCliente] = useState('');
@@ -323,6 +376,43 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const [itemAAnular, setItemAAnular] = useState<{ id: string, type: 'venta' | 'orden' } | null>(null);
   const [editingVentaId, setEditingVentaId] = useState<string | null>(null);
 
+  const horaEntradaCongelada = activeOrderId !== null || editingVentaId !== null;
+
+  const getExtrasSeleccionadosItems = (): ProductoVenta[] =>
+    extrasLavadoOpciones
+      .filter((e) => extrasSeleccionados.includes(e.nombre))
+      .map((e) => ({ nombre: e.nombre, precio: e.precio }));
+
+  const toggleExtraLavado = (nombre: string) => {
+    setExtrasSeleccionados((prev) =>
+      prev.includes(nombre) ? prev.filter((n) => n !== nombre) : [...prev, nombre]
+    );
+  };
+
+  const agregarExtraLavadoOpcion = () => {
+    const nombre = nuevoExtraNombre.trim();
+    const precio = parseFloat(nuevoExtraPrecio) || 0;
+    if (!nombre) {
+      toast.warning('Ingresá el nombre del extra.');
+      return;
+    }
+    if (extrasLavadoOpciones.some((e) => e.nombre.toLowerCase() === nombre.toLowerCase())) {
+      toast.warning('Ese extra ya existe.');
+      return;
+    }
+    setExtrasLavadoOpciones([...extrasLavadoOpciones, { nombre, precio }]);
+    setNuevoExtraNombre('');
+    setNuevoExtraPrecio('');
+    toast.success('Extra agregado.');
+  };
+
+  const aplicarExtrasYOrden = (orden: Venta) => {
+    const extras = orden.extrasLavado || [];
+    setExtrasSeleccionados(extras.map((e) => e.nombre));
+    const extrasSum = extras.reduce((sum, e) => sum + e.precio, 0);
+    setPrecioServicioLavado(Math.max(0, orden.lavado - extrasSum));
+  };
+
   // Estados para Consumo de Empleados
   const [listaEmpleados, setListaEmpleados] = useState<string[]>([]);
   const [consumosEmpleados, setConsumosEmpleados] = useState<Record<string, ProductoVenta[]>>({});
@@ -346,6 +436,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     if (savedVentas) setVentas(JSON.parse(savedVentas));
     if (savedAnuladas) setVentasAnuladas(JSON.parse(savedAnuladas));
     if (savedListaEmpleados) setListaEmpleados(JSON.parse(savedListaEmpleados));
+    else setListaEmpleados(DEFAULT_EMPLEADOS);
     if (savedConsumosEmpleados) setConsumosEmpleados(JSON.parse(savedConsumosEmpleados));
     
     const savedHistorialConsumos = localStorage.getItem('gowash-historial-consumos-empleados');
@@ -354,7 +445,25 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
     if (savedHistorialConsumos) setHistorialConsumosEmpleados(JSON.parse(savedHistorialConsumos));
     if (savedAuditLogs) setAuditLogs(JSON.parse(savedAuditLogs));
-    if (savedMetodosPago) setMetodosPago(JSON.parse(savedMetodosPago));
+    if (savedMetodosPago) {
+      const parsed: string[] = JSON.parse(savedMetodosPago);
+      if (!parsed.includes(PAGO_MIXTO)) {
+        const idx = parsed.includes('Efectivo') ? 1 : 0;
+        parsed.splice(idx, 0, PAGO_MIXTO);
+      }
+      setMetodosPago(parsed);
+    }
+
+    const savedDenoms = localStorage.getItem('gowash-denominaciones-billetes');
+    if (savedDenoms) {
+      try {
+        const denoms = JSON.parse(savedDenoms) as number[];
+        setDenominacionesBilletes(denoms);
+        setConteoBilletes(crearConteoBilletesVacio(denoms));
+      } catch {
+        /* defaults */
+      }
+    }
     
     if (savedOrdenesAbiertas) setOrdenesAbiertas(JSON.parse(savedOrdenesAbiertas));
     if (savedWashCounts) setWashCounts(JSON.parse(savedWashCounts));
@@ -375,16 +484,37 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     if (savedLavado) setServiciosLavado(JSON.parse(savedLavado));
     else setServiciosLavado(DEFAULT_SERVICIOS_LAVADO);
 
-    // Establecer fecha y hora actual
+    const savedExtrasLavado = localStorage.getItem('gowash-extras-lavado');
+    if (savedExtrasLavado) setExtrasLavadoOpciones(JSON.parse(savedExtrasLavado));
+    else setExtrasLavadoOpciones(DEFAULT_EXTRAS_LAVADO);
+
     const now = new Date();
     setFecha(now.toISOString().split('T')[0]);
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const timeString = `${hours}:${minutes}`;
-    setHora(timeString);
+    const timeString = getCurrentTimeString();
     setHoraEntrada(timeString);
     setHoraSalida(timeString);
   }, []);
+
+  useEffect(() => {
+    if (extrasLavadoOpciones.length > 0) {
+      localStorage.setItem('gowash-extras-lavado', JSON.stringify(extrasLavadoOpciones));
+    }
+  }, [extrasLavadoOpciones]);
+
+  useEffect(() => {
+    const extrasTotal = extrasLavadoOpciones
+      .filter((e) => extrasSeleccionados.includes(e.nombre))
+      .reduce((sum, e) => sum + e.precio, 0);
+    setLavado(precioServicioLavado + extrasTotal);
+  }, [precioServicioLavado, extrasSeleccionados, extrasLavadoOpciones]);
+
+  useEffect(() => {
+    if (horaEntradaCongelada) return;
+    const tick = () => setHoraEntrada(getCurrentTimeString());
+    tick();
+    const intervalId = setInterval(tick, 30000);
+    return () => clearInterval(intervalId);
+  }, [horaEntradaCongelada]);
 
   // Guardar en localStorage
   useEffect(() => {
@@ -494,6 +624,10 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
   const agregarMetodoPago = () => {
     if (!newMetodoPagoName.trim()) return;
+    if (newMetodoPagoName.trim() === PAGO_MIXTO) {
+      toast.warning('Ese nombre está reservado para el sistema.');
+      return;
+    }
     if (metodosPago.includes(newMetodoPagoName.trim())) {
       toast.warning('El método de pago ya existe.');
       return;
@@ -507,12 +641,33 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     toast.success('Método de pago agregado exitosamente.');
   };
 
+  const validarPagoMixto = (totalVenta: number) => {
+    const lineas = pagosMixtos.filter((p) => p.monto > 0);
+    if (lineas.length < 2) {
+      toast.warning('Pago mixto', { description: 'Agregá al menos 2 métodos con monto.' });
+      return false;
+    }
+    const suma = lineas.reduce((s, p) => s + p.monto, 0);
+    if (Math.abs(suma - totalVenta) > 0.01) {
+      toast.error('Montos no coinciden', {
+        description: `La suma (${formatMoney(suma)}) debe igualar el total (${formatMoney(totalVenta)}).`,
+      });
+      return false;
+    }
+    return true;
+  };
+
   const registrarVenta = (ordenDirecta?: Venta) => {
+    const totalVenta = ordenDirecta?.total ?? calcularTotal();
+    if (!ordenDirecta && metodoPago === PAGO_MIXTO && !validarPagoMixto(totalVenta)) {
+      return;
+    }
+
     // Si viene una ordenDirecta, usamos sus datos. Si no, usamos el estado actual.
     const vBase = ordenDirecta || {
       id: editingVentaId || Date.now().toString(),
       fecha,
-      hora,
+      hora: horaEntrada,
       horaEntrada,
       horaSalida,
       empleado,
@@ -524,6 +679,10 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       cosmeticos: calcularTotalCosmeticos(),
       total: calcularTotal(),
       metodoPago,
+      pagosMixtos:
+        metodoPago === PAGO_MIXTO
+          ? pagosMixtos.filter((p) => p.monto > 0)
+          : undefined,
       estadia: puedeEstadia() ? estadia : false,
       horasEstadia: puedeEstadia() && estadia ? horasEstadia : undefined,
       precioEstadia: puedeEstadia() && estadia ? precioEstadia : undefined,
@@ -531,6 +690,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       productosBar: [...productosBar],
       productosCosmeticos: [...productosCosmeticos],
       servicio,
+      extrasLavado: getExtrasSeleccionadosItems(),
       marca: vehiculoSeleccionado?.brand,
       modelo: vehiculoSeleccionado?.model,
       tamano: vehiculoSeleccionado?.size,
@@ -544,7 +704,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
     const faltantes = [];
     if (!vBase.fecha) faltantes.push("Fecha");
-    if (!vBase.hora) faltantes.push("Hora");
+    if (!vBase.horaEntrada) faltantes.push("Hora de entrada");
 
     if (faltantes.length > 0) {
       toast.error('Datos incompletos', { description: `Falta completar: ${faltantes.join(', ')}` });
@@ -624,7 +784,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     const ordenCobrada = {
       ...orden,
       fecha: orden.fecha || fecha,
-      hora: orden.hora || hora,
+      hora: orden.horaEntrada || horaEntrada,
       empleado: orden.empleado || empleado || 'Sin Empleado',
       horaSalida: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
       total: orden.total || (orden.lavado + orden.bar + orden.cosmeticos),
@@ -633,6 +793,9 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   };
 
   const guardarOrdenEnProgreso = () => {
+    if (editingVentaId) return;
+    const totalOrden = calcularTotal();
+    if (metodoPago === PAGO_MIXTO && !validarPagoMixto(totalOrden)) return;
     if (!patente && !cliente) {
       toast.warning('Faltan datos', { description: 'Ingresa Patente o Cliente para guardar la orden.' });
       setTimeout(() => document.getElementById('patente')?.focus(), 100);
@@ -646,7 +809,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     const orden: Venta = {
       id: activeOrderId || Date.now().toString(),
       fecha,
-      hora,
+      hora: horaEntrada,
       horaEntrada,
       horaSalida,
       empleado,
@@ -658,6 +821,10 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       cosmeticos: totalCosmeticos,
       total,
       metodoPago,
+      pagosMixtos:
+        metodoPago === PAGO_MIXTO
+          ? pagosMixtos.filter((p) => p.monto > 0)
+          : undefined,
       estadia,
       horasEstadia,
       precioEstadia,
@@ -665,6 +832,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       productosBar: [...productosBar],
       productosCosmeticos: [...productosCosmeticos],
       servicio,
+      extrasLavado: getExtrasSeleccionadosItems(),
       descLavadero,
       descBar,
       descCosmetica,
@@ -686,14 +854,13 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const cargarOrden = (orden: Venta) => {
     setActiveOrderId(orden.id);
     setFecha(orden.fecha);
-    setHora(orden.hora);
     setHoraEntrada(orden.horaEntrada);
     setHoraSalida(orden.horaSalida);
     setEmpleado(orden.empleado);
     setPatente(orden.patente);
     setCliente(orden.cliente);
     setNumeroCliente(orden.numeroCliente || '');
-    setLavado(orden.lavado);
+    aplicarExtrasYOrden(orden);
     setServicio(orden.servicio || '');
     
     // Buscar el vehículo en la lista de precios para restaurar la selección
@@ -707,6 +874,9 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
     setDescuento(orden.descuento);
     setMetodoPago(orden.metodoPago);
+    setPagosMixtos(
+      orden.pagosMixtos?.length ? orden.pagosMixtos : crearPagosMixtosInicial()
+    );
     setEstadia(orden.estadia || false);
     setHorasEstadia(orden.horasEstadia || 1);
     setPrecioEstadia(orden.precioEstadia || 0);
@@ -720,17 +890,15 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const limpiarFormulario = () => {
     const now = new Date();
     setFecha(now.toISOString().split('T')[0]);
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const timeString = `${hours}:${minutes}`;
-    setHora(timeString);
+    const timeString = getCurrentTimeString();
     setHoraEntrada(timeString);
     setHoraSalida(timeString);
     setActiveOrderId(null);
     setEditingVentaId(null);
     setPatente('');
     setCliente('');
-    setLavado(0);
+    setPrecioServicioLavado(0);
+    setExtrasSeleccionados([]);
     setServicio('');
     setDescuento(0);
     setDescuentoPorcentaje(0);
@@ -738,6 +906,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     setDescBar(true);
     setDescCosmetica(true);
     setMetodoPago('Efectivo');
+    setPagosMixtos(crearPagosMixtosInicial());
     setNumeroCliente('');
     setEstadia(false);
     setHorasEstadia(1);
@@ -748,19 +917,78 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     setSearchVehiculo('');
   };
 
+  const seleccionarEmpleadoVenta = (nombre: string) => {
+    setEmpleado(nombre);
+    setEmpleadoVentaOpen(false);
+  };
+
+  const agregarEmpleadoVenta = () => {
+    const nombre = nuevoEmpleadoVentaNombre.trim();
+    if (!nombre) {
+      toast.warning('Ingresá el nombre del empleado.');
+      return;
+    }
+    if (listaEmpleados.some((e) => e.toLowerCase() === nombre.toLowerCase())) {
+      toast.warning('Ese empleado ya existe.');
+      return;
+    }
+    setListaEmpleados([...listaEmpleados, nombre]);
+    setEmpleado(nombre);
+    setNuevoEmpleadoVentaNombre('');
+    toast.success('Empleado agregado.');
+  };
+
+  const iniciarEdicionEmpleadoLista = (nombre: string) => {
+    setEmpleadoEditando(nombre);
+    setEmpleadoEditandoNombre(nombre);
+  };
+
+  const cancelarEdicionEmpleadoLista = () => {
+    setEmpleadoEditando(null);
+    setEmpleadoEditandoNombre('');
+  };
+
+  const guardarEdicionEmpleadoLista = () => {
+    const nuevo = empleadoEditandoNombre.trim();
+    if (!empleadoEditando || !nuevo) return;
+    if (
+      nuevo.toLowerCase() !== empleadoEditando.toLowerCase() &&
+      listaEmpleados.some((e) => e.toLowerCase() === nuevo.toLowerCase())
+    ) {
+      toast.warning('Ese nombre ya existe.');
+      return;
+    }
+    setListaEmpleados(listaEmpleados.map((e) => (e === empleadoEditando ? nuevo : e)));
+    if (empleado === empleadoEditando) setEmpleado(nuevo);
+    if (consumosEmpleados[empleadoEditando]) {
+      const nuevosConsumos = { ...consumosEmpleados };
+      nuevosConsumos[nuevo] = nuevosConsumos[empleadoEditando];
+      delete nuevosConsumos[empleadoEditando];
+      setConsumosEmpleados(nuevosConsumos);
+    }
+    if (empleadoConsumoSeleccionado === empleadoEditando) {
+      setEmpleadoConsumoSeleccionado(nuevo);
+    }
+    cancelarEdicionEmpleadoLista();
+    toast.success('Empleado actualizado.');
+  };
+
   const iniciarEdicionVenta = (venta: Venta) => {
+    setActiveOrderId(null);
     setEditingVentaId(venta.id);
     setFecha(venta.fecha);
-    setHora(venta.hora);
     setHoraEntrada(venta.horaEntrada);
     setHoraSalida(venta.horaSalida);
     setEmpleado(venta.empleado);
     setPatente(venta.patente);
     setCliente(venta.cliente);
-    setLavado(venta.lavado);
+    aplicarExtrasYOrden(venta);
     setServicio(venta.servicio || '');
     setDescuento(venta.descuento);
     setMetodoPago(venta.metodoPago);
+    setPagosMixtos(
+      venta.pagosMixtos?.length ? venta.pagosMixtos : crearPagosMixtosInicial()
+    );
     setNumeroCliente(venta.numeroCliente || '');
     setEstadia(venta.estadia || false);
     setHorasEstadia(venta.horasEstadia || 1);
@@ -992,10 +1220,221 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     c.contenido.toLowerCase().includes(searchCosmeticos.toLowerCase())
   );
 
-  const totalEfectivo = ventas.filter(v => v.metodoPago.toLowerCase() === 'efectivo').reduce((sum, v) => sum + v.total, 0);
-  const totalTransferencia = ventas.filter(v => v.metodoPago.toLowerCase() === 'transferencia').reduce((sum, v) => sum + v.total, 0);
-  const totalBilletera = ventas.filter(v => v.metodoPago.toLowerCase() !== 'efectivo' && v.metodoPago.toLowerCase() !== 'transferencia').reduce((sum, v) => sum + v.total, 0);
-  const totalGeneral = ventas.reduce((sum, v) => sum + v.total, 0);
+  const ventasDelDia = useMemo(
+    () => ventas.filter((v) => v.fecha === fechaCierre),
+    [ventas, fechaCierre]
+  );
+
+  const sumaPorMetodoEnVentas = (metodoLower: string) =>
+    ventasDelDia.reduce((sum, v) => {
+      const parte = desglosePagosVenta(v)
+        .filter((p) => p.metodo.toLowerCase() === metodoLower)
+        .reduce((s, p) => s + p.monto, 0);
+      return sum + parte;
+    }, 0);
+
+  const totalEfectivo = useMemo(() => sumaPorMetodoEnVentas('efectivo'), [ventasDelDia]);
+
+  const totalTransferencia = useMemo(() => sumaPorMetodoEnVentas('transferencia'), [ventasDelDia]);
+
+  const totalBilletera = useMemo(
+    () =>
+      ventasDelDia.reduce((sum, v) => {
+        const parte = desglosePagosVenta(v)
+          .filter((p) => {
+            const m = p.metodo.toLowerCase();
+            return m !== 'efectivo' && m !== 'transferencia';
+          })
+          .reduce((s, p) => s + p.monto, 0);
+        return sum + parte;
+      }, 0),
+    [ventasDelDia]
+  );
+
+  const totalGeneral = useMemo(
+    () => ventasDelDia.reduce((sum, v) => sum + v.total, 0),
+    [ventasDelDia]
+  );
+
+  const resumenMetodosPago = useMemo(() => {
+    const map = new Map<string, { total: number; cantidad: number }>();
+    ventasDelDia.forEach((v) => {
+      const desglose = desglosePagosVenta(v);
+      const metodosEnEstaVenta = new Set<string>();
+      desglose.forEach((p) => {
+        const metodo = p.metodo?.trim() || 'Sin método';
+        const cur = map.get(metodo) ?? { total: 0, cantidad: 0 };
+        map.set(metodo, { total: cur.total + p.monto, cantidad: cur.cantidad });
+        metodosEnEstaVenta.add(metodo);
+      });
+      metodosEnEstaVenta.forEach((metodo) => {
+        const cur = map.get(metodo)!;
+        map.set(metodo, { ...cur, cantidad: cur.cantidad + 1 });
+      });
+    });
+
+    const vistos = new Set<string>();
+    const filas: { metodo: string; total: number; cantidad: number }[] = [];
+
+    metodosPago.forEach((m) => {
+      if (m === PAGO_MIXTO) return;
+      vistos.add(m);
+      filas.push({ metodo: m, ...(map.get(m) ?? { total: 0, cantidad: 0 }) });
+    });
+
+    map.forEach((data, metodo) => {
+      if (!vistos.has(metodo)) filas.push({ metodo, ...data });
+    });
+
+    return filas.sort((a, b) => b.total - a.total);
+  }, [ventasDelDia, metodosPago]);
+
+  const totalContadoBilletes = useMemo(
+    () =>
+      denominacionesBilletes.reduce(
+        (sum, d) => sum + (conteoBilletes[String(d)] || 0) * d,
+        0
+      ),
+    [conteoBilletes, denominacionesBilletes]
+  );
+
+  const diferenciaArqueo = totalContadoBilletes - totalEfectivo;
+
+  const cierreYaEnviado =
+    typeof window !== 'undefined' &&
+    !!localStorage.getItem(`gowash-cierre-enviado-${fechaCierre}`);
+
+  useEffect(() => {
+    localStorage.setItem('gowash-denominaciones-billetes', JSON.stringify(denominacionesBilletes));
+  }, [denominacionesBilletes]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`gowash-arqueo-${fechaCierre}`);
+    const base = crearConteoBilletesVacio(denominacionesBilletes);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Record<string, number>;
+        setConteoBilletes({ ...base, ...parsed });
+      } catch {
+        setConteoBilletes(base);
+      }
+    } else {
+      setConteoBilletes(base);
+    }
+  }, [fechaCierre, denominacionesBilletes]);
+
+  useEffect(() => {
+    localStorage.setItem(`gowash-arqueo-${fechaCierre}`, JSON.stringify(conteoBilletes));
+  }, [conteoBilletes, fechaCierre]);
+
+  const agregarDenominacionBillete = (valor: number) => {
+    if (denominacionesBilletes.includes(valor)) {
+      toast.warning('Esa denominación ya existe.');
+      return;
+    }
+    setDenominacionesBilletes([...denominacionesBilletes, valor].sort((a, b) => a - b));
+    setConteoBilletes((prev) => ({ ...prev, [String(valor)]: 0 }));
+  };
+
+  const eliminarDenominacionBillete = (valor: number) => {
+    if (denominacionesBilletes.length <= 1) {
+      toast.warning('Debe quedar al menos una denominación.');
+      return;
+    }
+    setDenominacionesBilletes(denominacionesBilletes.filter((d) => d !== valor));
+    setConteoBilletes((prev) => {
+      const next = { ...prev };
+      delete next[String(valor)];
+      return next;
+    });
+  };
+
+  const editarDenominacionBillete = (valorAnterior: number, valorNuevo: number) => {
+    if (valorAnterior === valorNuevo) return;
+    if (denominacionesBilletes.includes(valorNuevo)) {
+      toast.warning('Esa denominación ya existe.');
+      return;
+    }
+    setDenominacionesBilletes(
+      denominacionesBilletes.map((d) => (d === valorAnterior ? valorNuevo : d)).sort((a, b) => a - b)
+    );
+    setConteoBilletes((prev) => {
+      const next = { ...prev };
+      next[String(valorNuevo)] = next[String(valorAnterior)] ?? 0;
+      delete next[String(valorAnterior)];
+      return next;
+    });
+  };
+
+  const actualizarConteoBillete = (valor: number, cantidad: number) => {
+    setConteoBilletes((prev) => ({
+      ...prev,
+      [String(valor)]: Math.max(0, cantidad),
+    }));
+  };
+
+  const limpiarConteoBilletes = () => setConteoBilletes(crearConteoBilletesVacio(denominacionesBilletes));
+
+  const realizarCierreCaja = async () => {
+    if (ventasDelDia.length === 0) {
+      toast.warning('Sin ventas del día', {
+        description: `No hay ventas registradas para ${fechaCierre}.`,
+      });
+      return;
+    }
+
+    if (!googleSheetsSync.getSpreadsheetId()) {
+      toast.error('Google Sheets no configurado', {
+        description: 'Configurá la hoja en Ajustes antes de enviar el cierre.',
+      });
+      return;
+    }
+
+    if (typeof window === 'undefined' || !window.electronAPI?.googleSheets) {
+      toast.error('Cierre solo disponible en la app de escritorio (Electron).');
+      return;
+    }
+
+    setCierreEnProceso(true);
+    const cierreId = `cierre-${fechaCierre}-${Date.now()}`;
+
+    const cierre = {
+      id: cierreId,
+      fecha: fechaCierre,
+      horaCierre: getCurrentTimeString(),
+      totalEfectivoSistema: totalEfectivo,
+      totalContado: totalContadoBilletes,
+      diferencia: diferenciaArqueo,
+      totalGeneral,
+      cantidadVentas: ventasDelDia.length,
+      detalleMetodos: resumenMetodosPago,
+      detalleBilletes: denominacionesBilletes.map((valor) => {
+        const cantidad = conteoBilletes[String(valor)] || 0;
+        return { valor, cantidad, subtotal: cantidad * valor };
+      }),
+      empleado: empleado || undefined,
+    };
+
+    try {
+      const result = await googleSheetsSync.syncCierreCaja(cierre);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo guardar el cierre');
+      }
+
+      const historial = JSON.parse(localStorage.getItem('gowash-cierres-caja') || '[]');
+      localStorage.setItem('gowash-cierres-caja', JSON.stringify([cierre, ...historial]));
+      localStorage.setItem(`gowash-cierre-enviado-${fechaCierre}`, cierreId);
+
+      toast.success('Cierre de caja enviado', {
+        description: `Día ${fechaCierre} sincronizado con la nube.`,
+      });
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido';
+      toast.error('Error al cerrar caja', { description: msg });
+    } finally {
+      setCierreEnProceso(false);
+    }
+  };
 
   // Componente de edición de precios
   const EditorPrecios = () => {
@@ -1005,6 +1444,8 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     const [adjBarAmt, setAdjBarAmt] = useState('');
     const [adjCosPct, setAdjCosPct] = useState('');
     const [adjCosAmt, setAdjCosAmt] = useState('');
+    const [adjBarStock, setAdjBarStock] = useState('');
+    const [adjCosStock, setAdjCosStock] = useState('');
 
     const applyAdj = (type: 'lavado' | 'bar' | 'cosmeticos', mode: 'pct' | 'amt') => {
       if (type === 'lavado') {
@@ -1031,6 +1472,26 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
           pvp: mode === 'pct' ? Math.round(c.pvp * (1 + val / 100)) : c.pvp + val 
         })));
         mode === 'pct' ? setAdjCosPct('') : setAdjCosAmt('');
+      }
+    };
+
+    const applyStockAdj = (type: 'bar' | 'cosmeticos', mode: 'add' | 'set') => {
+      if (type === 'bar') {
+        const val = parseInt(mode === 'add' ? adjBarStock : adjBarStock, 10);
+        if (isNaN(val)) return;
+        setBarProductsData(barProductsData.map(p => ({
+          ...p,
+          stock: mode === 'add' ? Math.max(0, (p.stock || 0) + val) : Math.max(0, val)
+        })));
+        setAdjBarStock('');
+      } else {
+        const val = parseInt(adjCosStock, 10);
+        if (isNaN(val)) return;
+        setCosmeticosData(cosmeticosData.map(c => ({
+          ...c,
+          stock: mode === 'add' ? Math.max(0, (c.stock || 0) + val) : Math.max(0, val)
+        })));
+        setAdjCosStock('');
       }
     };
 
@@ -1081,12 +1542,11 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               </div>
               <div className="flex-1">
                 <Label>Precio</Label>
-                <Input
-                  type="number"
+                <EditableNumberInput
                   value={servicio.precio}
-                  onChange={(e) => {
+                  onChange={(precio) => {
                     const newServicios = [...serviciosLavado];
-                    newServicios[idx].precio = parseFloat(e.target.value) || 0;
+                    newServicios[idx].precio = precio;
                     setServiciosLavado(newServicios);
                   }}
                 />
@@ -1117,27 +1577,51 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h3 className="font-bold text-xl text-amber-900">Productos del Bar</h3>
           
-          <div className="flex flex-wrap gap-2 p-3 bg-white/60 rounded-xl border border-amber-200 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number" 
-                placeholder="% +/-" 
-                className="w-20 h-8 bg-white text-xs" 
-                value={adjBarPct}
-                onChange={(e) => setAdjBarPct(e.target.value)}
-              />
-              <Button size="sm" variant="outline" className="h-8 text-xs bg-amber-600 text-white border-0 hover:bg-amber-700" onClick={() => applyAdj('bar', 'pct')}>Ajustar %</Button>
+          <div className="flex flex-col gap-2 p-3 bg-white/60 rounded-xl border border-amber-200 shadow-sm">
+            {/* Ajuste de Precios */}
+            <p className="text-[9px] font-black uppercase tracking-widest text-amber-700">💰 Precios</p>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="% +/-" 
+                  className="w-20 h-8 bg-white text-xs" 
+                  value={adjBarPct}
+                  onChange={(e) => setAdjBarPct(e.target.value)}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-amber-600 text-white border-0 hover:bg-amber-700" onClick={() => applyAdj('bar', 'pct')}>Ajustar %</Button>
+              </div>
+              <div className="w-px h-8 bg-amber-200 mx-1 hidden md:block" />
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="$ +/-" 
+                  className="w-24 h-8 bg-white text-xs"
+                  value={adjBarAmt}
+                  onChange={(e) => setAdjBarAmt(e.target.value)}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-orange-600 text-white border-0 hover:bg-orange-700" onClick={() => applyAdj('bar', 'amt')}>Ajustar $</Button>
+              </div>
             </div>
-            <div className="w-px h-8 bg-amber-200 mx-1 hidden md:block" />
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number" 
-                placeholder="$ +/-" 
-                className="w-24 h-8 bg-white text-xs"
-                value={adjBarAmt}
-                onChange={(e) => setAdjBarAmt(e.target.value)}
-              />
-              <Button size="sm" variant="outline" className="h-8 text-xs bg-orange-600 text-white border-0 hover:bg-orange-700" onClick={() => applyAdj('bar', 'amt')}>Ajustar $</Button>
+            {/* Separador */}
+            <div className="border-t border-amber-200" />
+            {/* Ajuste de Stock */}
+            <p className="text-[9px] font-black uppercase tracking-widest text-green-700">📦 Stock</p>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="Cantidad" 
+                  className="w-24 h-8 bg-white text-xs" 
+                  value={adjBarStock}
+                  onChange={(e) => setAdjBarStock(e.target.value)}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-green-600 text-white border-0 hover:bg-green-700" onClick={() => applyStockAdj('bar', 'add')}>+ Agregar</Button>
+              </div>
+              <div className="w-px h-8 bg-amber-200 mx-1 hidden md:block" />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-slate-600 text-white border-0 hover:bg-slate-700" onClick={() => applyStockAdj('bar', 'set')}>Establecer todos</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -1168,24 +1652,22 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               </div>
               <div className="flex-1">
                 <Label>Precio</Label>
-                <Input
-                  type="number"
+                <EditableNumberInput
                   value={producto.value}
-                  onChange={(e) => {
+                  onChange={(value) => {
                     const newProductos = [...barProductsData];
-                    newProductos[idx].value = parseFloat(e.target.value) || 0;
+                    newProductos[idx].value = value;
                     setBarProductsData(newProductos);
                   }}
                 />
               </div>
               <div className="flex-1">
                 <Label>Stock</Label>
-                <Input
-                  type="number"
+                <EditableNumberInput
                   value={producto.stock ?? 0}
-                  onChange={(e) => {
+                  onChange={(stock) => {
                     const newProductos = [...barProductsData];
-                    newProductos[idx].stock = parseInt(e.target.value, 10) || 0;
+                    newProductos[idx].stock = stock;
                     setBarProductsData(newProductos);
                   }}
                 />
@@ -1216,27 +1698,51 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h3 className="font-bold text-xl text-teal-900">Cosméticos del Automotor</h3>
           
-          <div className="flex flex-wrap gap-2 p-3 bg-white/60 rounded-xl border border-teal-200 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number" 
-                placeholder="% +/-" 
-                className="w-20 h-8 bg-white text-xs" 
-                value={adjCosPct}
-                onChange={(e) => setAdjCosPct(e.target.value)}
-              />
-              <Button size="sm" variant="outline" className="h-8 text-xs bg-teal-600 text-white border-0 hover:bg-teal-700" onClick={() => applyAdj('cosmeticos', 'pct')}>Ajustar %</Button>
+          <div className="flex flex-col gap-2 p-3 bg-white/60 rounded-xl border border-teal-200 shadow-sm">
+            {/* Ajuste de Precios */}
+            <p className="text-[9px] font-black uppercase tracking-widest text-teal-700">💰 Precios</p>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="% +/-" 
+                  className="w-20 h-8 bg-white text-xs" 
+                  value={adjCosPct}
+                  onChange={(e) => setAdjCosPct(e.target.value)}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-teal-600 text-white border-0 hover:bg-teal-700" onClick={() => applyAdj('cosmeticos', 'pct')}>Ajustar %</Button>
+              </div>
+              <div className="w-px h-8 bg-teal-200 mx-1 hidden md:block" />
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="$ +/-" 
+                  className="w-24 h-8 bg-white text-xs"
+                  value={adjCosAmt}
+                  onChange={(e) => setAdjCosAmt(e.target.value)}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-cyan-600 text-white border-0 hover:bg-cyan-700" onClick={() => applyAdj('cosmeticos', 'amt')}>Ajustar $</Button>
+              </div>
             </div>
-            <div className="w-px h-8 bg-teal-200 mx-1 hidden md:block" />
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number" 
-                placeholder="$ +/-" 
-                className="w-24 h-8 bg-white text-xs"
-                value={adjCosAmt}
-                onChange={(e) => setAdjCosAmt(e.target.value)}
-              />
-              <Button size="sm" variant="outline" className="h-8 text-xs bg-cyan-600 text-white border-0 hover:bg-cyan-700" onClick={() => applyAdj('cosmeticos', 'amt')}>Ajustar $</Button>
+            {/* Separador */}
+            <div className="border-t border-teal-200" />
+            {/* Ajuste de Stock */}
+            <p className="text-[9px] font-black uppercase tracking-widest text-green-700">📦 Stock</p>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="Cantidad" 
+                  className="w-24 h-8 bg-white text-xs" 
+                  value={adjCosStock}
+                  onChange={(e) => setAdjCosStock(e.target.value)}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-green-600 text-white border-0 hover:bg-green-700" onClick={() => applyStockAdj('cosmeticos', 'add')}>+ Agregar</Button>
+              </div>
+              <div className="w-px h-8 bg-teal-200 mx-1 hidden md:block" />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="h-8 text-xs bg-slate-600 text-white border-0 hover:bg-slate-700" onClick={() => applyStockAdj('cosmeticos', 'set')}>Establecer todos</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -1267,24 +1773,22 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               </div>
               <div className="flex-1">
                 <Label>Precio</Label>
-                <Input
-                  type="number"
+                <EditableNumberInput
                   value={cosmetico.pvp}
-                  onChange={(e) => {
+                  onChange={(pvp) => {
                     const newCosmeticos = [...cosmeticosData];
-                    newCosmeticos[idx].pvp = parseFloat(e.target.value) || 0;
+                    newCosmeticos[idx].pvp = pvp;
                     setCosmeticosData(newCosmeticos);
                   }}
                 />
               </div>
               <div className="flex-1">
                 <Label>Stock</Label>
-                <Input
-                  type="number"
+                <EditableNumberInput
                   value={cosmetico.stock ?? 0}
-                  onChange={(e) => {
+                  onChange={(stock) => {
                     const newCosmeticos = [...cosmeticosData];
-                    newCosmeticos[idx].stock = parseInt(e.target.value, 10) || 0;
+                    newCosmeticos[idx].stock = stock;
                     setCosmeticosData(newCosmeticos);
                   }}
                 />
@@ -1318,7 +1822,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 bg-white shadow-lg">
         <TabsTrigger value="ventas">Ventas</TabsTrigger>
         <TabsTrigger value="consumo">Consumo Empleados</TabsTrigger>
-        <TabsTrigger value="precios">Editar Precios</TabsTrigger>
+        <TabsTrigger value="precios">Ajuste de Precios y Stock</TabsTrigger>
       </TabsList>
 
       <TabsContent value="ventas" className="space-y-6">
@@ -1339,34 +1843,19 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               />
             </div>
             <div>
-              <Label htmlFor="hora">Hora</Label>
-              <Input
-                id="hora"
-                type="time"
-                value={hora}
-                onChange={(e) => setHora(e.target.value)}
-                className="bg-white"
-              />
-            </div>
-            <div>
-              <Label htmlFor="empleado">Empleado</Label>
-              <Input
-                id="empleado"
-                value={empleado}
-                onChange={(e) => setEmpleado(e.target.value)}
-                placeholder="Nombre del empleado"
-                className="bg-white"
-              />
-            </div>
-            <div>
               <Label htmlFor="horaEntrada">Hora Entrada</Label>
               <Input
                 id="horaEntrada"
                 type="time"
                 value={horaEntrada}
-                onChange={(e) => setHoraEntrada(e.target.value)}
-                className="bg-white"
+                readOnly={!horaEntradaCongelada}
+                onChange={(e) => horaEntradaCongelada && setHoraEntrada(e.target.value)}
+                className={`bg-white ${!horaEntradaCongelada ? 'bg-slate-100 cursor-default' : ''}`}
+                title={horaEntradaCongelada ? 'Hora de ingreso del vehículo' : 'Se actualiza automáticamente con la hora del sistema'}
               />
+              {!horaEntradaCongelada && (
+                <p className="text-[10px] text-blue-600 mt-0.5">Hora del sistema (se actualiza sola)</p>
+              )}
             </div>
             <div>
               <Label htmlFor="horaSalida">Hora Salida</Label>
@@ -1406,6 +1895,87 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                   </span>
                 </div>
               )}
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold text-blue-800 uppercase">Empleado</Label>
+              <Collapsible open={empleadoVentaOpen} onOpenChange={setEmpleadoVentaOpen} className="mt-1">
+                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-white border border-blue-200 px-3 py-2 text-left hover:bg-blue-50 transition-colors">
+                  <span className={`text-sm font-semibold truncate ${empleado ? 'text-blue-900' : 'text-slate-400'}`}>
+                    {empleado || 'Seleccionar empleado...'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-blue-600 shrink-0 transition-transform ${empleadoVentaOpen ? 'rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2 space-y-2">
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 custom-scrollbar">
+                    {listaEmpleados.map((emp) => (
+                      empleadoEditando === emp ? (
+                        <div key={emp} className="flex gap-1.5 items-center bg-white p-2 rounded-lg border border-blue-200">
+                          <Input
+                            value={empleadoEditandoNombre}
+                            onChange={(e) => setEmpleadoEditandoNombre(e.target.value)}
+                            className="h-7 text-xs flex-1"
+                          />
+                          <Button type="button" size="sm" className="h-7 px-2 bg-green-600" onClick={guardarEdicionEmpleadoLista}>
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={cancelarEdicionEmpleadoLista}>
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          key={emp}
+                          className={`flex items-center justify-between gap-2 p-2 rounded-lg border transition-colors ${
+                            empleado === emp
+                              ? 'bg-blue-100 border-blue-400'
+                              : 'bg-white border-blue-100 hover:border-blue-300'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => seleccionarEmpleadoVenta(emp)}
+                            className="flex-1 text-left text-xs font-bold text-blue-900 truncate"
+                          >
+                            {emp}
+                          </button>
+                          <div className="flex gap-1 shrink-0">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-100"
+                              onClick={() => iniciarEdicionEmpleadoLista(emp)}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                  <div className="flex gap-2 items-end p-2 bg-blue-50/80 rounded-lg border border-blue-100">
+                    <div className="flex-1">
+                      <Label className="text-[9px] uppercase text-blue-700">Nuevo empleado</Label>
+                      <Input
+                        value={nuevoEmpleadoVentaNombre}
+                        onChange={(e) => setNuevoEmpleadoVentaNombre(e.target.value)}
+                        placeholder="Nombre..."
+                        className="h-7 text-xs bg-white mt-0.5"
+                        onKeyDown={(e) => e.key === 'Enter' && agregarEmpleadoVenta()}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-7 text-[10px] font-bold bg-blue-600 hover:bg-blue-700"
+                      onClick={agregarEmpleadoVenta}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Agregar
+                    </Button>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
             <div>
               <Label htmlFor="cliente">Cliente</Label>
@@ -1503,7 +2073,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                       onClick={() => {
                         setVehiculoSeleccionado(p);
                         setServicio(p.service);
-                        setLavado(p.price);
+                        setPrecioServicioLavado(p.price);
                         setSearchVehiculo('');
                       }}
                     >
@@ -1547,7 +2117,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                     onClick={() => {
                       setVehiculoSeleccionado(null);
                       setServicio('');
-                      setLavado(0);
+                      setPrecioServicioLavado(0);
                     }}
                   >
                     Quitar
@@ -1565,7 +2135,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                   setServicio(val);
                   const servicioEncontrado = serviciosLavado.find(s => s.nombre === val);
                   if (servicioEncontrado) {
-                    setLavado(servicioEncontrado.precio);
+                    setPrecioServicioLavado(servicioEncontrado.precio);
                   }
                 }}
               >
@@ -1581,6 +2151,70 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                 </SelectContent>
               </Select>
             </div>
+
+            <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen} className="pt-2 border-t border-indigo-200/50">
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-white/80 border border-indigo-200 px-3 py-2 text-left hover:bg-indigo-50 transition-colors">
+                <span className="text-[10px] font-bold text-indigo-800 uppercase tracking-wide">
+                  Extras / Adicionales
+                  {extrasSeleccionados.length > 0 && (
+                    <span className="ml-2 text-indigo-600 normal-case">({extrasSeleccionados.length} seleccionado{extrasSeleccionados.length !== 1 ? 's' : ''})</span>
+                  )}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-indigo-600 transition-transform ${extrasOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3 space-y-3">
+                <div className="space-y-2">
+                  {extrasLavadoOpciones.map((extra) => (
+                    <label
+                      key={extra.nombre}
+                      className="flex items-center justify-between gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={extrasSeleccionados.includes(extra.nombre)}
+                          onChange={() => toggleExtraLavado(extra.nombre)}
+                          className="w-4 h-4 text-indigo-600 rounded border-indigo-300"
+                        />
+                        <span className="text-xs font-bold text-indigo-900">{extra.nombre}</span>
+                      </div>
+                      <span className="text-xs font-black text-indigo-700">{formatMoney(extra.precio)}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2 items-end p-2 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                  <div className="flex-1 min-w-[120px]">
+                    <Label className="text-[9px] uppercase text-indigo-700">Nuevo extra</Label>
+                    <Input
+                      value={nuevoExtraNombre}
+                      onChange={(e) => setNuevoExtraNombre(e.target.value)}
+                      placeholder="Nombre..."
+                      className="h-7 text-xs bg-white mt-0.5"
+                    />
+                  </div>
+                  <div className="w-24">
+                    <Label className="text-[9px] uppercase text-indigo-700">Precio</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={nuevoExtraPrecio}
+                      onChange={(e) => setNuevoExtraPrecio(e.target.value)}
+                      placeholder="0"
+                      className="h-7 text-xs bg-white mt-0.5"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-7 text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700"
+                    onClick={agregarExtraLavadoOpcion}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Agregar
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </Card>
 
@@ -1794,6 +2428,9 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                       setShowNewMetodoPagoDialog(true);
                     } else {
                       setMetodoPago(val);
+                      if (val === PAGO_MIXTO) {
+                        setPagosMixtos(crearPagosMixtosInicial());
+                      }
                     }
                   }}
                 >
@@ -1810,6 +2447,101 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                   </SelectContent>
                 </Select>
               </div>
+
+              {metodoPago === PAGO_MIXTO && (
+                <div className="mt-3 space-y-2 p-3 bg-white rounded-lg border border-green-200 max-w-md">
+                  <p className="text-[10px] font-bold text-green-800 uppercase">Dividir pago</p>
+                  {pagosMixtos.map((linea, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Select
+                        value={linea.metodo}
+                        onValueChange={(val) => {
+                          const next = [...pagosMixtos];
+                          next[idx] = { ...next[idx], metodo: val };
+                          setPagosMixtos(next);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs flex-1 bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {metodosParaPagoMixto(metodosPago).map((m) => (
+                            <SelectItem key={m} value={m} className="text-xs">
+                              {m}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <EditableNumberInput
+                        value={linea.monto}
+                        onChange={(monto) => {
+                          const next = [...pagosMixtos];
+                          next[idx] = { ...next[idx], monto };
+                          setPagosMixtos(next);
+                        }}
+                        className="h-8 w-28 text-xs"
+                        placeholder="Monto"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 shrink-0"
+                        disabled={pagosMixtos.length <= 2}
+                        onClick={() => setPagosMixtos(pagosMixtos.filter((_, i) => i !== idx))}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px]"
+                      onClick={() =>
+                        setPagosMixtos([
+                          ...pagosMixtos,
+                          { metodo: metodosParaPagoMixto(metodosPago)[0] || 'Efectivo', monto: 0 },
+                        ])
+                      }
+                    >
+                      + Línea
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[10px]"
+                      onClick={() => {
+                        const total = calcularTotal();
+                        const n = pagosMixtos.length;
+                        const base = Math.floor(total / n);
+                        const resto = total - base * n;
+                        setPagosMixtos(
+                          pagosMixtos.map((p, i) => ({
+                            ...p,
+                            monto: i === 0 ? base + resto : base,
+                          }))
+                        );
+                      }}
+                    >
+                      Repartir total
+                    </Button>
+                  </div>
+                  <p
+                    className={`text-[10px] font-bold ${
+                      Math.abs(pagosMixtos.reduce((s, p) => s + p.monto, 0) - calcularTotal()) < 0.01
+                        ? 'text-green-700'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    Suma: {formatMoney(pagosMixtos.reduce((s, p) => s + p.monto, 0))} / Total:{' '}
+                    {formatMoney(calcularTotal())}
+                  </p>
+                </div>
+              )}
               
               {/* Total Informativo Rápido */}
               <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
@@ -1823,6 +2555,11 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
         {/* Total y Acciones */}
         <Card className="p-3 bg-gradient-to-r from-green-100 to-emerald-100 border border-green-300 shadow-sm">
+          {editingVentaId && (
+            <p className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2 uppercase tracking-wide">
+              Editando venta cerrada — confirmá con Guardar
+            </p>
+          )}
           <div className="flex flex-col md:flex-row items-center justify-between gap-3">
             
             <div className="text-center md:text-left">
@@ -1837,30 +2574,33 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
             </div>
 
             <div className="flex gap-2 w-full md:w-auto">
-              {editingVentaId && (
+              {editingVentaId ? (
                 <Button
                   onClick={() => registrarVenta()}
-                  className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-xs font-bold uppercase tracking-tight shadow-sm"
+                  className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white h-8 px-6 text-xs font-bold uppercase tracking-tight shadow-sm"
                   size="sm"
                 >
                   Guardar
                 </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={guardarOrdenEnProgreso}
+                    className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs font-bold uppercase tracking-tight shadow-sm"
+                    size="sm"
+                  >
+                    En Progreso
+                  </Button>
+                  <Button
+                    onClick={limpiarFormulario}
+                    variant="outline"
+                    className="flex-none h-8 px-3 text-xs font-bold uppercase tracking-tight text-slate-600 border-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                    size="sm"
+                  >
+                    Limpiar
+                  </Button>
+                </>
               )}
-              <Button
-                onClick={guardarOrdenEnProgreso}
-                className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white h-8 px-4 text-xs font-bold uppercase tracking-tight shadow-sm"
-                size="sm"
-              >
-                En Progreso
-              </Button>
-              <Button
-                onClick={limpiarFormulario}
-                variant="outline"
-                className="flex-none h-8 px-3 text-xs font-bold uppercase tracking-tight text-slate-600 border-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                size="sm"
-              >
-                Limpiar
-              </Button>
             </div>
             
           </div>
@@ -2015,7 +2755,9 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                       <td className="border p-2 text-right bg-teal-50">{formatMoney(venta.cosmeticos)}</td>
                       <td className="border p-2 text-right bg-green-50 font-bold">{formatMoney(venta.total)}</td>
                       <td className="border p-2 text-center">{venta.estadia ? 'Sí' : '-'}</td>
-                      <td className="border p-2 text-center text-sm">{venta.metodoPago}</td>
+                      <td className="border p-2 text-center text-sm max-w-[200px]">
+                        {formatMetodoPagoDisplay(venta, formatMoney)}
+                      </td>
                       <td className="border p-2 text-center">
                         <div className="flex gap-2 justify-center">
                           <Dialog>
@@ -2071,12 +2813,24 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                                   </div>
 
                                   {ventaSeleccionada.lavado > 0 && (
-                                    <div className="bg-cyan-50 p-4 rounded-lg flex justify-between items-center">
-                                      <div>
-                                        <h4 className="font-bold text-cyan-900">Lavado</h4>
-                                        <p className="text-sm">{ventaSeleccionada.servicio}</p>
+                                    <div className="bg-cyan-50 p-4 rounded-lg">
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <h4 className="font-bold text-cyan-900">Lavado</h4>
+                                          <p className="text-sm">{ventaSeleccionada.servicio}</p>
+                                        </div>
+                                        <p className="font-bold">{formatMoney(ventaSeleccionada.lavado)}</p>
                                       </div>
-                                      <p className="font-bold">{formatMoney(ventaSeleccionada.lavado)}</p>
+                                      {ventaSeleccionada.extrasLavado && ventaSeleccionada.extrasLavado.length > 0 && (
+                                        <ul className="mt-2 pt-2 border-t border-cyan-200 space-y-1">
+                                          {ventaSeleccionada.extrasLavado.map((e, idx) => (
+                                            <li key={idx} className="flex justify-between text-xs text-cyan-800">
+                                              <span>+ {e.nombre}</span>
+                                              <span>{formatMoney(e.precio)}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
                                     </div>
                                   )}
 
@@ -2129,7 +2883,9 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                                       <p className="text-2xl font-bold text-green-700">{formatMoney(ventaSeleccionada.total)}</p>
                                       <div className="text-right">
                                         <p className="text-sm text-green-800">Método de Pago</p>
-                                        <p className="font-bold text-green-900">{ventaSeleccionada.metodoPago}</p>
+                                        <p className="font-bold text-green-900 text-sm">
+                                          {formatMetodoPagoDisplay(ventaSeleccionada, formatMoney)}
+                                        </p>
                                       </div>
                                     </div>
                                   </div>
@@ -2223,25 +2979,47 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
           </Card>
         )}
 
-        {/* Resumen de Caja Ultra-Compacto */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-          <Card className="p-2 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
-            <h3 className="font-bold text-green-900 mb-0.5 text-[10px] uppercase">Efectivo</h3>
-            <p className="text-lg font-black text-green-700">{formatMoney(totalEfectivo)}</p>
-          </Card>
-          <Card className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
-            <h3 className="font-bold text-blue-900 mb-0.5 text-[10px] uppercase">Transferencia</h3>
-            <p className="text-lg font-black text-blue-700">{formatMoney(totalTransferencia)}</p>
-          </Card>
-          <Card className="p-2 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
-            <h3 className="font-bold text-purple-900 mb-0.5 text-[10px] uppercase">Digital / Otros</h3>
-            <p className="text-lg font-black text-purple-700">{formatMoney(totalBilletera)}</p>
-          </Card>
-          <Card className="p-2 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300">
-            <h3 className="font-bold text-gray-900 mb-0.5 text-[10px] uppercase">Total</h3>
-            <p className="text-lg font-black text-gray-800">{formatMoney(totalGeneral)}</p>
-          </Card>
-        </div>
+        <CierreCajaPanel
+          fechaCierre={fechaCierre}
+          onFechaCierreChange={setFechaCierre}
+          ventasDelDiaCount={ventasDelDia.length}
+          totalEfectivo={totalEfectivo}
+          totalTransferencia={totalTransferencia}
+          totalBilletera={totalBilletera}
+          totalGeneral={totalGeneral}
+          ventasEfectivoCount={
+            ventasDelDia.filter((v) =>
+              desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'efectivo' && p.monto > 0)
+            ).length
+          }
+          ventasTransferenciaCount={
+            ventasDelDia.filter((v) =>
+              desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'transferencia' && p.monto > 0)
+            ).length
+          }
+          ventasOtrosCount={
+            ventasDelDia.filter((v) =>
+              desglosePagosVenta(v).some((p) => {
+                const m = p.metodo.toLowerCase();
+                return m !== 'efectivo' && m !== 'transferencia' && p.monto > 0;
+              })
+            ).length
+          }
+          conteoBilletes={conteoBilletes}
+          onConteoChange={actualizarConteoBillete}
+          onLimpiarConteo={limpiarConteoBilletes}
+          totalContadoBilletes={totalContadoBilletes}
+          diferenciaArqueo={diferenciaArqueo}
+          resumenMetodosPago={resumenMetodosPago}
+          cierreYaEnviado={cierreYaEnviado}
+          cierreEnProceso={cierreEnProceso}
+          onCerrarCaja={realizarCierreCaja}
+          formatMoney={formatMoney}
+          denominacionesBilletes={denominacionesBilletes}
+          onAgregarDenominacion={agregarDenominacionBillete}
+          onEliminarDenominacion={eliminarDenominacionBillete}
+          onEditarDenominacion={editarDenominacionBillete}
+        />
       </TabsContent>
 
       <TabsContent value="consumo">

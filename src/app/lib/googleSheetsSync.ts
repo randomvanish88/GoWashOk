@@ -109,6 +109,67 @@ export const googleSheetsSync = {
   },
 
   /**
+   * Registra el cierre de caja del día en Google Sheets
+   */
+  async syncCierreCaja(cierre: {
+    id: string;
+    fecha: string;
+    horaCierre: string;
+    totalEfectivoSistema: number;
+    totalContado: number;
+    diferencia: number;
+    totalGeneral: number;
+    cantidadVentas: number;
+    detalleMetodos: { metodo: string; total: number; cantidad: number }[];
+    detalleBilletes: { valor: number; cantidad: number; subtotal: number }[];
+    empleado?: string;
+  }) {
+    if (!this.getSpreadsheetId()) {
+      return { success: false, error: 'No hay hoja de Google configurada.' };
+    }
+
+    const detalleMetodosTexto = cierre.detalleMetodos
+      .filter((m) => m.cantidad > 0)
+      .map((m) => `${m.metodo}: ${m.cantidad} venta(s) — $${m.total.toLocaleString('es-AR')}`)
+      .join(' | ');
+
+    const detalleBilletesTexto = cierre.detalleBilletes
+      .filter((b) => b.cantidad > 0)
+      .map((b) => `$${b.valor}×${b.cantidad}=${b.subtotal}`)
+      .join(' | ');
+
+    const data = {
+      Fecha: cierre.fecha,
+      Hora_Cierre: cierre.horaCierre,
+      Total_Efectivo_Sistema: cierre.totalEfectivoSistema,
+      Total_Contado: cierre.totalContado,
+      Diferencia: cierre.diferencia,
+      Total_General: cierre.totalGeneral,
+      Cantidad_Ventas: cierre.cantidadVentas,
+      Detalle_Metodos: detalleMetodosTexto,
+      Detalle_Billetes: detalleBilletesTexto,
+      Empleado: cierre.empleado || '',
+      ID: cierre.id,
+    };
+
+    try {
+      // @ts-ignore
+      const result = await window.electronAPI.googleSheets.addRow(
+        this.getSheetName('Cierres Caja'),
+        data
+      );
+      if (result?.success === false) {
+        return { success: false, error: result.error || 'Error al guardar en Sheets' };
+      }
+      console.log('[GoogleSheetsSync] Cierre de caja sincronizado.');
+      return { success: true };
+    } catch (error: any) {
+      console.error('[GoogleSheetsSync] Error sincronizando cierre:', error);
+      return { success: false, error: error?.message || 'Error de conexión' };
+    }
+  },
+
+  /**
    * Sincroniza un gasto
    */
   async syncGasto(gasto: any) {

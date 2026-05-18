@@ -49,6 +49,10 @@ function App() {
     if (savedLicense === 'true') {
       setIsLicensed(true);
     }
+    // Desarrollo en navegador: no hay electronAPI; la licencia es solo para Electron
+    if (import.meta.env.DEV && typeof window !== 'undefined' && !window.electronAPI) {
+      setIsLicensed(true);
+    }
     const savedAuth = localStorage.getItem('gowash-auth');
     if (savedAuth) {
       const authData = JSON.parse(savedAuth);

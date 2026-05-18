@@ -1,20 +1,36 @@
 import { useState, useEffect } from 'react';
 import { ShieldAlert, Key, Copy, CheckCircle2 } from 'lucide-react';
 
+declare global {
+  interface Window {
+    electronAPI?: {
+      getMachineId: () => Promise<string>;
+      validateLicense: (key: string) => Promise<boolean>;
+    };
+  }
+}
+
 export function LicenseLock({ onActivated }: { onActivated: () => void }) {
   const [machineId, setMachineId] = useState('Obteniendo ID...');
   const [licenseKey, setLicenseKey] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+  const isElectron = typeof window.electronAPI?.getMachineId === 'function';
 
   useEffect(() => {
     const fetchId = async () => {
-      if (window.electronAPI) {
-        const id = await window.electronAPI.getMachineId();
-        setMachineId(id);
+      if (!isElectron) {
+        setMachineId('Usá la app de escritorio (npm run electron:dev)');
+        return;
+      }
+      try {
+        const id = await window.electronAPI!.getMachineId();
+        setMachineId(id || 'UNKNOWN-ID');
+      } catch {
+        setMachineId('Error al leer el ID de hardware');
       }
     };
     fetchId();
-  }, []);
+  }, [isElectron]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(machineId);
@@ -23,14 +39,16 @@ export function LicenseLock({ onActivated }: { onActivated: () => void }) {
   };
 
   const handleValidate = async () => {
-    if (window.electronAPI) {
-      const isValid = await window.electronAPI.validateLicense(licenseKey);
-      if (isValid) {
-        localStorage.setItem('gowash-license-active', 'true');
-        onActivated();
-      } else {
-        alert('Clave de activación incorrecta. Por favor, verifique el ID.');
-      }
+    if (!isElectron) {
+      alert('La activación solo funciona en la aplicación de escritorio (Electron), no en el navegador.');
+      return;
+    }
+    const isValid = await window.electronAPI!.validateLicense(licenseKey);
+    if (isValid) {
+      localStorage.setItem('gowash-license-active', 'true');
+      onActivated();
+    } else {
+      alert('Clave de activación incorrecta. Por favor, verifique el ID.');
     }
   };
 

@@ -3,7 +3,6 @@ import { Price } from '../App';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Plus, Save, X, Car, Ruler, Sparkles, DollarSign, Image as ImageIcon, FolderOpen } from 'lucide-react';
 
 declare global {
@@ -51,13 +50,13 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
 
   useEffect(() => {
     if (editingPrice) {
-      setBrand(brands.includes(editingPrice.brand) ? editingPrice.brand : 'Otro');
-      setCustomBrand(brands.includes(editingPrice.brand) ? '' : editingPrice.brand);
+      setBrand(editingPrice.brand);
+      setCustomBrand('');
       setModel(editingPrice.model);
       setYear(editingPrice.year || '');
       setSize(editingPrice.size);
-      setService(SERVICES.includes(editingPrice.service) ? editingPrice.service : 'Otro');
-      setCustomService(SERVICES.includes(editingPrice.service) ? '' : editingPrice.service);
+      setService(editingPrice.service);
+      setCustomService('');
       setPrice(editingPrice.price.toString());
       setImageUrl(editingPrice.imageUrl || '');
     } else {
@@ -114,20 +113,17 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const finalBrand = brand === 'Otro' ? customBrand : brand;
-    const finalService = service === 'Otro' ? customService : service;
-
-    if (!finalBrand || !model) {
+    if (!brand || !model) {
       alert("Por favor completa al menos la Marca y el Modelo del vehículo.");
       return;
     }
 
     const priceData = {
-      brand: finalBrand,
+      brand: brand,
       model,
       year: year || undefined,
       size: size || 'No especificado',
-      service: finalService || 'Sin especificar',
+      service: service || 'Sin especificar',
       price: price ? parseFloat(price) : 0,
       imageUrl: imageUrl || undefined,
     };
@@ -161,26 +157,20 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
             <Car className="w-4 h-4" />
             Marca del Vehículo
           </Label>
-          <Select value={brand} onValueChange={setBrand} required>
-            <SelectTrigger id="brand" className="bg-white border-blue-300">
-              <SelectValue placeholder="Seleccionar marca" />
-            </SelectTrigger>
-            <SelectContent>
-              {brands.map(b => (
-                <SelectItem key={b} value={b}>{b}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {brand === 'Otro' && (
-            <Input
-              type="text"
-              placeholder="Especificar marca"
-              value={customBrand}
-              onChange={(e) => setCustomBrand(e.target.value)}
-              required
-              className="bg-white"
-            />
-          )}
+          <Input
+            id="brand"
+            list="brand-options"
+            placeholder="Ej: Toyota, Ford, Honda..."
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            required
+            className="bg-white border-blue-300"
+          />
+          <datalist id="brand-options">
+            {brands.map(b => (
+              <option key={b} value={b} />
+            ))}
+          </datalist>
         </div>
         
         {/* Modelo */}
@@ -219,16 +209,19 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
             <Ruler className="w-4 h-4" />
             Tamaño del Vehículo (Opcional)
           </Label>
-          <Select value={size} onValueChange={setSize}>
-            <SelectTrigger id="size" className="bg-white border-purple-300">
-              <SelectValue placeholder="Seleccionar tamaño" />
-            </SelectTrigger>
-            <SelectContent>
-              {sizes.map(s => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input
+            id="size"
+            list="size-options"
+            placeholder="Ej: Pequeño, Mediano, SUV..."
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            className="bg-white border-purple-300"
+          />
+          <datalist id="size-options">
+            {sizes.map(s => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
         </div>
 
         {/* Servicio */}
@@ -237,26 +230,19 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
             <Sparkles className="w-4 h-4" />
             Tipo de Servicio (Opcional)
           </Label>
-          <Select value={service} onValueChange={setService}>
-            <SelectTrigger id="service" className="bg-white border-pink-300">
-              <SelectValue placeholder="Seleccionar servicio" />
-            </SelectTrigger>
-            <SelectContent>
-              {SERVICES.map(s => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-              <SelectItem value="Otro">Otro</SelectItem>
-            </SelectContent>
-          </Select>
-          {service === 'Otro' && (
-            <Input
-              type="text"
-              placeholder="Especificar servicio"
-              value={customService}
-              onChange={(e) => setCustomService(e.target.value)}
-              className="bg-white"
-            />
-          )}
+          <Input
+            id="service"
+            list="service-options"
+            placeholder="Ej: Lavado Básico, Detallado..."
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+            className="bg-white border-pink-300"
+          />
+          <datalist id="service-options">
+            {SERVICES.map(s => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
         </div>
 
         {/* Precio */}
