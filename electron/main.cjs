@@ -87,10 +87,26 @@ app.whenReady().then(() => {
 
   autoUpdater.on('update-available', () => {
     console.log('[Auto-Update] Nueva versión disponible.');
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Actualización disponible',
+      message: 'Hay una nueva versión de GoWash POS disponible. Se descargará en segundo plano.',
+      buttons: ['OK']
+    });
   });
 
   autoUpdater.on('update-downloaded', () => {
     console.log('[Auto-Update] Versión descargada, lista para instalar.');
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Actualización lista',
+      message: '¡La actualización fue descargada! La aplicación se reiniciará para instalarla.',
+      buttons: ['Reiniciar ahora', 'Más tarde']
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
   });
 
   autoUpdater.on('error', (err) => {
