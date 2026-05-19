@@ -6,13 +6,16 @@ const SPREADSHEET_ID_KEY = 'gowash-google-sheet-id';
 const TEST_SPREADSHEET_ID_KEY = 'gowash-google-sheet-id-test';
 const TEST_MODE_KEY = 'gowash-test-mode';
 
+// ID por defecto embebido — funciona sin configuración en PCs nuevas
+const DEFAULT_SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+
 export const googleSheetsSync = {
   /**
    * Inicializa la conexión con el ID guardado (y el de prueba si aplica)
    */
   async init() {
     const isTest = this.isTestMode();
-    const prodId = localStorage.getItem(SPREADSHEET_ID_KEY);
+    const prodId = localStorage.getItem(SPREADSHEET_ID_KEY) || DEFAULT_SPREADSHEET_ID;
     const testId = localStorage.getItem(TEST_SPREADSHEET_ID_KEY);
     
     const activeId = isTest ? (testId || prodId) : prodId;
@@ -232,7 +235,7 @@ export const googleSheetsSync = {
   },
 
   getSpreadsheetId() {
-    return localStorage.getItem(SPREADSHEET_ID_KEY);
+    return localStorage.getItem(SPREADSHEET_ID_KEY) || DEFAULT_SPREADSHEET_ID;
   },
 
   setTestSpreadsheetId(id: string) {
