@@ -21,3 +21,22 @@
 .animate-gentle-bounce {
   animation: gentle-bounce 3s ease-in-out infinite;
 }
+
+/* Prevenir scroll automático en inputs */
+input:focus {
+  scroll-behavior: auto;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Evitar que los inputs causen scroll automático */
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+textarea:focus {
+  scroll-margin-top: 0;
+  scroll-margin-bottom: 0;
+}

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil } from 'lucide-react';
 import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
+import { InicioCajaPanel } from './InicioCajaPanel';
 import { EditableNumberInput } from './EditableNumberInput';
 import {
   PAGO_MIXTO,
@@ -318,6 +319,15 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const [empleadoEditando, setEmpleadoEditando] = useState<string | null>(null);
   const [empleadoEditandoNombre, setEmpleadoEditandoNombre] = useState('');
   const [fechaCierre, setFechaCierre] = useState(() => new Date().toISOString().split('T')[0]);
+  const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Monto de inicio de caja del día del cierre (leído desde localStorage)
+  const [inicioCajaVersion, setInicioCajaVersion] = useState(0);
+  const montoCajaInicio = useMemo(() => {
+    void inicioCajaVersion; // fuerza re-cálculo cuando se registra un inicio
+    const key = `gowash-inicio-monto-${fechaCierre}`;
+    return parseFloat(localStorage.getItem(key) || '0') || 0;
+  }, [fechaCierre, inicioCajaVersion]);
   const [denominacionesBilletes, setDenominacionesBilletes] = useState<number[]>(DEFAULT_DENOMINACIONES_ARS);
   const [conteoBilletes, setConteoBilletes] = useState<Record<string, number>>(() =>
     crearConteoBilletesVacio(DEFAULT_DENOMINACIONES_ARS)
@@ -1298,7 +1308,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     [conteoBilletes, denominacionesBilletes]
   );
 
-  const diferenciaArqueo = totalContadoBilletes - totalEfectivo;
+  const diferenciaArqueo = totalContadoBilletes - (totalEfectivo + montoCajaInicio);
 
   const cierreYaEnviado =
     typeof window !== 'undefined' &&
@@ -1403,6 +1413,8 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       fecha: fechaCierre,
       horaCierre: getCurrentTimeString(),
       totalEfectivoSistema: totalEfectivo,
+      montoCajaInicio,
+      totalEsperadoEfectivo: totalEfectivo + montoCajaInicio,
       totalContado: totalContadoBilletes,
       diferencia: diferenciaArqueo,
       totalGeneral,
@@ -1499,33 +1511,54 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       <div className="space-y-6">
       {/* Editor Servicios de Lavado */}
       <Card className="p-6 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h3 className="font-bold text-xl text-cyan-900">Servicios de Lavado</h3>
-          
-          <div className="flex flex-wrap gap-2 p-3 bg-white/60 rounded-xl border border-cyan-200 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number" 
-                placeholder="% +/-" 
-                className="w-20 h-8 bg-white text-xs" 
-                value={adjLavadoPct}
-                onChange={(e) => setAdjLavadoPct(e.target.value)}
-              />
-              <Button size="sm" variant="outline" className="h-8 text-xs bg-cyan-600 text-white border-0 hover:bg-cyan-700" onClick={() => applyAdj('lavado', 'pct')}>Ajustar %</Button>
-            </div>
-            <div className="w-px h-8 bg-cyan-200 mx-1 hidden md:block" />
-            <div className="flex items-center gap-2">
-              <Input 
-                type="number" 
-                placeholder="$ +/-" 
-                className="w-24 h-8 bg-white text-xs"
-                value={adjLavadoAmt}
-                onChange={(e) => setAdjLavadoAmt(e.target.value)}
-              />
-              <Button size="sm" variant="outline" className="h-8 text-xs bg-blue-600 text-white border-0 hover:bg-blue-700" onClick={() => applyAdj('lavado', 'amt')}>Ajustar $</Button>
+        <h3 className="font-bold text-xl text-cyan-900 mb-4">Servicios de Lavado</h3>
+        
+        {/* Controles superiores: Ajuste de precios y botón agregar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Ajuste de Precios */}
+          <div className="p-3 bg-white rounded-lg border border-cyan-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-cyan-700 mb-2">💰 Ajustar Precios</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="% +/-" 
+                  className="w-20 h-8 bg-white text-xs" 
+                  value={adjLavadoPct}
+                  onChange={(e) => setAdjLavadoPct(e.target.value)}
+                />
+                <Button size="sm" className="h-8 text-xs bg-cyan-600 text-white hover:bg-cyan-700 flex-1" onClick={() => applyAdj('lavado', 'pct')}>Ajustar %</Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="number" 
+                  placeholder="$ +/-" 
+                  className="w-20 h-8 bg-white text-xs"
+                  value={adjLavadoAmt}
+                  onChange={(e) => setAdjLavadoAmt(e.target.value)}
+                />
+                <Button size="sm" className="h-8 text-xs bg-blue-600 text-white hover:bg-blue-700 flex-1" onClick={() => applyAdj('lavado', 'amt')}>Ajustar $</Button>
+              </div>
             </div>
           </div>
+
+          {/* Espacio vacío o separador */}
+          <div></div>
+
+          {/* Botón Agregar */}
+          <div className="flex items-end">
+            <Button
+              onClick={() => {
+                setServiciosLavado([...serviciosLavado, { nombre: '', precio: 0 }]);
+              }}
+              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm py-2"
+            >
+              + Agregar Servicio
+            </Button>
+          </div>
         </div>
+
+        {/* Lista de servicios */}
         <div className="space-y-3">
           {serviciosLavado.map((servicio, idx) => (
             <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
@@ -1561,26 +1594,19 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               </Button>
             </div>
           ))}
-          <Button
-            onClick={() => {
-              setServiciosLavado([...serviciosLavado, { nombre: '', precio: 0 }]);
-            }}
-            className="w-full"
-          >
-            + Agregar Servicio
-          </Button>
         </div>
       </Card>
 
       {/* Editor Productos Bar */}
       <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h3 className="font-bold text-xl text-amber-900">Productos del Bar</h3>
-          
-          <div className="flex flex-col gap-2 p-3 bg-white/60 rounded-xl border border-amber-200 shadow-sm">
-            {/* Ajuste de Precios */}
-            <p className="text-[9px] font-black uppercase tracking-widest text-amber-700">💰 Precios</p>
-            <div className="flex flex-wrap gap-2">
+        <h3 className="font-bold text-xl text-amber-900 mb-4">Productos del Bar</h3>
+        
+        {/* Controles superiores: Ajuste de precios, stock y botón agregar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Ajuste de Precios */}
+          <div className="p-3 bg-white rounded-lg border border-amber-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-2">💰 Ajustar Precios</p>
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Input 
                   type="number" 
@@ -1589,42 +1615,53 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                   value={adjBarPct}
                   onChange={(e) => setAdjBarPct(e.target.value)}
                 />
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-amber-600 text-white border-0 hover:bg-amber-700" onClick={() => applyAdj('bar', 'pct')}>Ajustar %</Button>
+                <Button size="sm" className="h-8 text-xs bg-amber-600 text-white hover:bg-amber-700 flex-1" onClick={() => applyAdj('bar', 'pct')}>Ajustar %</Button>
               </div>
-              <div className="w-px h-8 bg-amber-200 mx-1 hidden md:block" />
               <div className="flex items-center gap-2">
                 <Input 
                   type="number" 
                   placeholder="$ +/-" 
-                  className="w-24 h-8 bg-white text-xs"
+                  className="w-20 h-8 bg-white text-xs"
                   value={adjBarAmt}
                   onChange={(e) => setAdjBarAmt(e.target.value)}
                 />
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-orange-600 text-white border-0 hover:bg-orange-700" onClick={() => applyAdj('bar', 'amt')}>Ajustar $</Button>
+                <Button size="sm" className="h-8 text-xs bg-orange-600 text-white hover:bg-orange-700 flex-1" onClick={() => applyAdj('bar', 'amt')}>Ajustar $</Button>
               </div>
             </div>
-            {/* Separador */}
-            <div className="border-t border-amber-200" />
-            {/* Ajuste de Stock */}
-            <p className="text-[9px] font-black uppercase tracking-widest text-green-700">📦 Stock</p>
-            <div className="flex flex-wrap gap-2">
+          </div>
+
+          {/* Ajuste de Stock */}
+          <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-green-700 mb-2">📦 Ajustar Stock</p>
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Input 
                   type="number" 
                   placeholder="Cantidad" 
-                  className="w-24 h-8 bg-white text-xs" 
+                  className="w-20 h-8 bg-white text-xs" 
                   value={adjBarStock}
                   onChange={(e) => setAdjBarStock(e.target.value)}
                 />
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-green-600 text-white border-0 hover:bg-green-700" onClick={() => applyStockAdj('bar', 'add')}>+ Agregar</Button>
+                <Button size="sm" className="h-8 text-xs bg-green-600 text-white hover:bg-green-700 flex-1" onClick={() => applyStockAdj('bar', 'add')}>+ Agregar</Button>
               </div>
-              <div className="w-px h-8 bg-amber-200 mx-1 hidden md:block" />
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-slate-600 text-white border-0 hover:bg-slate-700" onClick={() => applyStockAdj('bar', 'set')}>Establecer todos</Button>
-              </div>
+              <Button size="sm" className="w-full h-8 text-xs bg-slate-600 text-white hover:bg-slate-700" onClick={() => applyStockAdj('bar', 'set')}>Establecer todos</Button>
             </div>
           </div>
+
+          {/* Botón Agregar */}
+          <div className="flex items-end">
+            <Button
+              onClick={() => {
+                setBarProductsData([...barProductsData, { group: '', name: '', value: 0, stock: 0 }]);
+              }}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-2"
+            >
+              + Agregar Producto
+            </Button>
+          </div>
         </div>
+
+        {/* Lista de productos */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {barProductsData.map((producto, idx) => (
             <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
@@ -1682,26 +1719,19 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               </Button>
             </div>
           ))}
-          <Button
-            onClick={() => {
-              setBarProductsData([...barProductsData, { group: '', name: '', value: 0, stock: 0 }]);
-            }}
-            className="w-full"
-          >
-            + Agregar Producto
-          </Button>
         </div>
       </Card>
 
       {/* Editor Cosméticos */}
       <Card className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h3 className="font-bold text-xl text-teal-900">Cosméticos del Automotor</h3>
-          
-          <div className="flex flex-col gap-2 p-3 bg-white/60 rounded-xl border border-teal-200 shadow-sm">
-            {/* Ajuste de Precios */}
-            <p className="text-[9px] font-black uppercase tracking-widest text-teal-700">💰 Precios</p>
-            <div className="flex flex-wrap gap-2">
+        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosméticos del Automotor</h3>
+        
+        {/* Controles superiores: Ajuste de precios, stock y botón agregar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Ajuste de Precios */}
+          <div className="p-3 bg-white rounded-lg border border-teal-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-teal-700 mb-2">💰 Ajustar Precios</p>
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Input 
                   type="number" 
@@ -1710,42 +1740,53 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                   value={adjCosPct}
                   onChange={(e) => setAdjCosPct(e.target.value)}
                 />
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-teal-600 text-white border-0 hover:bg-teal-700" onClick={() => applyAdj('cosmeticos', 'pct')}>Ajustar %</Button>
+                <Button size="sm" className="h-8 text-xs bg-teal-600 text-white hover:bg-teal-700 flex-1" onClick={() => applyAdj('cosmeticos', 'pct')}>Ajustar %</Button>
               </div>
-              <div className="w-px h-8 bg-teal-200 mx-1 hidden md:block" />
               <div className="flex items-center gap-2">
                 <Input 
                   type="number" 
                   placeholder="$ +/-" 
-                  className="w-24 h-8 bg-white text-xs"
+                  className="w-20 h-8 bg-white text-xs"
                   value={adjCosAmt}
                   onChange={(e) => setAdjCosAmt(e.target.value)}
                 />
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-cyan-600 text-white border-0 hover:bg-cyan-700" onClick={() => applyAdj('cosmeticos', 'amt')}>Ajustar $</Button>
+                <Button size="sm" className="h-8 text-xs bg-cyan-600 text-white hover:bg-cyan-700 flex-1" onClick={() => applyAdj('cosmeticos', 'amt')}>Ajustar $</Button>
               </div>
             </div>
-            {/* Separador */}
-            <div className="border-t border-teal-200" />
-            {/* Ajuste de Stock */}
-            <p className="text-[9px] font-black uppercase tracking-widest text-green-700">📦 Stock</p>
-            <div className="flex flex-wrap gap-2">
+          </div>
+
+          {/* Ajuste de Stock */}
+          <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-green-700 mb-2">📦 Ajustar Stock</p>
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Input 
                   type="number" 
                   placeholder="Cantidad" 
-                  className="w-24 h-8 bg-white text-xs" 
+                  className="w-20 h-8 bg-white text-xs" 
                   value={adjCosStock}
                   onChange={(e) => setAdjCosStock(e.target.value)}
                 />
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-green-600 text-white border-0 hover:bg-green-700" onClick={() => applyStockAdj('cosmeticos', 'add')}>+ Agregar</Button>
+                <Button size="sm" className="h-8 text-xs bg-green-600 text-white hover:bg-green-700 flex-1" onClick={() => applyStockAdj('cosmeticos', 'add')}>+ Agregar</Button>
               </div>
-              <div className="w-px h-8 bg-teal-200 mx-1 hidden md:block" />
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 text-xs bg-slate-600 text-white border-0 hover:bg-slate-700" onClick={() => applyStockAdj('cosmeticos', 'set')}>Establecer todos</Button>
-              </div>
+              <Button size="sm" className="w-full h-8 text-xs bg-slate-600 text-white hover:bg-slate-700" onClick={() => applyStockAdj('cosmeticos', 'set')}>Establecer todos</Button>
             </div>
           </div>
+
+          {/* Botón Agregar */}
+          <div className="flex items-end">
+            <Button
+              onClick={() => {
+                setCosmeticosData([...cosmeticosData, { nombre: '', contenido: '', pvp: 0, stock: 0 }]);
+              }}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm py-2"
+            >
+              + Agregar Cosmético
+            </Button>
+          </div>
         </div>
+
+        {/* Lista de cosméticos */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {cosmeticosData.map((cosmetico, idx) => (
             <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
@@ -1803,14 +1844,6 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
               </Button>
             </div>
           ))}
-          <Button
-            onClick={() => {
-              setCosmeticosData([...cosmeticosData, { nombre: '', contenido: '', pvp: 0, stock: 0 }]);
-            }}
-            className="w-full"
-          >
-            + Agregar Cosmético
-          </Button>
         </div>
       </Card>
     </div>
@@ -1818,8 +1851,8 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   };
 
   return (
-    <Tabs defaultValue="ventas" className="space-y-6">
-      <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 bg-white shadow-lg">
+    <Tabs defaultValue="ventas" className="space-y-6 scroll-smooth">
+      <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 bg-white shadow-lg sticky top-0 z-10">
         <TabsTrigger value="ventas">Ventas</TabsTrigger>
         <TabsTrigger value="consumo">Consumo Empleados</TabsTrigger>
         <TabsTrigger value="precios">Ajuste de Precios y Stock</TabsTrigger>
@@ -2979,47 +3012,81 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
           </Card>
         )}
 
-        <CierreCajaPanel
-          fechaCierre={fechaCierre}
-          onFechaCierreChange={setFechaCierre}
-          ventasDelDiaCount={ventasDelDia.length}
-          totalEfectivo={totalEfectivo}
-          totalTransferencia={totalTransferencia}
-          totalBilletera={totalBilletera}
-          totalGeneral={totalGeneral}
-          ventasEfectivoCount={
-            ventasDelDia.filter((v) =>
-              desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'efectivo' && p.monto > 0)
-            ).length
-          }
-          ventasTransferenciaCount={
-            ventasDelDia.filter((v) =>
-              desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'transferencia' && p.monto > 0)
-            ).length
-          }
-          ventasOtrosCount={
-            ventasDelDia.filter((v) =>
-              desglosePagosVenta(v).some((p) => {
-                const m = p.metodo.toLowerCase();
-                return m !== 'efectivo' && m !== 'transferencia' && p.monto > 0;
-              })
-            ).length
-          }
-          conteoBilletes={conteoBilletes}
-          onConteoChange={actualizarConteoBillete}
-          onLimpiarConteo={limpiarConteoBilletes}
-          totalContadoBilletes={totalContadoBilletes}
-          diferenciaArqueo={diferenciaArqueo}
-          resumenMetodosPago={resumenMetodosPago}
-          cierreYaEnviado={cierreYaEnviado}
-          cierreEnProceso={cierreEnProceso}
-          onCerrarCaja={realizarCierreCaja}
-          formatMoney={formatMoney}
-          denominacionesBilletes={denominacionesBilletes}
-          onAgregarDenominacion={agregarDenominacionBillete}
-          onEliminarDenominacion={eliminarDenominacionBillete}
-          onEditarDenominacion={editarDenominacionBillete}
-        />
+        <Tabs defaultValue="cierre" className="mt-4">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-100 border border-slate-200 rounded-xl h-10">
+            <TabsTrigger
+              value="inicio"
+              className="rounded-lg text-xs font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center gap-1.5">
+                🟡 Inicio de Caja
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="cierre"
+              className="rounded-lg text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+            >
+              <span className="flex items-center gap-1.5">
+                🟢 Cierre de Caja
+              </span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="inicio">
+            <InicioCajaPanel
+              fechaInicio={fechaInicio}
+              onFechaInicioChange={setFechaInicio}
+              formatMoney={formatMoney}
+              denominacionesBilletes={denominacionesBilletes}
+              onInicioCajaRegistrado={() => setInicioCajaVersion(v => v + 1)}
+            />
+          </TabsContent>
+
+          <TabsContent value="cierre">
+            <CierreCajaPanel
+              fechaCierre={fechaCierre}
+              onFechaCierreChange={setFechaCierre}
+              ventasDelDiaCount={ventasDelDia.length}
+              totalEfectivo={totalEfectivo}
+              totalTransferencia={totalTransferencia}
+              totalBilletera={totalBilletera}
+              totalGeneral={totalGeneral}
+              montoCajaInicio={montoCajaInicio}
+              ventasEfectivoCount={
+                ventasDelDia.filter((v) =>
+                  desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'efectivo' && p.monto > 0)
+                ).length
+              }
+              ventasTransferenciaCount={
+                ventasDelDia.filter((v) =>
+                  desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'transferencia' && p.monto > 0)
+                ).length
+              }
+              ventasOtrosCount={
+                ventasDelDia.filter((v) =>
+                  desglosePagosVenta(v).some((p) => {
+                    const m = p.metodo.toLowerCase();
+                    return m !== 'efectivo' && m !== 'transferencia' && p.monto > 0;
+                  })
+                ).length
+              }
+              conteoBilletes={conteoBilletes}
+              onConteoChange={actualizarConteoBillete}
+              onLimpiarConteo={limpiarConteoBilletes}
+              totalContadoBilletes={totalContadoBilletes}
+              diferenciaArqueo={diferenciaArqueo}
+              resumenMetodosPago={resumenMetodosPago}
+              cierreYaEnviado={cierreYaEnviado}
+              cierreEnProceso={cierreEnProceso}
+              onCerrarCaja={realizarCierreCaja}
+              formatMoney={formatMoney}
+              denominacionesBilletes={denominacionesBilletes}
+              onAgregarDenominacion={agregarDenominacionBillete}
+              onEliminarDenominacion={eliminarDenominacionBillete}
+              onEditarDenominacion={editarDenominacionBillete}
+            />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
 
       <TabsContent value="consumo">
