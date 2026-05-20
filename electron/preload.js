@@ -4,6 +4,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMachineId: () => ipcRenderer.invoke('get-machine-id'),
   validateLicense: (key) => ipcRenderer.invoke('validate-license', key),
   selectImage: () => ipcRenderer.invoke('select-image'),
+  backup: {
+    save: (data) => ipcRenderer.invoke('backup-save', data),
+    load: () => ipcRenderer.invoke('backup-load'),
+  },
   googleSheets: {
     init: (spreadsheetId) => ipcRenderer.invoke('google-sheets-init', spreadsheetId),
     addRow: (sheetTitle, data) => ipcRenderer.invoke('google-sheets-add-row', { sheetTitle, data }),

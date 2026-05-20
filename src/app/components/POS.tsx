@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil } from 'lucide-react';
+import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles } from 'lucide-react';
 import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
 import { InicioCajaPanel } from './InicioCajaPanel';
 import { EditableNumberInput } from './EditableNumberInput';
@@ -283,7 +283,306 @@ const getCurrentTimeString = () => {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 };
 
-export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmin?: boolean }) {
+interface EditorPreciosProps {
+  serviciosLavado: ServicioLavado[];
+  setServiciosLavado: (s: ServicioLavado[]) => void;
+  barProductsData: ProductoBar[];
+  setBarProductsData: (p: ProductoBar[]) => void;
+  cosmeticosData: Cosmetico[];
+  setCosmeticosData: (c: Cosmetico[]) => void;
+}
+
+function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, setBarProductsData, cosmeticosData, setCosmeticosData }: EditorPreciosProps) {
+  const [adjLavadoPct, setAdjLavadoPct] = useState('');
+  const [adjLavadoAmt, setAdjLavadoAmt] = useState('');
+  const [adjBarPct, setAdjBarPct] = useState('');
+  const [adjBarAmt, setAdjBarAmt] = useState('');
+  const [adjCosPct, setAdjCosPct] = useState('');
+  const [adjCosAmt, setAdjCosAmt] = useState('');
+  const [adjBarStock, setAdjBarStock] = useState('');
+  const [adjCosStock, setAdjCosStock] = useState('');
+
+  const applyAdj = (type: 'lavado' | 'bar' | 'cosmeticos', mode: 'pct' | 'amt') => {
+    if (type === 'lavado') {
+      const val = parseFloat(mode === 'pct' ? adjLavadoPct : adjLavadoAmt);
+      if (isNaN(val)) return;
+      setServiciosLavado(serviciosLavado.map(s => ({ 
+        ...s, 
+        precio: mode === 'pct' ? Math.round(s.precio * (1 + val / 100)) : s.precio + val 
+      })));
+      mode === 'pct' ? setAdjLavadoPct('') : setAdjLavadoAmt('');
+    } else if (type === 'bar') {
+      const val = parseFloat(mode === 'pct' ? adjBarPct : adjBarAmt);
+      if (isNaN(val)) return;
+      setBarProductsData(barProductsData.map(p => ({ 
+        ...p, 
+        value: mode === 'pct' ? Math.round(p.value * (1 + val / 100)) : p.value + val 
+      })));
+      mode === 'pct' ? setAdjBarPct('') : setAdjBarAmt('');
+    } else if (type === 'cosmeticos') {
+      const val = parseFloat(mode === 'pct' ? adjCosPct : adjCosAmt);
+      if (isNaN(val)) return;
+      setCosmeticosData(cosmeticosData.map(c => ({ 
+        ...c, 
+        pvp: mode === 'pct' ? Math.round(c.pvp * (1 + val / 100)) : c.pvp + val 
+      })));
+      mode === 'pct' ? setAdjCosPct('') : setAdjCosAmt('');
+    }
+  };
+
+  const applyStockAdj = (type: 'bar' | 'cosmeticos', mode: 'add' | 'set') => {
+    if (type === 'bar') {
+      const val = parseInt(adjBarStock, 10);
+      if (isNaN(val)) return;
+      setBarProductsData(barProductsData.map(p => ({
+        ...p,
+        stock: mode === 'add' ? Math.max(0, (p.stock || 0) + val) : Math.max(0, val)
+      })));
+      setAdjBarStock('');
+    } else {
+      const val = parseInt(adjCosStock, 10);
+      if (isNaN(val)) return;
+      setCosmeticosData(cosmeticosData.map(c => ({
+        ...c,
+        stock: mode === 'add' ? Math.max(0, (c.stock || 0) + val) : Math.max(0, val)
+      })));
+      setAdjCosStock('');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Editor Servicios de Lavado */}
+      <Card className="p-6 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200">
+        <h3 className="font-bold text-xl text-cyan-900 mb-4">Servicios de Lavado</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="p-3 bg-white rounded-lg border border-cyan-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-cyan-700 mb-2">Ajustar Precios</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="% +/-" className="w-20 h-8 bg-white text-xs" value={adjLavadoPct} onChange={(e) => setAdjLavadoPct(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-cyan-600 text-white hover:bg-cyan-700 flex-1" onClick={() => applyAdj('lavado', 'pct')}>Ajustar %</Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="$ +/-" className="w-20 h-8 bg-white text-xs" value={adjLavadoAmt} onChange={(e) => setAdjLavadoAmt(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-blue-600 text-white hover:bg-blue-700 flex-1" onClick={() => applyAdj('lavado', 'amt')}>Ajustar $</Button>
+              </div>
+            </div>
+          </div>
+          <div></div>
+          <div className="flex items-end">
+            <Button onClick={() => setServiciosLavado([...serviciosLavado, { nombre: '', precio: 0 }])} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm py-2">+ Agregar Servicio</Button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {serviciosLavado.map((servicio, idx) => (
+            <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
+              <div className="flex-1">
+                <Label>Nombre del Servicio</Label>
+                <Input
+                  value={servicio.nombre}
+                  onChange={(e) => {
+                    const newServicios = [...serviciosLavado];
+                    newServicios[idx] = { ...newServicios[idx], nombre: e.target.value };
+                    setServiciosLavado(newServicios);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Precio</Label>
+                <EditableNumberInput
+                  value={servicio.precio}
+                  onChange={(precio) => {
+                    const newServicios = [...serviciosLavado];
+                    newServicios[idx] = { ...newServicios[idx], precio };
+                    setServiciosLavado(newServicios);
+                  }}
+                />
+              </div>
+              <Button variant="destructive" onClick={() => setServiciosLavado(serviciosLavado.filter((_, i) => i !== idx))}>Eliminar</Button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Editor Productos Bar */}
+      <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
+        <h3 className="font-bold text-xl text-amber-900 mb-4">Productos del Bar</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="p-3 bg-white rounded-lg border border-amber-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-2">Ajustar Precios</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="% +/-" className="w-20 h-8 bg-white text-xs" value={adjBarPct} onChange={(e) => setAdjBarPct(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-amber-600 text-white hover:bg-amber-700 flex-1" onClick={() => applyAdj('bar', 'pct')}>Ajustar %</Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="$ +/-" className="w-20 h-8 bg-white text-xs" value={adjBarAmt} onChange={(e) => setAdjBarAmt(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-orange-600 text-white hover:bg-orange-700 flex-1" onClick={() => applyAdj('bar', 'amt')}>Ajustar $</Button>
+              </div>
+            </div>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-green-700 mb-2">Ajustar Stock</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="Cantidad" className="w-20 h-8 bg-white text-xs" value={adjBarStock} onChange={(e) => setAdjBarStock(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-green-600 text-white hover:bg-green-700 flex-1" onClick={() => applyStockAdj('bar', 'add')}>+ Agregar</Button>
+              </div>
+              <Button size="sm" className="w-full h-8 text-xs bg-slate-600 text-white hover:bg-slate-700" onClick={() => applyStockAdj('bar', 'set')}>Establecer todos</Button>
+            </div>
+          </div>
+          <div className="flex items-end">
+            <Button onClick={() => setBarProductsData([...barProductsData, { group: '', name: '', value: 0, stock: 0 }])} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-2">+ Agregar Producto</Button>
+          </div>
+        </div>
+
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {barProductsData.map((producto, idx) => (
+            <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
+              <div className="flex-1">
+                <Label>Categoria</Label>
+                <Input
+                  value={producto.group}
+                  onChange={(e) => {
+                    const newProductos = [...barProductsData];
+                    newProductos[idx] = { ...newProductos[idx], group: e.target.value };
+                    setBarProductsData(newProductos);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Nombre</Label>
+                <Input
+                  value={producto.name}
+                  onChange={(e) => {
+                    const newProductos = [...barProductsData];
+                    newProductos[idx] = { ...newProductos[idx], name: e.target.value };
+                    setBarProductsData(newProductos);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Precio</Label>
+                <EditableNumberInput
+                  value={producto.value}
+                  onChange={(value) => {
+                    const newProductos = [...barProductsData];
+                    newProductos[idx] = { ...newProductos[idx], value };
+                    setBarProductsData(newProductos);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Stock</Label>
+                <EditableNumberInput
+                  value={producto.stock ?? 0}
+                  onChange={(stock) => {
+                    const newProductos = [...barProductsData];
+                    newProductos[idx] = { ...newProductos[idx], stock };
+                    setBarProductsData(newProductos);
+                  }}
+                />
+              </div>
+              <Button variant="destructive" onClick={() => setBarProductsData(barProductsData.filter((_, i) => i !== idx))}>Eliminar</Button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Editor Cosmeticos */}
+      <Card className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200">
+        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosmeticos del Automotor</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="p-3 bg-white rounded-lg border border-teal-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-teal-700 mb-2">Ajustar Precios</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="% +/-" className="w-20 h-8 bg-white text-xs" value={adjCosPct} onChange={(e) => setAdjCosPct(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-teal-600 text-white hover:bg-teal-700 flex-1" onClick={() => applyAdj('cosmeticos', 'pct')}>Ajustar %</Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="$ +/-" className="w-20 h-8 bg-white text-xs" value={adjCosAmt} onChange={(e) => setAdjCosAmt(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-cyan-600 text-white hover:bg-cyan-700 flex-1" onClick={() => applyAdj('cosmeticos', 'amt')}>Ajustar $</Button>
+              </div>
+            </div>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+            <p className="text-[9px] font-black uppercase tracking-widest text-green-700 mb-2">Ajustar Stock</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input type="number" placeholder="Cantidad" className="w-20 h-8 bg-white text-xs" value={adjCosStock} onChange={(e) => setAdjCosStock(e.target.value)} />
+                <Button size="sm" className="h-8 text-xs bg-green-600 text-white hover:bg-green-700 flex-1" onClick={() => applyStockAdj('cosmeticos', 'add')}>+ Agregar</Button>
+              </div>
+              <Button size="sm" className="w-full h-8 text-xs bg-slate-600 text-white hover:bg-slate-700" onClick={() => applyStockAdj('cosmeticos', 'set')}>Establecer todos</Button>
+            </div>
+          </div>
+          <div className="flex items-end">
+            <Button onClick={() => setCosmeticosData([...cosmeticosData, { nombre: '', contenido: '', pvp: 0, stock: 0 }])} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm py-2">+ Agregar Cosmetico</Button>
+          </div>
+        </div>
+
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {cosmeticosData.map((cosmetico, idx) => (
+            <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
+              <div className="flex-1">
+                <Label>Nombre</Label>
+                <Input
+                  value={cosmetico.nombre}
+                  onChange={(e) => {
+                    const newCosmeticos = [...cosmeticosData];
+                    newCosmeticos[idx] = { ...newCosmeticos[idx], nombre: e.target.value };
+                    setCosmeticosData(newCosmeticos);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Contenido</Label>
+                <Input
+                  value={cosmetico.contenido}
+                  onChange={(e) => {
+                    const newCosmeticos = [...cosmeticosData];
+                    newCosmeticos[idx] = { ...newCosmeticos[idx], contenido: e.target.value };
+                    setCosmeticosData(newCosmeticos);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Precio</Label>
+                <EditableNumberInput
+                  value={cosmetico.pvp}
+                  onChange={(pvp) => {
+                    const newCosmeticos = [...cosmeticosData];
+                    newCosmeticos[idx] = { ...newCosmeticos[idx], pvp };
+                    setCosmeticosData(newCosmeticos);
+                  }}
+                />
+              </div>
+              <div className="flex-1">
+                <Label>Stock</Label>
+                <EditableNumberInput
+                  value={cosmetico.stock ?? 0}
+                  onChange={(stock) => {
+                    const newCosmeticos = [...cosmeticosData];
+                    newCosmeticos[idx] = { ...newCosmeticos[idx], stock };
+                    setCosmeticosData(newCosmeticos);
+                  }}
+                />
+              </div>
+              <Button variant="destructive" onClick={() => setCosmeticosData(cosmeticosData.filter((_, i) => i !== idx))}>Eliminar</Button>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { prices?: Price[], isAdmin?: boolean, onNavigateToPrices?: () => void }) {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<Venta[]>([]);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
@@ -291,6 +590,28 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const [productosCosmeticos, setProductosCosmeticos] = useState<ProductoVenta[]>([]);
   const [ventasAnuladas, setVentasAnuladas] = useState<VentaAnulada[]>([]);
   const [washCounts, setWashCounts] = useState<Record<string, number>>({});
+  const [filtroSectorVentas, setFiltroSectorVentas] = useState<string>("Todos");
+  const [filtroPagoVentas, setFiltroPagoVentas] = useState<string>("Todos");
+
+  const ventasFiltradas = ventas.filter(venta => {
+    // Filtro por sector
+    const matchLavadero = venta.lavado > 0;
+    const matchBar = venta.bar > 0;
+    const matchCosmetica = venta.cosmeticos > 0;
+    let sectorMatch = false;
+    if (filtroSectorVentas === "Todos") sectorMatch = true;
+    else if (filtroSectorVentas === "Lavadero" && matchLavadero) sectorMatch = true;
+    else if (filtroSectorVentas === "Bar" && matchBar) sectorMatch = true;
+    else if (filtroSectorVentas === "Cosmetica" && matchCosmetica) sectorMatch = true;
+
+    // Filtro por método de pago
+    let pagoMatch = false;
+    if (filtroPagoVentas === "Todos") pagoMatch = true;
+    else if (filtroPagoVentas === venta.metodoPago) pagoMatch = true;
+    else if (filtroPagoVentas === "Otro" && !["Efectivo", "Transferencia", "Mercado Pago", "Tarjeta", "Cuenta Corriente"].includes(venta.metodoPago || "")) pagoMatch = true;
+
+    return sectorMatch && pagoMatch;
+  });
 
   // Estados nuevos para Consumo Empleados
   const [historialConsumosEmpleados, setHistorialConsumosEmpleados] = useState<VentaEmpleado[]>([]);
@@ -351,6 +672,8 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
   const [pagosMixtos, setPagosMixtos] = useState<PagoParcial[]>(crearPagosMixtosInicial);
   const [showNewMetodoPagoDialog, setShowNewMetodoPagoDialog] = useState(false);
   const [newMetodoPagoName, setNewMetodoPagoName] = useState('');
+  const [editingMetodoPago, setEditingMetodoPago] = useState<string | null>(null);
+  const [editingMetodoPagoName, setEditingMetodoPagoName] = useState('');
   const [numeroCliente, setNumeroCliente] = useState('');
   const [estadia, setEstadia] = useState(false);
   const [horasEstadia, setHorasEstadia] = useState(1);
@@ -651,6 +974,38 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     toast.success('Método de pago agregado exitosamente.');
   };
 
+  const editarMetodoPago = (original: string) => {
+    const nuevo = editingMetodoPagoName.trim();
+    if (!nuevo) return;
+    if (nuevo === PAGO_MIXTO) {
+      toast.warning('Ese nombre está reservado.');
+      return;
+    }
+    if (nuevo !== original && metodosPago.includes(nuevo)) {
+      toast.warning('Ese método de pago ya existe.');
+      return;
+    }
+    const nuevosMetodos = metodosPago.map(m => m === original ? nuevo : m);
+    setMetodosPago(nuevosMetodos);
+    localStorage.setItem('gowash-metodos-pago-ventas', JSON.stringify(nuevosMetodos));
+    if (metodoPago === original) setMetodoPago(nuevo);
+    setEditingMetodoPago(null);
+    setEditingMetodoPagoName('');
+    toast.success('Método de pago actualizado.');
+  };
+
+  const eliminarMetodoPago = (nombre: string) => {
+    if (nombre === 'Efectivo' || nombre === PAGO_MIXTO) {
+      toast.warning('No se puede eliminar este método.');
+      return;
+    }
+    const nuevosMetodos = metodosPago.filter(m => m !== nombre);
+    setMetodosPago(nuevosMetodos);
+    localStorage.setItem('gowash-metodos-pago-ventas', JSON.stringify(nuevosMetodos));
+    if (metodoPago === nombre) setMetodoPago('Efectivo');
+    toast.success('Método de pago eliminado.');
+  };
+
   const validarPagoMixto = (totalVenta: number) => {
     const lineas = pagosMixtos.filter((p) => p.monto > 0);
     if (lineas.length < 2) {
@@ -728,8 +1083,8 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       return;
     }
 
-    const currentCount = washCounts[vBase.patente] || 0;
-    const esGratis = vBase.patente && currentCount % 6 === 5;
+    const currentCount = vBase.numeroCliente ? (washCounts[vBase.numeroCliente] || 0) : 0;
+    const esGratis = vBase.numeroCliente && currentCount % 6 === 5;
 
     const nuevaVenta: Venta = {
       ...vBase,
@@ -779,8 +1134,8 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       const nuevasVentas = [nuevaVenta, ...ventas];
       setVentas(nuevasVentas);
 
-      if (nuevaVenta.patente) {
-        const newCounts = { ...washCounts, [nuevaVenta.patente]: currentCount + 1 };
+      if (nuevaVenta.numeroCliente) {
+        const newCounts = { ...washCounts, [nuevaVenta.numeroCliente]: currentCount + 1 };
         setWashCounts(newCounts);
       }
 
@@ -1440,6 +1795,17 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       toast.success('Cierre de caja enviado', {
         description: `Día ${fechaCierre} sincronizado con la nube.`,
       });
+
+      // Reiniciar ventas y caja para iniciar nuevo turno
+      const ventasRestantes = ventas.filter((v) => v.fecha !== fechaCierre);
+      setVentas(ventasRestantes);
+      localStorage.setItem('gowash-ventas', JSON.stringify(ventasRestantes));
+
+      limpiarConteoBilletes();
+      localStorage.removeItem(`gowash-inicio-monto-${fechaCierre}`);
+      setInicioCajaVersion(v => v + 1);
+      localStorage.removeItem(`gowash-cierre-enviado-${fechaCierre}`);
+
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido';
       toast.error('Error al cerrar caja', { description: msg });
@@ -1448,407 +1814,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
     }
   };
 
-  // Componente de edición de precios
-  const EditorPrecios = () => {
-    const [adjLavadoPct, setAdjLavadoPct] = useState('');
-    const [adjLavadoAmt, setAdjLavadoAmt] = useState('');
-    const [adjBarPct, setAdjBarPct] = useState('');
-    const [adjBarAmt, setAdjBarAmt] = useState('');
-    const [adjCosPct, setAdjCosPct] = useState('');
-    const [adjCosAmt, setAdjCosAmt] = useState('');
-    const [adjBarStock, setAdjBarStock] = useState('');
-    const [adjCosStock, setAdjCosStock] = useState('');
 
-    const applyAdj = (type: 'lavado' | 'bar' | 'cosmeticos', mode: 'pct' | 'amt') => {
-      if (type === 'lavado') {
-        const val = parseFloat(mode === 'pct' ? adjLavadoPct : adjLavadoAmt);
-        if (isNaN(val)) return;
-        setServiciosLavado(serviciosLavado.map(s => ({ 
-          ...s, 
-          precio: mode === 'pct' ? Math.round(s.precio * (1 + val / 100)) : s.precio + val 
-        })));
-        mode === 'pct' ? setAdjLavadoPct('') : setAdjLavadoAmt('');
-      } else if (type === 'bar') {
-        const val = parseFloat(mode === 'pct' ? adjBarPct : adjBarAmt);
-        if (isNaN(val)) return;
-        setBarProductsData(barProductsData.map(p => ({ 
-          ...p, 
-          value: mode === 'pct' ? Math.round(p.value * (1 + val / 100)) : p.value + val 
-        })));
-        mode === 'pct' ? setAdjBarPct('') : setAdjBarAmt('');
-      } else if (type === 'cosmeticos') {
-        const val = parseFloat(mode === 'pct' ? adjCosPct : adjCosAmt);
-        if (isNaN(val)) return;
-        setCosmeticosData(cosmeticosData.map(c => ({ 
-          ...c, 
-          pvp: mode === 'pct' ? Math.round(c.pvp * (1 + val / 100)) : c.pvp + val 
-        })));
-        mode === 'pct' ? setAdjCosPct('') : setAdjCosAmt('');
-      }
-    };
-
-    const applyStockAdj = (type: 'bar' | 'cosmeticos', mode: 'add' | 'set') => {
-      if (type === 'bar') {
-        const val = parseInt(mode === 'add' ? adjBarStock : adjBarStock, 10);
-        if (isNaN(val)) return;
-        setBarProductsData(barProductsData.map(p => ({
-          ...p,
-          stock: mode === 'add' ? Math.max(0, (p.stock || 0) + val) : Math.max(0, val)
-        })));
-        setAdjBarStock('');
-      } else {
-        const val = parseInt(adjCosStock, 10);
-        if (isNaN(val)) return;
-        setCosmeticosData(cosmeticosData.map(c => ({
-          ...c,
-          stock: mode === 'add' ? Math.max(0, (c.stock || 0) + val) : Math.max(0, val)
-        })));
-        setAdjCosStock('');
-      }
-    };
-
-    return (
-      <div className="space-y-6">
-      {/* Editor Servicios de Lavado */}
-      <Card className="p-6 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200">
-        <h3 className="font-bold text-xl text-cyan-900 mb-4">Servicios de Lavado</h3>
-        
-        {/* Controles superiores: Ajuste de precios y botón agregar */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Ajuste de Precios */}
-          <div className="p-3 bg-white rounded-lg border border-cyan-200 shadow-sm">
-            <p className="text-[9px] font-black uppercase tracking-widest text-cyan-700 mb-2">💰 Ajustar Precios</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="% +/-" 
-                  className="w-20 h-8 bg-white text-xs" 
-                  value={adjLavadoPct}
-                  onChange={(e) => setAdjLavadoPct(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-cyan-600 text-white hover:bg-cyan-700 flex-1" onClick={() => applyAdj('lavado', 'pct')}>Ajustar %</Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="$ +/-" 
-                  className="w-20 h-8 bg-white text-xs"
-                  value={adjLavadoAmt}
-                  onChange={(e) => setAdjLavadoAmt(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-blue-600 text-white hover:bg-blue-700 flex-1" onClick={() => applyAdj('lavado', 'amt')}>Ajustar $</Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Espacio vacío o separador */}
-          <div></div>
-
-          {/* Botón Agregar */}
-          <div className="flex items-end">
-            <Button
-              onClick={() => {
-                setServiciosLavado([...serviciosLavado, { nombre: '', precio: 0 }]);
-              }}
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm py-2"
-            >
-              + Agregar Servicio
-            </Button>
-          </div>
-        </div>
-
-        {/* Lista de servicios */}
-        <div className="space-y-3">
-          {serviciosLavado.map((servicio, idx) => (
-            <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
-              <div className="flex-1">
-                <Label>Nombre del Servicio</Label>
-                <Input
-                  value={servicio.nombre}
-                  onChange={(e) => {
-                    const newServicios = [...serviciosLavado];
-                    newServicios[idx].nombre = e.target.value;
-                    setServiciosLavado(newServicios);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Precio</Label>
-                <EditableNumberInput
-                  value={servicio.precio}
-                  onChange={(precio) => {
-                    const newServicios = [...serviciosLavado];
-                    newServicios[idx].precio = precio;
-                    setServiciosLavado(newServicios);
-                  }}
-                />
-              </div>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setServiciosLavado(serviciosLavado.filter((_, i) => i !== idx));
-                }}
-              >
-                Eliminar
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Editor Productos Bar */}
-      <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200">
-        <h3 className="font-bold text-xl text-amber-900 mb-4">Productos del Bar</h3>
-        
-        {/* Controles superiores: Ajuste de precios, stock y botón agregar */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Ajuste de Precios */}
-          <div className="p-3 bg-white rounded-lg border border-amber-200 shadow-sm">
-            <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 mb-2">💰 Ajustar Precios</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="% +/-" 
-                  className="w-20 h-8 bg-white text-xs" 
-                  value={adjBarPct}
-                  onChange={(e) => setAdjBarPct(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-amber-600 text-white hover:bg-amber-700 flex-1" onClick={() => applyAdj('bar', 'pct')}>Ajustar %</Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="$ +/-" 
-                  className="w-20 h-8 bg-white text-xs"
-                  value={adjBarAmt}
-                  onChange={(e) => setAdjBarAmt(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-orange-600 text-white hover:bg-orange-700 flex-1" onClick={() => applyAdj('bar', 'amt')}>Ajustar $</Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Ajuste de Stock */}
-          <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-            <p className="text-[9px] font-black uppercase tracking-widest text-green-700 mb-2">📦 Ajustar Stock</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="Cantidad" 
-                  className="w-20 h-8 bg-white text-xs" 
-                  value={adjBarStock}
-                  onChange={(e) => setAdjBarStock(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-green-600 text-white hover:bg-green-700 flex-1" onClick={() => applyStockAdj('bar', 'add')}>+ Agregar</Button>
-              </div>
-              <Button size="sm" className="w-full h-8 text-xs bg-slate-600 text-white hover:bg-slate-700" onClick={() => applyStockAdj('bar', 'set')}>Establecer todos</Button>
-            </div>
-          </div>
-
-          {/* Botón Agregar */}
-          <div className="flex items-end">
-            <Button
-              onClick={() => {
-                setBarProductsData([...barProductsData, { group: '', name: '', value: 0, stock: 0 }]);
-              }}
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-2"
-            >
-              + Agregar Producto
-            </Button>
-          </div>
-        </div>
-
-        {/* Lista de productos */}
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {barProductsData.map((producto, idx) => (
-            <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
-              <div className="flex-1">
-                <Label>Categoría</Label>
-                <Input
-                  value={producto.group}
-                  onChange={(e) => {
-                    const newProductos = [...barProductsData];
-                    newProductos[idx].group = e.target.value;
-                    setBarProductsData(newProductos);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Nombre</Label>
-                <Input
-                  value={producto.name}
-                  onChange={(e) => {
-                    const newProductos = [...barProductsData];
-                    newProductos[idx].name = e.target.value;
-                    setBarProductsData(newProductos);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Precio</Label>
-                <EditableNumberInput
-                  value={producto.value}
-                  onChange={(value) => {
-                    const newProductos = [...barProductsData];
-                    newProductos[idx].value = value;
-                    setBarProductsData(newProductos);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Stock</Label>
-                <EditableNumberInput
-                  value={producto.stock ?? 0}
-                  onChange={(stock) => {
-                    const newProductos = [...barProductsData];
-                    newProductos[idx].stock = stock;
-                    setBarProductsData(newProductos);
-                  }}
-                />
-              </div>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setBarProductsData(barProductsData.filter((_, i) => i !== idx));
-                }}
-              >
-                Eliminar
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Editor Cosméticos */}
-      <Card className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200">
-        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosméticos del Automotor</h3>
-        
-        {/* Controles superiores: Ajuste de precios, stock y botón agregar */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Ajuste de Precios */}
-          <div className="p-3 bg-white rounded-lg border border-teal-200 shadow-sm">
-            <p className="text-[9px] font-black uppercase tracking-widest text-teal-700 mb-2">💰 Ajustar Precios</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="% +/-" 
-                  className="w-20 h-8 bg-white text-xs" 
-                  value={adjCosPct}
-                  onChange={(e) => setAdjCosPct(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-teal-600 text-white hover:bg-teal-700 flex-1" onClick={() => applyAdj('cosmeticos', 'pct')}>Ajustar %</Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="$ +/-" 
-                  className="w-20 h-8 bg-white text-xs"
-                  value={adjCosAmt}
-                  onChange={(e) => setAdjCosAmt(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-cyan-600 text-white hover:bg-cyan-700 flex-1" onClick={() => applyAdj('cosmeticos', 'amt')}>Ajustar $</Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Ajuste de Stock */}
-          <div className="p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-            <p className="text-[9px] font-black uppercase tracking-widest text-green-700 mb-2">📦 Ajustar Stock</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="number" 
-                  placeholder="Cantidad" 
-                  className="w-20 h-8 bg-white text-xs" 
-                  value={adjCosStock}
-                  onChange={(e) => setAdjCosStock(e.target.value)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-green-600 text-white hover:bg-green-700 flex-1" onClick={() => applyStockAdj('cosmeticos', 'add')}>+ Agregar</Button>
-              </div>
-              <Button size="sm" className="w-full h-8 text-xs bg-slate-600 text-white hover:bg-slate-700" onClick={() => applyStockAdj('cosmeticos', 'set')}>Establecer todos</Button>
-            </div>
-          </div>
-
-          {/* Botón Agregar */}
-          <div className="flex items-end">
-            <Button
-              onClick={() => {
-                setCosmeticosData([...cosmeticosData, { nombre: '', contenido: '', pvp: 0, stock: 0 }]);
-              }}
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm py-2"
-            >
-              + Agregar Cosmético
-            </Button>
-          </div>
-        </div>
-
-        {/* Lista de cosméticos */}
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {cosmeticosData.map((cosmetico, idx) => (
-            <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
-              <div className="flex-1">
-                <Label>Nombre</Label>
-                <Input
-                  value={cosmetico.nombre}
-                  onChange={(e) => {
-                    const newCosmeticos = [...cosmeticosData];
-                    newCosmeticos[idx].nombre = e.target.value;
-                    setCosmeticosData(newCosmeticos);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Contenido</Label>
-                <Input
-                  value={cosmetico.contenido}
-                  onChange={(e) => {
-                    const newCosmeticos = [...cosmeticosData];
-                    newCosmeticos[idx].contenido = e.target.value;
-                    setCosmeticosData(newCosmeticos);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Precio</Label>
-                <EditableNumberInput
-                  value={cosmetico.pvp}
-                  onChange={(pvp) => {
-                    const newCosmeticos = [...cosmeticosData];
-                    newCosmeticos[idx].pvp = pvp;
-                    setCosmeticosData(newCosmeticos);
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Label>Stock</Label>
-                <EditableNumberInput
-                  value={cosmetico.stock ?? 0}
-                  onChange={(stock) => {
-                    const newCosmeticos = [...cosmeticosData];
-                    newCosmeticos[idx].stock = stock;
-                    setCosmeticosData(newCosmeticos);
-                  }}
-                />
-              </div>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setCosmeticosData(cosmeticosData.filter((_, i) => i !== idx));
-                }}
-              >
-                Eliminar
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-    );
-  };
 
   return (
     <Tabs defaultValue="ventas" className="space-y-6 scroll-smooth">
@@ -1909,25 +1875,6 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                 placeholder="ABC-123"
                 className="uppercase font-mono text-lg border-slate-300 focus:border-blue-500 bg-white"
               />
-              {patente && (
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                    <div 
-                      className={`h-full transition-all duration-500 ${
-                        (washCounts[patente] || 0) % 6 === 5 ? 'bg-green-500 animate-pulse' : 'bg-blue-500'
-                      }`}
-                      style={{ width: `${(((washCounts[patente] || 0) % 6) / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                    (washCounts[patente] || 0) % 6 === 5 ? 'text-green-600 animate-bounce' : 'text-slate-500'
-                  }`}>
-                    {(washCounts[patente] || 0) % 6 === 5 
-                      ? '¡Próximo Lavado Gratis!' 
-                      : `Lavados: ${(washCounts[patente] || 0) % 6} / 5`}
-                  </span>
-                </div>
-              )}
             </div>
             <div>
               <Label className="text-[10px] font-bold text-blue-800 uppercase">Empleado</Label>
@@ -2029,6 +1976,25 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                 placeholder="ID o Teléfono"
                 className="bg-white"
               />
+              {numeroCliente && (
+                <div className="mt-1 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        (washCounts[numeroCliente] || 0) % 6 === 5 ? 'bg-green-500 animate-pulse' : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${(((washCounts[numeroCliente] || 0) % 6) / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    (washCounts[numeroCliente] || 0) % 6 === 5 ? 'text-green-600 animate-bounce' : 'text-slate-500'
+                  }`}>
+                    {(washCounts[numeroCliente] || 0) % 6 === 5 
+                      ? '¡Próximo Lavado Gratis!' 
+                      : `Lavados: ${(washCounts[numeroCliente] || 0) % 6} / 5`}
+                  </span>
+                </div>
+              )}
             </div>
             {puedeEstadia() && (
               <div className="flex flex-col space-y-4 mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
@@ -2479,6 +2445,60 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                     </SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Lista de métodos de pago con opciones de editar/eliminar */}
+                <Collapsible className="mt-2">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md bg-green-50 border border-green-200 px-2 py-1.5 text-left hover:bg-green-100 transition-colors">
+                    <span className="text-[10px] font-bold text-green-700 uppercase">Administrar métodos</span>
+                    <Pencil className="w-3 h-3 text-green-600" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2 space-y-1.5">
+                    {metodosPago.filter(m => m !== PAGO_MIXTO).map(m => (
+                      editingMetodoPago === m ? (
+                        <div key={m} className="flex gap-1.5 items-center bg-white p-1.5 rounded-md border border-green-200">
+                          <Input
+                            value={editingMetodoPagoName}
+                            onChange={(e) => setEditingMetodoPagoName(e.target.value)}
+                            className="h-7 text-xs flex-1"
+                            onKeyDown={(e) => e.key === 'Enter' && editarMetodoPago(m)}
+                          />
+                          <Button type="button" size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700" onClick={() => editarMetodoPago(m)}>
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={() => { setEditingMetodoPago(null); setEditingMetodoPagoName(''); }}>
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div key={m} className="flex items-center justify-between gap-2 p-1.5 rounded-md bg-white border border-green-100 hover:border-green-300 transition-colors">
+                          <span className="text-xs font-semibold text-green-900 truncate flex-1">{m}</span>
+                          <div className="flex gap-1 shrink-0">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
+                              onClick={() => { setEditingMetodoPago(m); setEditingMetodoPagoName(m); }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            {m !== 'Efectivo' && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
+                                onClick={() => eliminarMetodoPago(m)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
 
               {metodoPago === PAGO_MIXTO && (
@@ -2732,10 +2752,49 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
 
         {/* Tabla de Ventas */}
         <Card className="p-6">
-          <h3 className="font-bold text-xl mb-4">Registro de Ventas del Día</h3>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
+            <h3 className="font-bold text-xl">Registro de Ventas del Día</h3>
+            <div className="flex flex-wrap gap-2 items-center">
+              <Select value={filtroSectorVentas} onValueChange={setFiltroSectorVentas}>
+                <SelectTrigger className="w-[140px] h-9 text-xs font-semibold border-blue-200">
+                  <SelectValue placeholder="Sector" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos los sectores</SelectItem>
+                  <SelectItem value="Lavadero">Lavadero</SelectItem>
+                  <SelectItem value="Bar">Bar</SelectItem>
+                  <SelectItem value="Cosmetica">Cosmética</SelectItem>
+                </SelectContent>
+              </Select>
 
-          {ventas.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No hay ventas registradas</p>
+              <Select value={filtroPagoVentas} onValueChange={setFiltroPagoVentas}>
+                <SelectTrigger className="w-[140px] h-9 text-xs font-semibold border-green-200">
+                  <SelectValue placeholder="Pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos los pagos</SelectItem>
+                  <SelectItem value="Efectivo">Efectivo</SelectItem>
+                  <SelectItem value="Transferencia">Transferencia</SelectItem>
+                  <SelectItem value="Mercado Pago">Mercado Pago</SelectItem>
+                  <SelectItem value="Tarjeta">Tarjeta</SelectItem>
+                  <SelectItem value="Cuenta Corriente">Cta Corriente</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 text-xs font-bold border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
+                onClick={() => onNavigateToPrices && onNavigateToPrices()}
+              >
+                <Sparkles className="w-3 h-3 mr-1" />
+                Agregar o Editar
+              </Button>
+            </div>
+          </div>
+
+          {ventasFiltradas.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No hay ventas registradas para estos filtros</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
@@ -2759,7 +2818,7 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                   </tr>
                 </thead>
                 <tbody>
-                  {ventas.map((venta) => (
+                  {ventasFiltradas.map((venta) => (
                     <tr key={venta.id} className="hover:bg-gray-50">
                       <td className="border p-2 text-center">
                         {venta.imageUrl ? (
@@ -2927,36 +2986,39 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
                             </DialogContent>
                           </Dialog>
 
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => iniciarEdicionVenta(venta)}
-                          >
-                            Editar
-                          </Button>
-
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                Eliminar
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                              >
+                                Acciones
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Está seguro de eliminar esta venta?</AlertDialogTitle>
+                                <AlertDialogTitle>¿Desea editar o eliminar esta venta?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Si confirma, se le solicitará el motivo de la anulación para el registro de auditoría.
+                                  Puede editar los datos de esta venta, o eliminarla de forma permanente (requiere motivo para auditoría).
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
-                              <AlertDialogFooter>
+                              <AlertDialogFooter className="sm:justify-between">
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => eliminarVenta(venta.id)}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                  Confirmar y Proceder
-                                </AlertDialogAction>
+                                <div className="flex gap-2">
+                                  <AlertDialogAction 
+                                    onClick={() => eliminarVenta(venta.id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                  >
+                                    Eliminar
+                                  </AlertDialogAction>
+                                  <AlertDialogAction 
+                                    onClick={() => iniciarEdicionVenta(venta)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                  >
+                                    Editar
+                                  </AlertDialogAction>
+                                </div>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -3420,7 +3482,14 @@ export function POS({ prices = [], isAdmin = false }: { prices?: Price[], isAdmi
       </TabsContent>
 
       <TabsContent value="precios">
-        <EditorPrecios />
+        <EditorPrecios
+          serviciosLavado={serviciosLavado}
+          setServiciosLavado={setServiciosLavado}
+          barProductsData={barProductsData}
+          setBarProductsData={setBarProductsData}
+          cosmeticosData={cosmeticosData}
+          setCosmeticosData={setCosmeticosData}
+        />
       </TabsContent>
       {/* Diálogo de Motivo de Anulación */}
       <Dialog open={showAnulacionDialog} onOpenChange={setShowAnulacionDialog}>

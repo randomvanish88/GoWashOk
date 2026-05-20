@@ -15,6 +15,7 @@ import { LicenseLock } from './components/LicenseLock';
 import { googleSheetsSync } from './lib/googleSheetsSync';
 import { GoogleSheetsSettings } from './components/GoogleSheetsSettings';
 import { VirtualAssistant } from './components/VirtualAssistant';
+import { restoreFromBackupIfNeeded, startAutoBackup } from './lib/dataBackup';
 import { Toaster } from 'sonner';
 const logoImage = "./logo.png";
 
@@ -45,55 +46,70 @@ function App() {
 
   // Cargar datos desde localStorage
   useEffect(() => {
-    const savedLicense = localStorage.getItem('gowash-license-active');
-    if (savedLicense === 'true') {
-      setIsLicensed(true);
-    }
-    // Desarrollo en navegador: no hay electronAPI; la licencia es solo para Electron
-    if (import.meta.env.DEV && typeof window !== 'undefined' && !window.electronAPI) {
-      setIsLicensed(true);
-    }
-    const savedAuth = localStorage.getItem('gowash-auth');
-    if (savedAuth) {
-      const authData = JSON.parse(savedAuth);
-      setIsAuthenticated(true);
-      setUser(authData.username);
-    }
-    const savedPrices = localStorage.getItem('carwash-prices');
-    const savedSizes = localStorage.getItem('carwash-sizes');
-    const savedBrands = localStorage.getItem('carwash-brands');
+    const initializeApp = async () => {
+      // Primero intentar restaurar desde backup si localStorage está vacío
+      const restored = await restoreFromBackupIfNeeded();
+      if (restored) {
+        console.log('[GoWash] Datos restaurados desde backup. Recargando...');
+        window.location.reload();
+        return;
+      }
 
-    if (savedPrices) {
-      setPrices(JSON.parse(savedPrices));
-    } else {
-      // Datos de ejemplo iniciales
-      const defaultPrices: Price[] = [
-        { id: '1', brand: 'Toyota', model: '-', size: 'Pequeño', service: 'Lavado Básico', price: 15 },
-        { id: '2', brand: 'Toyota', model: '-', size: 'Mediano', service: 'Lavado Básico', price: 20 },
-        { id: '3', brand: 'Toyota', model: '-', size: 'Grande', service: 'Lavado Básico', price: 25 },
-        { id: '4', brand: 'Honda', model: '-', size: 'Pequeño', service: 'Lavado Premium', price: 25 },
-        { id: '5', brand: 'Ford', model: '-', size: 'SUV', service: 'Lavado Premium + Encerado', price: 50 },
-      ];
-      setPrices(defaultPrices);
-      localStorage.setItem('carwash-prices', JSON.stringify(defaultPrices));
-    }
+      // Iniciar auto-backup periódico
+      startAutoBackup();
 
-    if (savedSizes) {
-      setSizes(JSON.parse(savedSizes));
-    } else {
-      setSizes(DEFAULT_SIZES);
-      localStorage.setItem('carwash-sizes', JSON.stringify(DEFAULT_SIZES));
-    }
+      const savedLicense = localStorage.getItem('gowash-license-active');
+      if (savedLicense === 'true') {
+        setIsLicensed(true);
+      }
+      // Desarrollo en navegador: no hay electronAPI; la licencia es solo para Electron
+      if (import.meta.env.DEV && typeof window !== 'undefined' && !window.electronAPI) {
+        setIsLicensed(true);
+      }
+      const savedAuth = localStorage.getItem('gowash-auth');
+      if (savedAuth) {
+        const authData = JSON.parse(savedAuth);
+        setIsAuthenticated(true);
+        setUser(authData.username);
+      }
+      const savedPrices = localStorage.getItem('carwash-prices');
+      const savedSizes = localStorage.getItem('carwash-sizes');
+      const savedBrands = localStorage.getItem('carwash-brands');
 
-    if (savedBrands) {
-      setBrands(JSON.parse(savedBrands));
-    } else {
-      setBrands(DEFAULT_BRANDS);
-      localStorage.setItem('carwash-brands', JSON.stringify(DEFAULT_BRANDS));
-    }
+      if (savedPrices) {
+        setPrices(JSON.parse(savedPrices));
+      } else {
+        // Datos de ejemplo iniciales
+        const defaultPrices: Price[] = [
+          { id: '1', brand: 'Toyota', model: '-', size: 'Pequeño', service: 'Lavado Básico', price: 15 },
+          { id: '2', brand: 'Toyota', model: '-', size: 'Mediano', service: 'Lavado Básico', price: 20 },
+          { id: '3', brand: 'Toyota', model: '-', size: 'Grande', service: 'Lavado Básico', price: 25 },
+          { id: '4', brand: 'Honda', model: '-', size: 'Pequeño', service: 'Lavado Premium', price: 25 },
+          { id: '5', brand: 'Ford', model: '-', size: 'SUV', service: 'Lavado Premium + Encerado', price: 50 },
+        ];
+        setPrices(defaultPrices);
+        localStorage.setItem('carwash-prices', JSON.stringify(defaultPrices));
+      }
 
-    // Inicializar Google Sheets
-    googleSheetsSync.init();
+      if (savedSizes) {
+        setSizes(JSON.parse(savedSizes));
+      } else {
+        setSizes(DEFAULT_SIZES);
+        localStorage.setItem('carwash-sizes', JSON.stringify(DEFAULT_SIZES));
+      }
+
+      if (savedBrands) {
+        setBrands(JSON.parse(savedBrands));
+      } else {
+        setBrands(DEFAULT_BRANDS);
+        localStorage.setItem('carwash-brands', JSON.stringify(DEFAULT_BRANDS));
+      }
+
+      // Inicializar Google Sheets
+      googleSheetsSync.init();
+    };
+
+    initializeApp();
   }, []);
 
   // Guardar en localStorage cuando cambian los datos
@@ -347,7 +363,7 @@ function App() {
           </TabsContent>
 
           <TabsContent value="pos">
-            <POS prices={prices} isAdmin={isAuthenticated} />
+            <POS prices={prices} isAdmin={isAuthenticated} onNavigateToPrices={() => setActiveTab('add')} />
           </TabsContent>
 
           <TabsContent value="gastos">

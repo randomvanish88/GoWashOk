@@ -1,12 +1,43 @@
 const { app, BrowserWindow, ipcMain, protocol, dialog, net } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs');
 const { pathToFileURL } = require('url');
 const { machineIdSync } = require('node-machine-id');
 const crypto = require('crypto');
 
 // ESTA ES TU PALABRA SECRETA - ¡NO LA COMPARTAS!
 const MASTER_SECRET = 'GoWash_Secret_2026_Admin'; 
+
+// --- SISTEMA DE BACKUP DE DATOS ---
+const BACKUP_FILE = path.join(app.getPath('userData'), 'gowash-backup.json');
+
+function saveBackup(data) {
+  try {
+    fs.writeFileSync(BACKUP_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    console.log('[Backup] Datos guardados correctamente en disco.');
+    return { success: true };
+  } catch (error) {
+    console.error('[Backup] Error al guardar:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+function loadBackup() {
+  try {
+    if (!fs.existsSync(BACKUP_FILE)) {
+      console.log('[Backup] No existe archivo de backup previo.');
+      return { success: true, data: null };
+    }
+    const raw = fs.readFileSync(BACKUP_FILE, 'utf-8');
+    const data = JSON.parse(raw);
+    console.log('[Backup] Datos restaurados desde disco.');
+    return { success: true, data };
+  } catch (error) {
+    console.error('[Backup] Error al leer:', error.message);
+    return { success: false, error: error.message, data: null };
+  }
+}
 
 function createWindow() {
   const isDev = !app.isPackaged;
@@ -97,10 +128,33 @@ app.whenReady().then(() => {
 
   autoUpdater.on('update-downloaded', () => {
     console.log('[Auto-Update] Versión descargada, lista para instalar.');
+    // Forzar backup antes de instalar la actualización
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      win.webContents.executeJavaScript(`
+        (function() {
+          try {
+            const keys = Object.keys(localStorage);
+            const data = {};
+            keys.forEach(k => { data[k] = localStorage.getItem(k); });
+            return JSON.stringify(data);
+          } catch(e) { return null; }
+        })()
+      `).then((result) => {
+        if (result) {
+          try {
+            const parsed = JSON.parse(result);
+            saveBackup(parsed);
+            console.log('[Auto-Update] Backup pre-actualización guardado.');
+          } catch(e) { /* ignore */ }
+        }
+      }).catch(() => {});
+    }
+
     dialog.showMessageBox({
       type: 'info',
       title: 'Actualización lista',
-      message: '¡La actualización fue descargada! La aplicación se reiniciará para instalarla.',
+      message: '¡La actualización fue descargada! La aplicación se reiniciará para instalarla. Tus datos están respaldados.',
       buttons: ['Reiniciar ahora', 'Más tarde']
     }).then((result) => {
       if (result.response === 0) {
@@ -252,4 +306,13 @@ ipcMain.handle('google-sheets-upload-creds', async () => {
     console.error('[GoogleSheets] Error al guardar credenciales:', error);
     return { success: false, error: error.message };
   }
+});
+
+// --- IPC HANDLERS PARA BACKUP DE DATOS ---
+ipcMain.handle('backup-save', async (event, data) => {
+  return saveBackup(data);
+});
+
+ipcMain.handle('backup-load', async () => {
+  return loadBackup();
 });
