@@ -1,7 +1,7 @@
 {
   "name": "gowash-pos",
   "private": true,
-  "version": "0.0.7",
+  "version": "9.0.0",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -115,6 +115,12 @@
     "win": {
       "target": "nsis",
       "icon": "public/logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
     },
     "publish": [
       {

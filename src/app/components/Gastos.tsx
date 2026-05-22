@@ -11,7 +11,7 @@ import { AlertCircle, Trash2, FileText, RotateCcw } from 'lucide-react';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
 
 
-interface Gasto {
+export interface Gasto {
   id: string;
   fecha: string;
   sector: string;
@@ -78,11 +78,35 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
   const [ventasAnuladas, setVentasAnuladas] = useState<VentaAnulada[]>([]);
 
   // Cargar gastos desde localStorage
-  useEffect(() => {
+  const loadGastos = () => {
     const savedGastos = localStorage.getItem('gowash-gastos');
     if (savedGastos) {
       setGastos(JSON.parse(savedGastos));
+    } else {
+      setGastos([]);
     }
+  };
+
+  useEffect(() => {
+    loadGastos();
+    
+    const handleGastosUpdated = () => {
+      loadGastos();
+    };
+
+    const handleEditarGasto = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setEditingGasto(customEvent.detail);
+        // Scroll to top where the form is located
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('gastos-updated', handleGastosUpdated);
+    window.addEventListener('editar-gasto', handleEditarGasto);
+    
+    // Y el resto del useEffect...
 
     const savedAnuladas = localStorage.getItem('gowash-ventas-anuladas');
     if (savedAnuladas) {
@@ -92,21 +116,30 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
     const savedSectores = localStorage.getItem('gowash-sectores-gastos');
     if (savedSectores) {
       setSectores(JSON.parse(savedSectores));
+    } else {
+      // Guardar los valores por defecto si no existen
+      localStorage.setItem('gowash-sectores-gastos', JSON.stringify(SECTORES_INICIALES));
     }
 
     const savedProveedores = localStorage.getItem('gowash-proveedores-gastos');
     if (savedProveedores) {
       setProveedores(JSON.parse(savedProveedores));
+    } else {
+      localStorage.setItem('gowash-proveedores-gastos', JSON.stringify(['Particular', 'Distribuidora Central']));
     }
 
     const savedCategorias = localStorage.getItem('gowash-categorias-gastos');
     if (savedCategorias) {
       setCategorias(JSON.parse(savedCategorias));
+    } else {
+      localStorage.setItem('gowash-categorias-gastos', JSON.stringify(CATEGORIAS_INICIALES));
     }
 
     const savedMetodosPago = localStorage.getItem('gowash-metodos-pago-gastos');
     if (savedMetodosPago) {
       setMetodosPago(JSON.parse(savedMetodosPago));
+    } else {
+      localStorage.setItem('gowash-metodos-pago-gastos', JSON.stringify(['Efectivo', 'Digital']));
     }
 
     // Establecer fecha y hora actual
@@ -115,6 +148,11 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     setHora(`${hours}:${minutes}`);
+
+    return () => {
+      window.removeEventListener('gastos-updated', handleGastosUpdated);
+      window.removeEventListener('editar-gasto', handleEditarGasto);
+    };
   }, []);
 
   // Guardar gastos en localStorage
@@ -182,6 +220,34 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
     setMetodoPago(newMetodoPagoName.trim());
     setNewMetodoPagoName('');
     setShowNewMetodoPagoDialog(false);
+  };
+
+  const eliminarSector = (sectorAEliminar: string) => {
+    const nuevos = sectores.filter(s => s !== sectorAEliminar);
+    setSectores(nuevos);
+    localStorage.setItem('gowash-sectores-gastos', JSON.stringify(nuevos));
+    if (sector === sectorAEliminar) setSector('');
+  };
+
+  const eliminarProveedor = (proveedorAEliminar: string) => {
+    const nuevos = proveedores.filter(p => p !== proveedorAEliminar);
+    setProveedores(nuevos);
+    localStorage.setItem('gowash-proveedores-gastos', JSON.stringify(nuevos));
+    if (proveedor === proveedorAEliminar) setProveedor('');
+  };
+
+  const eliminarCategoria = (categoriaAEliminar: string) => {
+    const nuevas = categorias.filter(c => c !== categoriaAEliminar);
+    setCategorias(nuevas);
+    localStorage.setItem('gowash-categorias-gastos', JSON.stringify(nuevas));
+    if (categoria === categoriaAEliminar) setCategoria('');
+  };
+
+  const eliminarMetodoPago = (metodoAEliminar: string) => {
+    const nuevos = metodosPago.filter(m => m !== metodoAEliminar);
+    setMetodosPago(nuevos);
+    localStorage.setItem('gowash-metodos-pago-gastos', JSON.stringify(nuevos));
+    if (metodoPago === metodoAEliminar) setMetodoPago('Efectivo');
   };
 
   const registrarGasto = () => {
@@ -306,7 +372,14 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-1.5">
           {/* 1. Sector */}
           <div>
-            <Label htmlFor="gastoSector" className="text-[10px] uppercase font-bold text-gray-500">Sector</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="gastoSector" className="text-[10px] uppercase font-bold text-gray-500">Sector</Label>
+              {sector && (
+                <button type="button" onClick={() => eliminarSector(sector)} className="text-red-400 hover:text-red-600 transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
             <Select 
               value={sector} 
               onValueChange={(val) => {
@@ -333,7 +406,14 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
 
           {/* 2. Categoría */}
           <div>
-            <Label htmlFor="gastoCategoria" className="text-[10px] uppercase font-bold text-gray-500">Categoría</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="gastoCategoria" className="text-[10px] uppercase font-bold text-gray-500">Categoría</Label>
+              {categoria && (
+                <button type="button" onClick={() => eliminarCategoria(categoria)} className="text-red-400 hover:text-red-600 transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
             <Select 
               value={categoria} 
               onValueChange={(val) => {
@@ -360,7 +440,14 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
 
           {/* 3. Proveedor */}
           <div>
-            <Label htmlFor="gastoProveedor" className="text-[10px] uppercase font-bold text-gray-500">Proveedor</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="gastoProveedor" className="text-[10px] uppercase font-bold text-gray-500">Proveedor</Label>
+              {proveedor && (
+                <button type="button" onClick={() => eliminarProveedor(proveedor)} className="text-red-400 hover:text-red-600 transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
             <Select 
               value={proveedor} 
               onValueChange={(val) => {
@@ -424,7 +511,14 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
 
           {/* 7. Pago */}
           <div>
-            <Label htmlFor="gastoMetodoPago" className="text-[10px] uppercase font-bold text-gray-500">Pago</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="gastoMetodoPago" className="text-[10px] uppercase font-bold text-gray-500">Pago</Label>
+              {metodoPago && (
+                <button type="button" onClick={() => eliminarMetodoPago(metodoPago)} className="text-red-400 hover:text-red-600 transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
             <Select 
               value={metodoPago} 
               onValueChange={(val) => {
@@ -551,11 +645,14 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                     <td className="border p-1.5 text-right font-bold text-red-600 text-xs">{formatMoney(gasto.monto)}</td>
                     <td className="border p-1.5 text-center">
                       <span className={`px-1.5 py-0 rounded-full text-[9px] ${
-                        gasto.metodoPago === 'efectivo'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-blue-100 text-blue-800'
+                        (() => {
+                          const method = gasto.metodoPago.toLowerCase();
+                          if (method === 'efectivo') return 'bg-green-100 text-green-800';
+                          if (method === 'digital') return 'bg-blue-100 text-blue-800';
+                          return 'bg-gray-100 text-gray-800';
+                        })()
                       }`}>
-                        {gasto.metodoPago === 'efectivo' ? 'Efectivo' : 'Digital'}
+                        {gasto.metodoPago}
                       </span>
                     </td>
                     <td className="border p-1.5 text-[10px]">{gasto.empleado}</td>

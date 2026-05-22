@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -17,7 +17,9 @@ import {
 } from './ui/alert-dialog';
 import { Banknote, ChevronDown, CloudUpload, Pencil, Plus, Trash2 } from 'lucide-react';
 import { EditableNumberInput } from './EditableNumberInput';
-import { toast } from 'sonner';
+import { useGastos } from './useGastos';
+
+import { googleSheetsSync } from '../lib/googleSheetsSync';
 
 export const DEFAULT_DENOMINACIONES_ARS = [50, 100, 200, 500, 1000, 2000, 10000, 20000];
 
@@ -53,6 +55,7 @@ interface CierreCajaPanelProps {
   onAgregarDenominacion: (valor: number) => void;
   onEliminarDenominacion: (valor: number) => void;
   onEditarDenominacion: (valorAnterior: number, valorNuevo: number) => void;
+  isAdmin?: boolean;
 }
 
 export function CierreCajaPanel({
@@ -81,17 +84,53 @@ export function CierreCajaPanel({
   onAgregarDenominacion,
   onEliminarDenominacion,
   onEditarDenominacion,
+  isAdmin = false,
 }: CierreCajaPanelProps) {
+
+
+
   const [arqueoAbierto, setArqueoAbierto] = useState(true);
   const [editorDenomsAbierto, setEditorDenomsAbierto] = useState(false);
   const [nuevaDenominacion, setNuevaDenominacion] = useState('');
   const [denomEditando, setDenomEditando] = useState<number | null>(null);
   const [denomEditandoValor, setDenomEditandoValor] = useState('');
 
+  const { gastos, sectores, categorias, proveedores, eliminarGasto } = useGastos();
+  const [filtroSector, setFiltroSector] = useState('Todos');
+  const [filtroCategoria, setFiltroCategoria] = useState('Todas');
+  const [filtroProveedor, setFiltroProveedor] = useState('Todos');
+  const [filtroOrden, setFiltroOrden] = useState('Más reciente');
+  const [incluirGastosEnCierre, setIncluirGastosEnCierre] = useState(false);
+
+  let gastosDelDia = gastos.filter(g => {
+    if (g.fecha !== fechaCierre) return false;
+    if (filtroSector !== 'Todos' && g.sector !== filtroSector) return false;
+    if (filtroCategoria !== 'Todas' && g.categoria !== filtroCategoria) return false;
+    if (filtroProveedor !== 'Todos' && g.proveedor !== filtroProveedor) return false;
+    return true;
+  });
+
+  if (filtroOrden === 'Mayor gasto') {
+    gastosDelDia.sort((a, b) => b.monto - a.monto);
+  } else if (filtroOrden === 'Menor gasto') {
+    gastosDelDia.sort((a, b) => a.monto - b.monto);
+  } else {
+    // Más reciente (por defecto, asumiendo que los últimos están al final)
+    gastosDelDia.reverse();
+  }
+
+  // Todos los gastos del día (sin filtros) para el cierre
+  const todosLosGastosDelDia = gastos.filter(g => g.fecha === fechaCierre);
+  const totalGastosDia = todosLosGastosDelDia.reduce((sum, g) => sum + g.monto, 0);
+
   const denomsOrdenadas = [...denominacionesBilletes].sort((a, b) => a - b);
 
   // Lógica central: total esperado = inicio de caja + TODAS las ventas del día
   const totalEsperado = montoCajaInicio + totalGeneral;
+  // Total neto considerando gastos (opcional)
+  const totalEsperadoNeto = incluirGastosEnCierre ? totalEsperado - totalGastosDia : totalEsperado;
+
+
 
   return (
     <div className="mt-4 space-y-3">
@@ -339,6 +378,182 @@ export function CierreCajaPanel({
         </div>
       </Card>
 
+      {/* Gastos Diarios */}
+      <div className="mt-6 mb-6 space-y-4">
+        {/* FILTROS */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+          <details open>
+            <summary className="cursor-pointer font-semibold text-sm text-gray-700 outline-none select-none">
+              Filtros y Configuración
+            </summary>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1.5">Fecha</label>
+                <input type="date" className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" defaultValue={fechaCierre} disabled />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1.5">Sector</label>
+                <select 
+                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filtroSector}
+                  onChange={(e) => setFiltroSector(e.target.value)}
+                >
+                  <option value="Todos">Todos</option>
+                  {sectores.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1.5">Categoría</label>
+                <select 
+                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                >
+                  <option value="Todas">Todas</option>
+                  {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1.5">Proveedor</label>
+                <select 
+                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filtroProveedor}
+                  onChange={(e) => setFiltroProveedor(e.target.value)}
+                >
+                  <option value="Todos">Todos</option>
+                  {proveedores.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1.5">Ordenar</label>
+                <select 
+                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filtroOrden}
+                  onChange={(e) => setFiltroOrden(e.target.value)}
+                >
+                  <option value="Más reciente">Más reciente</option>
+                  <option value="Mayor gasto">Mayor gasto</option>
+                  <option value="Menor gasto">Menor gasto</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 p-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+                  onClick={() => {
+                    setFiltroSector('Todos');
+                    setFiltroCategoria('Todas');
+                    setFiltroProveedor('Todos');
+                    setFiltroOrden('Más reciente');
+                  }}
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        {/* TABLA */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+            <h2 className="text-xl font-bold text-gray-800">Gastos del Día</h2>
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent('navegar-a', { detail: 'gastos' }))}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Agregar Gasto
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            {gastosDelDia.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                No hay gastos registrados para esta fecha.
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm">
+                  <tr>
+                    <th className="p-4 font-semibold whitespace-nowrap">Hora</th>
+                    <th className="p-4 font-semibold whitespace-nowrap">Sector</th>
+                    <th className="p-4 font-semibold">Detalle</th>
+                    <th className="p-4 font-semibold whitespace-nowrap">Método</th>
+                    <th className="p-4 font-semibold text-right whitespace-nowrap">Monto</th>
+                    <th className="p-4 font-semibold text-center whitespace-nowrap">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
+                  {gastosDelDia.map(gasto => {
+                    let horaStr = '--:--';
+                    if (gasto.fecha && gasto.fecha.includes('T')) {
+                      const d = new Date(gasto.fecha);
+                      horaStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+
+                    return (
+                      <tr key={gasto.id} className="hover:bg-gray-50 transition-colors group">
+                        <td className="p-4 text-gray-500 font-medium whitespace-nowrap">{horaStr}</td>
+                        <td className="p-4 whitespace-nowrap">
+                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                            {gasto.sector}
+                          </span>
+                        </td>
+                        <td className="p-4 min-w-[200px]">
+                          <p className="font-semibold text-gray-800">{gasto.categoria}</p>
+                          {gasto.descripcion && <p className="text-xs text-gray-500 mt-0.5">{gasto.descripcion}</p>}
+                        </td>
+                        <td className="p-4 whitespace-nowrap text-gray-600 font-medium">
+                          {gasto.metodoPago}
+                        </td>
+                        <td className="p-4 text-right font-bold text-gray-900 whitespace-nowrap">{formatMoney(gasto.monto)}</td>
+                        <td className="p-4 whitespace-nowrap">
+                          <div className="flex justify-center gap-2">
+                            <button 
+                              onClick={() => {
+                                window.dispatchEvent(new CustomEvent('editar-gasto', { detail: gasto }));
+                                window.dispatchEvent(new CustomEvent('navegar-a', { detail: 'gastos' }));
+                              }}
+                              className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                            >
+                              Editar
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (window.confirm('¿Estás seguro de que querés eliminar este gasto?')) {
+                                  eliminarGasto(gasto.id);
+                                }
+                              }}
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 bg-gray-50 p-5">
+            <div className="flex justify-end">
+              <div className="w-full md:w-72 space-y-3">
+                <div className="flex justify-between text-gray-600 text-sm font-medium">
+                  <span>Cantidad de gastos</span>
+                  <span className="font-bold">{gastosDelDia.length}</span>
+                </div>
+                <div className="flex justify-between items-center text-2xl font-black pt-2">
+                  <span className="text-gray-800">Total Gastos</span>
+                  <span className="text-red-500">{formatMoney(totalGastosDia)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Tabla detalle + botón cierre */}
       <Card className="p-4 bg-white border border-slate-200 shadow-sm">
         <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wide mb-3">
@@ -364,15 +579,41 @@ export function CierreCajaPanel({
             </tbody>
             <tfoot>
               <tr className="bg-slate-50 border-t-2 border-slate-200">
-                <td className="p-2 font-bold text-slate-800">Total del día</td>
+                <td className="p-2 font-bold text-slate-800">Total ventas del día</td>
                 <td className="p-2 text-center font-bold text-slate-700">{ventasDelDiaCount}</td>
                 <td className="p-2 text-right font-black text-lg text-slate-900">{formatMoney(totalGeneral)}</td>
+              </tr>
+              {incluirGastosEnCierre && (
+                <tr className="bg-red-50 border-t border-red-100">
+                  <td className="p-2 font-semibold text-red-700" colSpan={2}>Gastos del día (descontado)</td>
+                  <td className="p-2 text-right font-black text-red-600">− {formatMoney(totalGastosDia)}</td>
+                </tr>
+              )}
+              <tr className="bg-emerald-50 border-t-2 border-emerald-200">
+                <td className="p-2 font-black text-emerald-900" colSpan={2}>Neto final en caja</td>
+                <td className="p-2 text-right font-black text-xl text-emerald-800">{formatMoney(totalEsperadoNeto)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center pt-2 border-t border-slate-100">
+          {/* Toggle incluir gastos */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div
+              onClick={() => setIncluirGastosEnCierre(v => !v)}
+              className={`relative w-10 h-5 rounded-full transition-colors ${
+                incluirGastosEnCierre ? 'bg-emerald-500' : 'bg-slate-300'
+              }`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                incluirGastosEnCierre ? 'translate-x-5' : 'translate-x-0'
+              }`} />
+            </div>
+            <span className="text-[11px] text-slate-600 font-medium">
+              Descontar gastos del día ({formatMoney(totalGastosDia)}) del neto final
+            </span>
+          </label>
           <p className="text-[10px] text-slate-500 max-w-md">
             El cierre registra totales, arqueo de billetes y detalle por método en la pestaña{' '}
             <strong>Cierres Caja</strong> de Google Sheets.
@@ -390,21 +631,28 @@ export function CierreCajaPanel({
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Confirmar cierre de caja?</AlertDialogTitle>
-                <AlertDialogDescription asChild>
+                <AlertDialogDescription>
                   <div className="space-y-2 text-sm text-left">
                     <p>Fecha: <strong>{fechaCierre}</strong> — {ventasDelDiaCount} ventas</p>
                     <div className="bg-slate-50 rounded-lg p-3 space-y-1.5 text-xs border border-slate-200">
                       <div className="flex justify-between">
-                        <span className="text-amber-700 font-bold">🟡 Inicio de caja</span>
+                        <span className="font-bold">Inicio de caja</span>
                         <span className="font-bold">{formatMoney(montoCajaInicio)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-700 font-bold">📊 Total ventas</span>
+                        <span className="font-bold">Total ventas</span>
                         <span className="font-bold">{formatMoney(totalGeneral)}</span>
                       </div>
+                      {incluirGastosEnCierre && (
+                        <div className="flex justify-between text-red-600">
+                          <span className="font-bold">Gastos del día</span>
+                          <span className="font-bold">− {formatMoney(totalGastosDia)}</span>
+                        </div>
+                      )}
+                    </div>
                       <div className="flex justify-between border-t border-slate-200 pt-1.5 text-sm">
-                        <span className="font-black text-emerald-800">Total esperado</span>
-                        <span className="font-black text-emerald-800">{formatMoney(totalEsperado)}</span>
+                        <span className="font-black text-emerald-800">Neto final en caja</span>
+                        <span className="font-black text-emerald-800">{formatMoney(totalEsperadoNeto)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-semibold text-slate-700">Contado físico</span>
@@ -422,7 +670,7 @@ export function CierreCajaPanel({
                         Ya se envió un cierre este día. Podés enviar otro si necesitás actualizar.
                       </p>
                     )}
-                  </div>
+                  
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

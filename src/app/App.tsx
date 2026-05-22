@@ -110,6 +110,18 @@ function App() {
     };
 
     initializeApp();
+
+    const handleNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+    window.addEventListener('navegar-a', handleNavigate);
+
+    return () => {
+      window.removeEventListener('navegar-a', handleNavigate);
+    };
   }, []);
 
   // Guardar en localStorage cuando cambian los datos

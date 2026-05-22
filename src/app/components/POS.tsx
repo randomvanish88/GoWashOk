@@ -1806,6 +1806,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setInicioCajaVersion(v => v + 1);
       localStorage.removeItem(`gowash-cierre-enviado-${fechaCierre}`);
 
+      // Reiniciar gastos del día cerrado
+      const gastosGuardados: Array<{ fecha: string }> = JSON.parse(localStorage.getItem('gowash-gastos') || '[]');
+      const gastosRestantes = gastosGuardados.filter(g => g.fecha !== fechaCierre);
+      localStorage.setItem('gowash-gastos', JSON.stringify(gastosRestantes));
+      window.dispatchEvent(new Event('gastos-updated'));
+
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido';
       toast.error('Error al cerrar caja', { description: msg });
@@ -1924,9 +1930,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-100"
-                              onClick={() => iniciarEdicionEmpleadoLista(emp)}
+                              onClick={(e) => { e.stopPropagation(); iniciarEdicionEmpleadoLista(emp); }}
                             >
                               <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-red-600 hover:bg-red-100"
+                              onClick={(e) => { e.stopPropagation(); eliminarEmpleado(emp); }}
+                            >
+                              <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
                         </div>
