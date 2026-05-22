@@ -40,6 +40,7 @@ function App() {
   const [brands, setBrands] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<string | null>(null);
+  const isAdmin = user === 'admin';
   const [activeTab, setActiveTab] = useState('pos'); // Default to POS for workers
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isLicensed, setIsLicensed] = useState(false);
@@ -287,9 +288,26 @@ function App() {
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/5 border border-white/5 px-3 py-1.5 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                  isAdmin
+                    ? 'bg-purple-500/10 border-purple-500/20'
+                    : user === 'supervisor'
+                    ? 'bg-blue-500/10 border-blue-500/20'
+                    : 'bg-emerald-500/10 border-emerald-500/20'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${
+                    isAdmin ? 'bg-purple-400' : user === 'supervisor' ? 'bg-blue-400' : 'bg-emerald-400'
+                  }`} />
                   <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">{user}</span>
+                  <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${
+                    isAdmin
+                      ? 'bg-purple-500/20 text-purple-300'
+                      : user === 'supervisor'
+                      ? 'bg-blue-500/20 text-blue-300'
+                      : 'bg-emerald-500/20 text-emerald-300'
+                  }`}>
+                    {isAdmin ? 'Admin' : user === 'supervisor' ? 'Supervisor' : 'Empleado'}
+                  </span>
                 </div>
                 <Button 
                   onClick={handleLogout} 
@@ -306,7 +324,7 @@ function App() {
                 onClick={handleOpenLogin} 
                 className="bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-6 h-9 text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-blue-500/10 transition-all hover:shadow-blue-500/20 active:scale-95"
               >
-                Acceso Admin
+                Iniciar Sesión
               </Button>
             )}
           </div>
@@ -314,14 +332,15 @@ function App() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full max-w-5xl mx-auto ${isAuthenticated ? 'grid-cols-3 md:grid-cols-7' : 'grid-cols-3 md:grid-cols-6'} bg-white shadow-lg`}>
+          <TabsList className={`grid w-full max-w-5xl mx-auto ${isAdmin ? 'grid-cols-3 md:grid-cols-7' : 'grid-cols-3 md:grid-cols-3'} bg-white shadow-lg`}>
             <TabsTrigger value="pos">Punto de Venta</TabsTrigger>
-            <TabsTrigger value="list">Lista de Precios</TabsTrigger>
-            <TabsTrigger value="add">Editar Precios</TabsTrigger>
-            <TabsTrigger value="sizes">Tamaños</TabsTrigger>
-            <TabsTrigger value="brands">Marcas</TabsTrigger>
             <TabsTrigger value="gastos">Gastos</TabsTrigger>
-            {isAuthenticated && (
+            {isAdmin && <TabsTrigger value="list">Lista de Precios</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="add">Editar Precios</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="sizes">Tamaños</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="brands">Marcas</TabsTrigger>}
+            
+            {isAdmin && (
               <TabsTrigger value="settings" title="Configuración de Google Sheets" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
                 <span>Config</span>
@@ -329,62 +348,68 @@ function App() {
             )}
           </TabsList>
 
-          <TabsContent value="list">
-            <Card className="p-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <PriceList
-                prices={prices}
-                onEdit={isAuthenticated ? handleEditPrice : undefined}
-                onDelete={isAuthenticated ? handleDeletePrice : undefined}
-                onMove={isAuthenticated ? handleMovePrice : undefined}
-              />
-            </Card>
-          </TabsContent>
+          {isAdmin && (
+            <>
+              <TabsContent value="list">
+                <Card className="p-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                  <PriceList
+                    prices={prices}
+                    onEdit={handleEditPrice}
+                    onDelete={handleDeletePrice}
+                    onMove={handleMovePrice}
+                  />
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="add">
-            <Card className="p-6 max-w-2xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <PriceForm
-                onSubmit={editingPrice ? handleUpdatePrice : handleAddPrice}
-                onCancel={editingPrice ? handleCancelEdit : undefined}
-                editingPrice={editingPrice}
-                sizes={sizes}
-                brands={brands}
-              />
-            </Card>
-          </TabsContent>
+              <TabsContent value="add">
+                <Card className="p-6 max-w-2xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                  <PriceForm
+                    onSubmit={editingPrice ? handleUpdatePrice : handleAddPrice}
+                    onCancel={editingPrice ? handleCancelEdit : undefined}
+                    editingPrice={editingPrice}
+                    sizes={sizes}
+                    brands={brands}
+                  />
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="sizes">
-            <Card className="p-6 max-w-4xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <SizeEditor
-                sizes={sizes}
-                onAddSize={handleAddSize}
-                onEditSize={handleEditSize}
-                onDeleteSize={handleDeleteSize}
-              />
-            </Card>
-          </TabsContent>
+              <TabsContent value="sizes">
+                <Card className="p-6 max-w-4xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                  <SizeEditor
+                    sizes={sizes}
+                    onAddSize={handleAddSize}
+                    onEditSize={handleEditSize}
+                    onDeleteSize={handleDeleteSize}
+                  />
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="brands">
-            <Card className="p-6 max-w-5xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <BrandEditor
-                brands={brands}
-                onAddBrand={handleAddBrand}
-                onEditBrand={handleEditBrand}
-                onDeleteBrand={handleDeleteBrand}
-              />
-            </Card>
-          </TabsContent>
+              <TabsContent value="brands">
+                <Card className="p-6 max-w-5xl mx-auto shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                  <BrandEditor
+                    brands={brands}
+                    onAddBrand={handleAddBrand}
+                    onEditBrand={handleEditBrand}
+                    onDeleteBrand={handleDeleteBrand}
+                  />
+                </Card>
+              </TabsContent>
+            </>
+          )}
 
           <TabsContent value="pos">
-            <POS prices={prices} isAdmin={isAuthenticated} onNavigateToPrices={() => setActiveTab('add')} />
+            <POS prices={prices} isAdmin={isAdmin} onNavigateToPrices={() => setActiveTab('add')} />
           </TabsContent>
 
           <TabsContent value="gastos">
-            <Gastos isAdmin={isAuthenticated} />
+            <Gastos isAdmin={isAdmin} />
           </TabsContent>
           
-          <TabsContent value="settings">
-            <GoogleSheetsSettings />
-          </TabsContent>
+          {isAdmin && (
+            <TabsContent value="settings">
+              <GoogleSheetsSettings />
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Sección de Contacto y Redes */}

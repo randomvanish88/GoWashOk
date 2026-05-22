@@ -16,11 +16,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple mock authentication
-    if (username === 'admin' && password === 'admin') {
+    // Validate users
+    if (username === 'admin' && password === 'tomadmin') {
+      onLogin(username);
+    } else if (username === 'supervisor' && password === 'admin1') {
+      onLogin(username);
+    } else if (username === 'empleado' && password === 'admin2') {
       onLogin(username);
     } else {
-      setError('Credenciales incorrectas. Intenta con admin/admin.');
+      setError('Credenciales incorrectas. Verificá tu usuario y contraseña.');
     }
   };
 
