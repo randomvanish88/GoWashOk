@@ -61,6 +61,7 @@ function createWindow() {
     // win.webContents.openDevTools(); 
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
+    // DevTools desactivado en producción
   }
 
   // Bloquear F12 y otras herramientas de desarrollo en producción

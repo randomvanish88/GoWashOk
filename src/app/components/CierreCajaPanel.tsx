@@ -90,6 +90,9 @@ export function CierreCajaPanel({
 
 
   const [arqueoAbierto, setArqueoAbierto] = useState(true);
+  const [composicionAbierto, setComposicionAbierto] = useState(true);
+  const [gastosAbierto, setGastosAbierto] = useState(true);
+  const [detalleAbierto, setDetalleAbierto] = useState(true);
   const [editorDenomsAbierto, setEditorDenomsAbierto] = useState(false);
   const [nuevaDenominacion, setNuevaDenominacion] = useState('');
   const [denomEditando, setDenomEditando] = useState<number | null>(null);
@@ -167,94 +170,175 @@ export function CierreCajaPanel({
         </div>
       </div>
 
-      {/* Resumen de caja: inicio + ventas = total esperado */}
-      <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wide mb-3">
-          Composición del cierre
-        </h4>
-        <div className="space-y-2">
-
-          {/* Inicio de caja */}
-          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🟡</span>
-              <div>
-                <p className="text-xs font-bold text-amber-900">Inicio de caja</p>
-                <p className="text-[10px] text-amber-700">Efectivo al abrir el día</p>
-              </div>
-            </div>
-            <span className="text-base font-black text-amber-800">{formatMoney(montoCajaInicio)}</span>
+      {/* Composición del Cierre - Dashboard mejorado */}
+      <Card className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h4 className="font-bold text-white text-2xl flex items-center gap-2">
+              <span className="w-3 h-3 bg-emerald-400 rounded-full"></span>
+              Composición del Cierre
+            </h4>
+            <p className="text-slate-400 text-sm mt-1">Estadísticas operativas del día</p>
           </div>
-
-          {/* Ventas del día por método */}
-          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-            <div className="px-3 py-1.5 bg-slate-100 border-b border-slate-200">
-              <p className="text-[10px] font-bold text-slate-700 uppercase">Ventas del día — {ventasDelDiaCount} ventas</p>
-            </div>
-            <div className="divide-y divide-slate-50">
-              <div className="flex items-center justify-between px-3 py-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">💵</span>
-                  <span className="text-xs font-semibold text-green-800">Efectivo</span>
-                  <span className="text-[9px] text-slate-400">{ventasEfectivoCount} ventas</span>
-                </div>
-                <span className="text-xs font-bold text-green-800">{formatMoney(totalEfectivo)}</span>
-              </div>
-              <div className="flex items-center justify-between px-3 py-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">🏦</span>
-                  <span className="text-xs font-semibold text-blue-800">Transferencia</span>
-                  <span className="text-[9px] text-slate-400">{ventasTransferenciaCount} ventas</span>
-                </div>
-                <span className="text-xs font-bold text-blue-800">{formatMoney(totalTransferencia)}</span>
-              </div>
-              <div className="flex items-center justify-between px-3 py-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">📱</span>
-                  <span className="text-xs font-semibold text-purple-800">Digital / Otros</span>
-                  <span className="text-[9px] text-slate-400">{ventasOtrosCount} ventas</span>
-                </div>
-                <span className="text-xs font-bold text-purple-800">{formatMoney(totalBilletera)}</span>
-              </div>
-              <div className="flex items-center justify-between px-3 py-2 bg-slate-50">
-                <span className="text-xs font-black text-slate-800">Total ventas</span>
-                <span className="text-sm font-black text-slate-900">{formatMoney(totalGeneral)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Total esperado en caja */}
-          <div className="flex items-center justify-between bg-emerald-600 rounded-xl px-4 py-3">
-            <div>
-              <p className="text-xs font-black text-emerald-100 uppercase tracking-wide">Total esperado en caja</p>
-              <p className="text-[10px] text-emerald-200">Inicio + todas las ventas</p>
-            </div>
-            <span className="text-2xl font-black text-white">{formatMoney(totalEsperado)}</span>
-          </div>
+          <button
+            onClick={() => setComposicionAbierto(!composicionAbierto)}
+            className="flex items-center gap-1 rounded-lg bg-slate-700 border border-slate-600 px-3 py-2 text-left hover:bg-slate-600 transition-colors"
+          >
+            <span className="text-[10px] font-bold text-slate-300">
+              {composicionAbierto ? 'Ocultar' : 'Mostrar'}
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${composicionAbierto ? 'rotate-180' : ''}`} />
+          </button>
         </div>
+
+        {composicionAbierto && (
+          <div className="space-y-6">
+            {/* Grid principal */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* VENTAS POR SECTOR */}
+              <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center text-xl">💰</div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Ventas por sector</h3>
+                    <p className="text-slate-400 text-xs">Facturación del día</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Lavadero', value: totalGeneral, color: 'bg-blue-500', textColor: 'text-blue-300' },
+                    { label: 'Bar', value: 0, color: 'bg-amber-500', textColor: 'text-amber-300' },
+                    { label: 'Cosmética/Accesorios', value: 0, color: 'bg-teal-500', textColor: 'text-teal-300' },
+                  ].map((sector, idx) => (
+                    <div key={sector.label}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-semibold text-slate-300">{sector.label}</span>
+                        <span className={`font-bold ${sector.textColor}`}>{formatMoney(sector.value)}</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`${sector.color} h-full rounded-full transition-all`}
+                          style={{ width: totalGeneral > 0 ? `${Math.min((sector.value / totalGeneral) * 100, 100)}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CLIENTES POR SECTOR */}
+              <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center text-xl">👥</div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Clientes por sector</h3>
+                    <p className="text-slate-400 text-xs">Flujo diario de clientes</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Lavadero', count: ventasDelDiaCount, color: 'text-blue-400' },
+                    { label: 'Bar', count: ventasEfectivoCount, color: 'text-amber-400' },
+                    { label: 'Cosmética/Accesorios', count: ventasTransferenciaCount, color: 'text-teal-400' },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-sm text-slate-300">{item.label}</div>
+                        <div className="text-slate-500 text-xs">Clientes atendidos</div>
+                      </div>
+                      <div className={`text-2xl font-bold ${item.color}`}>{item.count}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* MÉTODOS DE PAGO */}
+              <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-xl">💳</div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Métodos de pago</h3>
+                    <p className="text-slate-400 text-xs">Desglose de pagos</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Efectivo', value: totalEfectivo, color: 'bg-green-500', textColor: 'text-green-300' },
+                    { label: 'Transferencia', value: totalTransferencia, color: 'bg-blue-500', textColor: 'text-blue-300' },
+                    { label: 'Digital / Otros', value: totalBilletera, color: 'bg-purple-500', textColor: 'text-purple-300' },
+                  ].map((metodo) => (
+                    <div key={metodo.label}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-semibold text-slate-300">{metodo.label}</span>
+                        <span className={`font-bold ${metodo.textColor}`}>{formatMoney(metodo.value)}</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className={`${metodo.color} h-full rounded-full transition-all`}
+                          style={{ width: totalGeneral > 0 ? `${Math.min((metodo.value / totalGeneral) * 100, 100)}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* RESUMEN FINAL */}
+              <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-xl">✓</div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Resumen del día</h3>
+                    <p className="text-slate-400 text-xs">Totales operativos</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                    <span className="text-sm text-slate-400">Inicio de caja</span>
+                    <span className="font-bold text-amber-300">{formatMoney(montoCajaInicio)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                    <span className="text-sm text-slate-400">Total ventas</span>
+                    <span className="font-bold text-white">{formatMoney(totalGeneral)}</span>
+                  </div>
+                  {incluirGastosEnCierre && (
+                    <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                      <span className="text-sm text-slate-400">Total gastos</span>
+                      <span className="font-bold text-red-400">− {formatMoney(totalGastosDia)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center bg-emerald-600/20 border border-emerald-500/30 rounded-lg px-3 py-3 mt-3">
+                    <span className="text-xs font-black text-emerald-300 uppercase tracking-wide">TOTAL ESPERADO</span>
+                    <span className="text-xl font-black text-emerald-300">{formatMoney(totalEsperadoNeto)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Arqueo físico de billetes */}
-      <Card className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
+      <Card className="p-3 bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-lg">
         <Collapsible open={arqueoAbierto} onOpenChange={setArqueoAbierto}>
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h4 className="font-bold text-green-900 text-xs uppercase">Arqueo físico de billetes</h4>
-              <p className="text-[10px] text-green-700 mt-0.5">Contá el dinero físico en caja</p>
+              <h4 className="font-bold text-white text-xs uppercase">Arqueo físico de billetes</h4>
+              <p className="text-[10px] text-slate-400 mt-0.5">Contá el dinero físico en caja</p>
             </div>
-            <CollapsibleTrigger className="flex items-center gap-1 rounded-lg bg-white/90 border border-green-200 px-2 py-1 text-left hover:bg-white">
-              <span className="text-[10px] font-bold text-green-800">
+            <CollapsibleTrigger className="flex items-center gap-1 rounded-lg bg-slate-700 border border-slate-600 px-2 py-1 text-left hover:bg-slate-600">
+              <span className="text-[10px] font-bold text-slate-300">
                 {arqueoAbierto ? 'Ocultar' : 'Mostrar'}
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-green-700 transition-transform ${arqueoAbierto ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${arqueoAbierto ? 'rotate-180' : ''}`} />
             </CollapsibleTrigger>
           </div>
 
           <CollapsibleContent>
-            <div className="overflow-x-auto rounded-lg border border-green-200 bg-white mb-2">
+            <div className="overflow-x-auto rounded-lg border border-slate-700 bg-slate-800 mb-2">
               <table className="w-full text-[10px]">
                 <thead>
-                  <tr className="bg-green-100/80 text-green-900">
+                  <tr className="bg-slate-700 text-slate-300">
                     <th className="p-1.5 text-left font-bold">Billete</th>
                     <th className="p-1.5 text-center font-bold w-16">Cant.</th>
                     <th className="p-1.5 text-right font-bold">Subtotal</th>
@@ -264,16 +348,16 @@ export function CierreCajaPanel({
                   {denomsOrdenadas.map((valor) => {
                     const cant = conteoBilletes[String(valor)] || 0;
                     return (
-                      <tr key={valor} className="border-t border-green-50">
-                        <td className="p-1.5 font-bold text-green-900">{formatMoney(valor)}</td>
+                      <tr key={valor} className="border-t border-slate-700">
+                        <td className="p-1.5 font-bold text-slate-300">{formatMoney(valor)}</td>
                         <td className="p-1">
                           <EditableNumberInput
                             value={cant}
                             onChange={(n) => onConteoChange(valor, n)}
-                            className="h-7 text-xs text-center px-1"
+                            className="h-7 text-xs text-center px-1 bg-slate-700 border-slate-600 text-white"
                           />
                         </td>
-                        <td className="p-1.5 text-right font-bold text-green-800">
+                        <td className="p-1.5 text-right font-bold text-emerald-300">
                           {formatMoney(cant * valor)}
                         </td>
                       </tr>
@@ -286,7 +370,7 @@ export function CierreCajaPanel({
               type="button"
               variant="outline"
               size="sm"
-              className="w-full h-7 text-[10px] mb-2 border-green-300 text-green-800"
+              className="w-full h-7 text-[10px] mb-2 border-slate-600 text-slate-300 bg-slate-700 hover:bg-slate-600"
               onClick={onLimpiarConteo}
             >
               Limpiar conteo
@@ -294,9 +378,9 @@ export function CierreCajaPanel({
 
             {/* Editor de denominaciones */}
             <Collapsible open={editorDenomsAbierto} onOpenChange={setEditorDenomsAbierto}>
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-dashed border-green-300 bg-green-50/50 px-2 py-1.5 text-left mb-1">
-                <span className="text-[9px] font-bold text-green-800 uppercase">Editar denominaciones</span>
-                <ChevronDown className={`w-3 h-3 text-green-700 transition-transform ${editorDenomsAbierto ? 'rotate-180' : ''}`} />
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-dashed border-slate-600 bg-slate-700/50 px-2 py-1.5 text-left mb-1">
+                <span className="text-[9px] font-bold text-slate-300 uppercase">Editar denominaciones</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${editorDenomsAbierto ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 pt-1">
                 {denomsOrdenadas.map((valor) =>
@@ -305,27 +389,27 @@ export function CierreCajaPanel({
                       <EditableNumberInput
                         value={parseInt(denomEditandoValor, 10) || valor}
                         onChange={(n) => setDenomEditandoValor(String(n))}
-                        className="h-7 text-xs flex-1"
+                        className="h-7 text-xs flex-1 bg-slate-700 border-slate-600 text-white"
                       />
-                      <Button type="button" size="sm" className="h-7 px-2 bg-green-600"
+                      <Button type="button" size="sm" className="h-7 px-2 bg-emerald-600 hover:bg-emerald-700"
                         onClick={() => {
                           const nuevo = parseInt(denomEditandoValor, 10);
                           if (!nuevo || nuevo <= 0) { toast.warning('Valor inválido'); return; }
                           onEditarDenominacion(valor, nuevo);
                           setDenomEditando(null);
                         }}>✓</Button>
-                      <Button type="button" size="sm" variant="outline" className="h-7 px-2"
+                      <Button type="button" size="sm" variant="outline" className="h-7 px-2 border-slate-600 text-slate-300 hover:bg-slate-700"
                         onClick={() => setDenomEditando(null)}>✕</Button>
                     </div>
                   ) : (
-                    <div key={valor} className="flex items-center justify-between gap-1 bg-white rounded border border-green-100 px-2 py-1">
-                      <span className="text-xs font-bold text-green-900">{formatMoney(valor)}</span>
+                    <div key={valor} className="flex items-center justify-between gap-1 bg-slate-700 rounded border border-slate-600 px-2 py-1">
+                      <span className="text-xs font-bold text-slate-300">{formatMoney(valor)}</span>
                       <div className="flex gap-1">
-                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0"
+                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-slate-300"
                           onClick={() => { setDenomEditando(valor); setDenomEditandoValor(String(valor)); }}>
-                          <Pencil className="w-3 h-3 text-green-700" />
+                          <Pencil className="w-3 h-3" />
                         </Button>
-                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500"
+                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
                           onClick={() => onEliminarDenominacion(valor)} disabled={denomsOrdenadas.length <= 1}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -335,12 +419,12 @@ export function CierreCajaPanel({
                 )}
                 <div className="flex gap-1 items-end">
                   <div className="flex-1">
-                    <Label className="text-[9px] text-green-800">Nueva denominación ($)</Label>
+                    <Label className="text-[9px] text-slate-400">Nueva denominación ($)</Label>
                     <Input type="text" inputMode="numeric" value={nuevaDenominacion}
                       onChange={(e) => setNuevaDenominacion(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Ej: 5000" className="h-7 text-xs mt-0.5" />
+                      placeholder="Ej: 5000" className="h-7 text-xs mt-0.5 bg-slate-700 border-slate-600 text-white" />
                   </div>
-                  <Button type="button" size="sm" className="h-7 text-[10px] bg-green-700"
+                  <Button type="button" size="sm" className="h-7 text-[10px] bg-emerald-600 hover:bg-emerald-700"
                     onClick={() => {
                       const v = parseInt(nuevaDenominacion, 10);
                       if (!v || v <= 0) { toast.warning('Ingresá un valor válido'); return; }
@@ -356,21 +440,21 @@ export function CierreCajaPanel({
         </Collapsible>
 
         {/* Resultado del arqueo */}
-        <div className="space-y-1.5 pt-2 border-t border-green-200 mt-2">
+        <div className="space-y-1.5 pt-2 border-t border-slate-700 mt-2">
           <div className="flex justify-between text-[11px]">
-            <span className="text-green-800 font-medium">Total contado físico</span>
-            <span className="font-black text-green-900">{formatMoney(totalContadoBilletes)}</span>
+            <span className="text-slate-400 font-medium">Total contado físico</span>
+            <span className="font-black text-emerald-300">{formatMoney(totalContadoBilletes)}</span>
           </div>
           <div className="flex justify-between text-[11px]">
-            <span className="text-green-800 font-medium">Total esperado</span>
-            <span className="font-black text-green-900">{formatMoney(totalEsperado)}</span>
+            <span className="text-slate-400 font-medium">Total esperado</span>
+            <span className="font-black text-slate-300">{formatMoney(totalEsperado)}</span>
           </div>
           <div className={`flex justify-between text-sm font-black rounded-lg px-2 py-1.5 ${
             Math.abs(diferenciaArqueo) < 0.01
-              ? 'bg-green-100 text-green-800'
+              ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
               : diferenciaArqueo > 0
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-red-100 text-red-700'
+                ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                : 'bg-red-600/20 text-red-300 border border-red-500/30'
           }`}>
             <span>Diferencia</span>
             <span>{diferenciaArqueo > 0 ? '+' : ''}{formatMoney(diferenciaArqueo)}</span>
@@ -381,20 +465,20 @@ export function CierreCajaPanel({
       {/* Gastos Diarios */}
       <div className="mt-6 mb-6 space-y-4">
         {/* FILTROS */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg shadow-lg border border-slate-700 p-5">
           <details open>
-            <summary className="cursor-pointer font-semibold text-sm text-gray-700 outline-none select-none">
+            <summary className="cursor-pointer font-semibold text-sm text-slate-300 outline-none select-none">
               Filtros y Configuración
             </summary>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1.5">Fecha</label>
-                <input type="date" className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" defaultValue={fechaCierre} disabled />
+                <label className="text-xs font-medium text-slate-400 block mb-1.5">Fecha</label>
+                <input type="date" className="w-full border border-slate-600 bg-slate-700 text-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" defaultValue={fechaCierre} disabled />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1.5">Sector</label>
+                <label className="text-xs font-medium text-slate-400 block mb-1.5">Sector</label>
                 <select 
-                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-slate-600 bg-slate-700 text-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                   value={filtroSector}
                   onChange={(e) => setFiltroSector(e.target.value)}
                 >
@@ -403,9 +487,9 @@ export function CierreCajaPanel({
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1.5">Categoría</label>
+                <label className="text-xs font-medium text-slate-400 block mb-1.5">Categoría</label>
                 <select 
-                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-slate-600 bg-slate-700 text-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                   value={filtroCategoria}
                   onChange={(e) => setFiltroCategoria(e.target.value)}
                 >
@@ -414,9 +498,9 @@ export function CierreCajaPanel({
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1.5">Proveedor</label>
+                <label className="text-xs font-medium text-slate-400 block mb-1.5">Proveedor</label>
                 <select 
-                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-slate-600 bg-slate-700 text-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                   value={filtroProveedor}
                   onChange={(e) => setFiltroProveedor(e.target.value)}
                 >
@@ -425,9 +509,9 @@ export function CierreCajaPanel({
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1.5">Ordenar</label>
+                <label className="text-xs font-medium text-slate-400 block mb-1.5">Ordenar</label>
                 <select 
-                  className="w-full border border-gray-200 bg-white text-slate-900 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-slate-600 bg-slate-700 text-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                   value={filtroOrden}
                   onChange={(e) => setFiltroOrden(e.target.value)}
                 >
@@ -438,7 +522,7 @@ export function CierreCajaPanel({
               </div>
               <div className="flex items-end">
                 <button
-                  className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 p-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 p-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm border border-slate-600"
                   onClick={() => {
                     setFiltroSector('Todos');
                     setFiltroCategoria('Todas');
@@ -454,234 +538,265 @@ export function CierreCajaPanel({
         </div>
 
         {/* TABLA */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Gastos del Día</h2>
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-lg shadow-lg border border-slate-700 overflow-hidden">
+          <div className="flex items-center justify-between p-5 border-b border-slate-700">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold text-slate-300">Gastos del Día</h2>
+              <button
+                onClick={() => setGastosAbierto(!gastosAbierto)}
+                className="flex items-center gap-1 rounded-lg bg-slate-700 border border-slate-600 px-2 py-1 text-left hover:bg-slate-600 transition-colors"
+              >
+                <span className="text-[10px] font-bold text-slate-300">
+                  {gastosAbierto ? 'Ocultar' : 'Mostrar'}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${gastosAbierto ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
             <button 
               onClick={() => window.dispatchEvent(new CustomEvent('navegar-a', { detail: 'gastos' }))}
-              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
             >
               <Plus className="w-4 h-4" /> Agregar Gasto
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            {gastosDelDia.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                No hay gastos registrados para esta fecha.
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm">
-                  <tr>
-                    <th className="p-4 font-semibold whitespace-nowrap">Hora</th>
-                    <th className="p-4 font-semibold whitespace-nowrap">Sector</th>
-                    <th className="p-4 font-semibold">Detalle</th>
-                    <th className="p-4 font-semibold whitespace-nowrap">Método</th>
-                    <th className="p-4 font-semibold text-right whitespace-nowrap">Monto</th>
-                    <th className="p-4 font-semibold text-center whitespace-nowrap">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm text-gray-700 divide-y divide-gray-100">
-                  {gastosDelDia.map(gasto => {
-                    let horaStr = '--:--';
-                    if (gasto.fecha && gasto.fecha.includes('T')) {
-                      const d = new Date(gasto.fecha);
-                      horaStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    }
-
-                    return (
-                      <tr key={gasto.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="p-4 text-gray-500 font-medium whitespace-nowrap">{horaStr}</td>
-                        <td className="p-4 whitespace-nowrap">
-                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
-                            {gasto.sector}
-                          </span>
-                        </td>
-                        <td className="p-4 min-w-[200px]">
-                          <p className="font-semibold text-gray-800">{gasto.categoria}</p>
-                          {gasto.descripcion && <p className="text-xs text-gray-500 mt-0.5">{gasto.descripcion}</p>}
-                        </td>
-                        <td className="p-4 whitespace-nowrap text-gray-600 font-medium">
-                          {gasto.metodoPago}
-                        </td>
-                        <td className="p-4 text-right font-bold text-gray-900 whitespace-nowrap">{formatMoney(gasto.monto)}</td>
-                        <td className="p-4 whitespace-nowrap">
-                          <div className="flex justify-center gap-2">
-                            <button 
-                              onClick={() => {
-                                window.dispatchEvent(new CustomEvent('editar-gasto', { detail: gasto }));
-                                window.dispatchEvent(new CustomEvent('navegar-a', { detail: 'gastos' }));
-                              }}
-                              className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                            >
-                              Editar
-                            </button>
-                            <button 
-                              onClick={() => {
-                                if (window.confirm('¿Estás seguro de que querés eliminar este gasto?')) {
-                                  eliminarGasto(gasto.id);
-                                }
-                              }}
-                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                            >
-                              Eliminar
-                            </button>
-                          </div>
-                        </td>
+          {gastosAbierto && (
+            <>
+              <div className="overflow-x-auto">
+                {gastosDelDia.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    No hay gastos registrados para esta fecha.
+                  </div>
+                ) : (
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-800 border-b border-slate-700 text-slate-400 text-sm">
+                      <tr>
+                        <th className="p-4 font-semibold whitespace-nowrap">Hora</th>
+                        <th className="p-4 font-semibold whitespace-nowrap">Sector</th>
+                        <th className="p-4 font-semibold">Detalle</th>
+                        <th className="p-4 font-semibold whitespace-nowrap">Método</th>
+                        <th className="p-4 font-semibold text-right whitespace-nowrap">Monto</th>
+                        <th className="p-4 font-semibold text-center whitespace-nowrap">Acciones</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
+                    </thead>
+                    <tbody className="text-sm text-slate-300 divide-y divide-slate-700">
+                      {gastosDelDia.map(gasto => {
+                        let horaStr = '--:--';
+                        if (gasto.fecha && gasto.fecha.includes('T')) {
+                          const d = new Date(gasto.fecha);
+                          horaStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        }
 
-          <div className="border-t border-gray-100 bg-gray-50 p-5">
-            <div className="flex justify-end">
-              <div className="w-full md:w-72 space-y-3">
-                <div className="flex justify-between text-gray-600 text-sm font-medium">
-                  <span>Cantidad de gastos</span>
-                  <span className="font-bold">{gastosDelDia.length}</span>
-                </div>
-                <div className="flex justify-between items-center text-2xl font-black pt-2">
-                  <span className="text-gray-800">Total Gastos</span>
-                  <span className="text-red-500">{formatMoney(totalGastosDia)}</span>
+                        return (
+                          <tr key={gasto.id} className="hover:bg-slate-800/50 transition-colors group">
+                            <td className="p-4 text-slate-500 font-medium whitespace-nowrap">{horaStr}</td>
+                            <td className="p-4 whitespace-nowrap">
+                              <span className="bg-blue-600/30 text-blue-300 px-3 py-1 rounded-full text-xs font-semibold border border-blue-500/30">
+                                {gasto.sector}
+                              </span>
+                            </td>
+                            <td className="p-4 min-w-[200px]">
+                              <p className="font-semibold text-slate-300">{gasto.categoria}</p>
+                              {gasto.descripcion && <p className="text-xs text-slate-500 mt-0.5">{gasto.descripcion}</p>}
+                            </td>
+                            <td className="p-4 whitespace-nowrap text-slate-400 font-medium">
+                              {gasto.metodoPago}
+                            </td>
+                            <td className="p-4 text-right font-bold text-red-300 whitespace-nowrap">{formatMoney(gasto.monto)}</td>
+                            <td className="p-4 whitespace-nowrap">
+                              <div className="flex justify-center gap-2">
+                                <button 
+                                  onClick={() => {
+                                    window.dispatchEvent(new CustomEvent('editar-gasto', { detail: gasto }));
+                                    window.dispatchEvent(new CustomEvent('navegar-a', { detail: 'gastos' }));
+                                  }}
+                                  className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                >
+                                  Editar
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm('¿Estás seguro de que querés eliminar este gasto?')) {
+                                      eliminarGasto(gasto.id);
+                                    }
+                                  }}
+                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              <div className="border-t border-slate-700 bg-slate-800 p-5">
+                <div className="flex justify-end">
+                  <div className="w-full md:w-72 space-y-3">
+                    <div className="flex justify-between text-slate-400 text-sm font-medium">
+                      <span>Cantidad de gastos</span>
+                      <span className="font-bold text-slate-300">{gastosDelDia.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-2xl font-black pt-2">
+                      <span className="text-slate-400">Total Gastos</span>
+                      <span className="text-red-400">{formatMoney(totalGastosDia)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Tabla detalle + botón cierre */}
-      <Card className="p-4 bg-white border border-slate-200 shadow-sm">
-        <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wide mb-3">
-          Detalle de ventas por método de pago — {fechaCierre}
-        </h4>
-        <div className="overflow-x-auto rounded-lg border border-slate-100 mb-4">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-slate-100 text-slate-700">
-                <th className="p-2 text-left font-bold">Método de pago</th>
-                <th className="p-2 text-center font-bold">Ventas</th>
-                <th className="p-2 text-right font-bold">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resumenMetodosPago.map((row) => (
-                <tr key={row.metodo} className={`border-t border-slate-50 ${row.cantidad === 0 ? 'opacity-50' : ''}`}>
-                  <td className="p-2 font-semibold text-slate-800">{row.metodo}</td>
-                  <td className="p-2 text-center text-slate-600">{row.cantidad}</td>
-                  <td className="p-2 text-right font-black text-slate-900">{formatMoney(row.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-slate-50 border-t-2 border-slate-200">
-                <td className="p-2 font-bold text-slate-800">Total ventas del día</td>
-                <td className="p-2 text-center font-bold text-slate-700">{ventasDelDiaCount}</td>
-                <td className="p-2 text-right font-black text-lg text-slate-900">{formatMoney(totalGeneral)}</td>
-              </tr>
-              {incluirGastosEnCierre && (
-                <tr className="bg-red-50 border-t border-red-100">
-                  <td className="p-2 font-semibold text-red-700" colSpan={2}>Gastos del día (descontado)</td>
-                  <td className="p-2 text-right font-black text-red-600">− {formatMoney(totalGastosDia)}</td>
-                </tr>
-              )}
-              <tr className="bg-emerald-50 border-t-2 border-emerald-200">
-                <td className="p-2 font-black text-emerald-900" colSpan={2}>Neto final en caja</td>
-                <td className="p-2 text-right font-black text-xl text-emerald-800">{formatMoney(totalEsperadoNeto)}</td>
-              </tr>
-            </tfoot>
-          </table>
+      <Card className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-bold text-slate-300 text-xs uppercase tracking-wide">
+            Detalle de ventas por método de pago — {fechaCierre}
+          </h4>
+          <button
+            onClick={() => setDetalleAbierto(!detalleAbierto)}
+            className="flex items-center gap-1 rounded-lg bg-slate-700 border border-slate-600 px-2 py-1 text-left hover:bg-slate-600 transition-colors"
+          >
+            <span className="text-[10px] font-bold text-slate-300">
+              {detalleAbierto ? 'Ocultar' : 'Mostrar'}
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${detalleAbierto ? 'rotate-180' : ''}`} />
+          </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center pt-2 border-t border-slate-100">
-          {/* Toggle incluir gastos */}
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <div
-              onClick={() => setIncluirGastosEnCierre(v => !v)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
-                incluirGastosEnCierre ? 'bg-emerald-500' : 'bg-slate-300'
-              }`}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                incluirGastosEnCierre ? 'translate-x-5' : 'translate-x-0'
-              }`} />
+        {detalleAbierto && (
+          <>
+            <div className="overflow-x-auto rounded-lg border border-slate-700 mb-4">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-slate-800 text-slate-400">
+                    <th className="p-2 text-left font-bold">Método de pago</th>
+                    <th className="p-2 text-center font-bold">Ventas</th>
+                    <th className="p-2 text-right font-bold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resumenMetodosPago.map((row) => (
+                    <tr key={row.metodo} className={`border-t border-slate-700 ${row.cantidad === 0 ? 'opacity-50' : ''}`}>
+                      <td className="p-2 font-semibold text-slate-300">{row.metodo}</td>
+                      <td className="p-2 text-center text-slate-400">{row.cantidad}</td>
+                      <td className="p-2 text-right font-black text-slate-200">{formatMoney(row.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-slate-800 border-t-2 border-slate-700">
+                    <td className="p-2 font-bold text-slate-300">Total ventas del día</td>
+                    <td className="p-2 text-center font-bold text-slate-400">{ventasDelDiaCount}</td>
+                    <td className="p-2 text-right font-black text-lg text-slate-200">{formatMoney(totalGeneral)}</td>
+                  </tr>
+                  {incluirGastosEnCierre && (
+                    <tr className="bg-red-600/20 border-t border-red-500/30">
+                      <td className="p-2 font-semibold text-red-300" colSpan={2}>Gastos del día (descontado)</td>
+                      <td className="p-2 text-right font-black text-red-300">− {formatMoney(totalGastosDia)}</td>
+                    </tr>
+                  )}
+                  <tr className="bg-emerald-600/20 border-t-2 border-emerald-500/30">
+                    <td className="p-2 font-black text-emerald-300" colSpan={2}>Neto final en caja</td>
+                    <td className="p-2 text-right font-black text-xl text-emerald-300">{formatMoney(totalEsperadoNeto)}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-            <span className="text-[11px] text-slate-600 font-medium">
-              Descontar gastos del día ({formatMoney(totalGastosDia)}) del neto final
-            </span>
-          </label>
-          <p className="text-[10px] text-slate-500 max-w-md">
-            El cierre registra totales, arqueo de billetes y detalle por método en la pestaña{' '}
-            <strong>Cierres Caja</strong> de Google Sheets.
-          </p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0"
-                disabled={cierreEnProceso || ventasDelDiaCount === 0}
-              >
-                <CloudUpload className="w-4 h-4 mr-2" />
-                {cierreEnProceso ? 'Enviando...' : 'Cerrar caja y enviar a la nube'}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Confirmar cierre de caja?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <div className="space-y-2 text-sm text-left">
-                    <p>Fecha: <strong>{fechaCierre}</strong> — {ventasDelDiaCount} ventas</p>
-                    <div className="bg-slate-50 rounded-lg p-3 space-y-1.5 text-xs border border-slate-200">
-                      <div className="flex justify-between">
-                        <span className="font-bold">Inicio de caja</span>
-                        <span className="font-bold">{formatMoney(montoCajaInicio)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-bold">Total ventas</span>
-                        <span className="font-bold">{formatMoney(totalGeneral)}</span>
-                      </div>
-                      {incluirGastosEnCierre && (
-                        <div className="flex justify-between text-red-600">
-                          <span className="font-bold">Gastos del día</span>
-                          <span className="font-bold">− {formatMoney(totalGastosDia)}</span>
+
+            <div className="flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center pt-2 border-t border-slate-700">
+              {/* Toggle incluir gastos */}
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div
+                  onClick={() => setIncluirGastosEnCierre(v => !v)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    incluirGastosEnCierre ? 'bg-emerald-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-slate-800 rounded-full shadow transition-transform ${
+                    incluirGastosEnCierre ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </div>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Descontar gastos del día ({formatMoney(totalGastosDia)}) del neto final
+                </span>
+              </label>
+              <p className="text-[10px] text-slate-500 max-w-md">
+                El cierre registra totales, arqueo de billetes y detalle por método en la pestaña{' '}
+                <strong>Cierres Caja</strong> de Google Sheets.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0"
+                    disabled={cierreEnProceso || ventasDelDiaCount === 0}
+                  >
+                    <CloudUpload className="w-4 h-4 mr-2" />
+                    {cierreEnProceso ? 'Enviando...' : 'Cerrar caja y enviar a la nube'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Confirmar cierre de caja?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      <div className="space-y-2 text-sm text-left">
+                        <p>Fecha: <strong>{fechaCierre}</strong> — {ventasDelDiaCount} ventas</p>
+                        <div className="bg-slate-800 rounded-lg p-3 space-y-1.5 text-xs border border-slate-700">
+                          <div className="flex justify-between text-slate-300">
+                            <span className="font-bold">Inicio de caja</span>
+                            <span className="font-bold">{formatMoney(montoCajaInicio)}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-300">
+                            <span className="font-bold">Total ventas</span>
+                            <span className="font-bold">{formatMoney(totalGeneral)}</span>
+                          </div>
+                          {incluirGastosEnCierre && (
+                            <div className="flex justify-between text-red-400">
+                              <span className="font-bold">Gastos del día</span>
+                              <span className="font-bold">− {formatMoney(totalGastosDia)}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                      <div className="flex justify-between border-t border-slate-200 pt-1.5 text-sm">
-                        <span className="font-black text-emerald-800">Neto final en caja</span>
-                        <span className="font-black text-emerald-800">{formatMoney(totalEsperadoNeto)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-slate-700">Contado físico</span>
-                        <span className="font-bold">{formatMoney(totalContadoBilletes)}</span>
-                      </div>
-                      <div className={`flex justify-between border-t border-slate-200 pt-1.5 ${
-                        Math.abs(diferenciaArqueo) < 0.01 ? 'text-green-700' : diferenciaArqueo > 0 ? 'text-blue-700' : 'text-red-600'
-                      }`}>
-                        <span className="font-black">Diferencia</span>
-                        <span className="font-black">{diferenciaArqueo > 0 ? '+' : ''}{formatMoney(diferenciaArqueo)}</span>
-                      </div>
-                    </div>
-                    {cierreYaEnviado && (
-                      <p className="text-amber-600 font-medium">
-                        Ya se envió un cierre este día. Podés enviar otro si necesitás actualizar.
-                      </p>
-                    )}
-                  
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={onCerrarCaja} className="bg-emerald-600 hover:bg-emerald-700">
-                  Confirmar y enviar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+                          <div className="flex justify-between border-t border-slate-700 pt-1.5 text-sm text-emerald-300">
+                            <span className="font-black">Neto final en caja</span>
+                            <span className="font-black">{formatMoney(totalEsperadoNeto)}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-400">
+                            <span className="font-semibold">Contado físico</span>
+                            <span className="font-bold">{formatMoney(totalContadoBilletes)}</span>
+                          </div>
+                          <div className={`flex justify-between border-t border-slate-700 pt-1.5 ${
+                            Math.abs(diferenciaArqueo) < 0.01 ? 'text-emerald-400' : diferenciaArqueo > 0 ? 'text-blue-400' : 'text-red-400'
+                          }`}>
+                            <span className="font-black">Diferencia</span>
+                            <span className="font-black">{diferenciaArqueo > 0 ? '+' : ''}{formatMoney(diferenciaArqueo)}</span>
+                          </div>
+                        </div>
+                        {cierreYaEnviado && (
+                          <p className="text-amber-400 font-medium">
+                            Ya se envió un cierre este día. Podés enviar otro si necesitás actualizar.
+                          </p>
+                        )}
+                      
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={onCerrarCaja} className="bg-emerald-600 hover:bg-emerald-700">
+                      Confirmar y enviar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );

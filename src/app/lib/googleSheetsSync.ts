@@ -158,8 +158,8 @@ export const googleSheetsSync = {
       : 'Bar: 0 ventas — $0';
 
     const detallesCosmeticaTexto = cierre.detallesPorSector?.cosmetica
-      ? `Cosmética: ${cierre.detallesPorSector.cosmetica.cantidad} venta(s) — $${cierre.detallesPorSector.cosmetica.total.toLocaleString('es-AR')}`
-      : 'Cosmética: 0 ventas — $0';
+      ? `Cosmética/Accesorios: ${cierre.detallesPorSector.cosmetica.cantidad} venta(s) — $${cierre.detallesPorSector.cosmetica.total.toLocaleString('es-AR')}`
+      : 'Cosmética/Accesorios: 0 ventas — $0';
 
     const detallesGastosTexto = cierre.gastosDelDia && cierre.gastosDelDia.length > 0
       ? cierre.gastosDelDia

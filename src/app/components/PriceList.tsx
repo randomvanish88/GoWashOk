@@ -93,7 +93,7 @@ export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) 
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs">Todas las marcas</SelectItem>
-            {uniqueBrands.map(brand => (
+            {uniqueBrands.filter(b => b && b.trim() !== '').map(brand => (
               <SelectItem key={brand} value={brand} className="text-xs">{brand}</SelectItem>
             ))}
           </SelectContent>
@@ -106,7 +106,7 @@ export function PriceList({ prices, onEdit, onDelete, onMove }: PriceListProps) 
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-xs">Todos los tamaños</SelectItem>
-            {uniqueSizes.map(size => (
+            {uniqueSizes.filter(s => s && s.trim() !== '').map(size => (
               <SelectItem key={size} value={size} className="text-xs">{size}</SelectItem>
             ))}
           </SelectContent>

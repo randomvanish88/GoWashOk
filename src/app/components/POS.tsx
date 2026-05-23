@@ -55,6 +55,7 @@ interface Venta {
   horasEstadia?: number;
   precioEstadia?: number;
   descuento: number;
+  recargo: number;
   productosBar: ProductoVenta[];
   productosCosmeticos: ProductoVenta[];
   servicio?: string;
@@ -62,6 +63,9 @@ interface Venta {
   descLavadero?: boolean;
   descBar?: boolean;
   descCosmetica?: boolean;
+  recargoLavadero?: boolean;
+  recargoBar?: boolean;
+  recargoCosmetica?: boolean;
   marca?: string;
   modelo?: string;
   tamano?: string;
@@ -493,9 +497,9 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
         </div>
       </Card>
 
-      {/* Editor Cosmeticos */}
+      {/* Editor Cosmética/Accesorios */}
       <Card className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200">
-        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosmeticos del Automotor</h3>
+        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosmética/Accesorios del Automotor</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="p-3 bg-white rounded-lg border border-teal-200 shadow-sm">
@@ -585,6 +589,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
 export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { prices?: Price[], isAdmin?: boolean, onNavigateToPrices?: () => void }) {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [ordenesAbiertas, setOrdenesAbiertas] = useState<Venta[]>([]);
+  const [ordenesCobradas, setOrdenesCobradas] = useState<string[]>([]);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [productosBar, setProductosBar] = useState<ProductoVenta[]>([]);
   const [productosCosmeticos, setProductosCosmeticos] = useState<ProductoVenta[]>([]);
@@ -602,7 +607,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     if (filtroSectorVentas === "Todos") sectorMatch = true;
     else if (filtroSectorVentas === "Lavadero" && matchLavadero) sectorMatch = true;
     else if (filtroSectorVentas === "Bar" && matchBar) sectorMatch = true;
-    else if (filtroSectorVentas === "Cosmetica" && matchCosmetica) sectorMatch = true;
+    else if (filtroSectorVentas === "Cosmetica/Accesorios" && matchCosmetica) sectorMatch = true;
 
     // Filtro por método de pago
     let pagoMatch = false;
@@ -661,6 +666,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [servicio, setServicio] = useState('');
   const [descuento, setDescuento] = useState(0);
   const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
+  const [recargo, setRecargo] = useState(0);
+  const [recargoPorcentaje, setRecargoPorcentaje] = useState(0);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [metodosPago, setMetodosPago] = useState<string[]>([
     'Efectivo',
@@ -680,9 +687,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [precioEstadia, setPrecioEstadia] = useState(0);
 
   // Estados de Descuento
-  const [descLavadero, setDescLavadero] = useState(true);
-  const [descBar, setDescBar] = useState(true);
-  const [descCosmetica, setDescCosmetica] = useState(true);
+  const [descLavadero, setDescLavadero] = useState(false);
+  const [descBar, setDescBar] = useState(false);
+  const [descCosmetica, setDescCosmetica] = useState(false);
+
+  // Estados de Recargo (separados de Descuento)
+  const [recargoLavadero, setRecargoLavadero] = useState(false);
+  const [recargoBar, setRecargoBar] = useState(false);
+  const [recargoCosmetica, setRecargoCosmetica] = useState(false);
 
   // Calcula si debe habilitarse la estadía (> 1 hora)
   const puedeEstadia = () => {
@@ -913,6 +925,17 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     }
   }, [lavado, productosBar, productosCosmeticos, descLavadero, descBar, descCosmetica, descuentoPorcentaje]);
 
+  // Recalcular recargo dinámicamente si hay porcentaje y cambian los items o alcances
+  useEffect(() => {
+    if (recargoPorcentaje > 0) {
+      let base = 0;
+      if (recargoLavadero) base += lavado;
+      if (recargoBar) base += productosBar.reduce((sum, p) => sum + p.precio, 0);
+      if (recargoCosmetica) base += productosCosmeticos.reduce((sum, p) => sum + p.precio, 0);
+      setRecargo((base * recargoPorcentaje) / 100);
+    }
+  }, [lavado, productosBar, productosCosmeticos, recargoLavadero, recargoBar, recargoCosmetica, recargoPorcentaje]);
+
   const formatMoney = (amount: number) => {
     return `$${parseFloat(amount.toString()).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
@@ -931,7 +954,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   const calcularTotal = () => {
     const subtotal = calcularSubtotal();
-    return subtotal - descuento;
+    return subtotal - descuento + recargo;
   };
 
   const agregarProductoBar = (nombre: string, precio: number) => {
@@ -953,6 +976,16 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const actualizarDescuentoPorcentaje = (porcentaje: number) => {
     setDescuentoPorcentaje(porcentaje);
     if (porcentaje === 0) setDescuento(0);
+  };
+
+  const actualizarRecargoPorcentaje = (porcentaje: number) => {
+    setRecargoPorcentaje(porcentaje);
+    if (porcentaje === 0) {
+      setRecargo(0);
+    } else {
+      const subtotal = calcularSubtotal();
+      setRecargo((subtotal * porcentaje) / 100);
+    }
   };
 
   const agregarMetodoPago = () => {
@@ -1052,6 +1085,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       horasEstadia: puedeEstadia() && estadia ? horasEstadia : undefined,
       precioEstadia: puedeEstadia() && estadia ? precioEstadia : undefined,
       descuento,
+      recargo,
       productosBar: [...productosBar],
       productosCosmeticos: [...productosCosmeticos],
       servicio,
@@ -1059,7 +1093,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       marca: vehiculoSeleccionado?.brand,
       modelo: vehiculoSeleccionado?.model,
       tamano: vehiculoSeleccionado?.size,
-      imageUrl: vehiculoSeleccionado?.imageUrl
+      imageUrl: vehiculoSeleccionado?.imageUrl,
+      descLavadero,
+      descBar,
+      descCosmetica,
+      recargoLavadero,
+      recargoBar,
+      recargoCosmetica
     };
 
     // Fallback de emergencia
@@ -1112,9 +1152,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     });
     setCosmeticosData(newCosmeticosData);
 
-    // Si es una orden que estaba abierta, la quitamos
+    // Si es una orden que estaba abierta, la marcamos como cobrada (no la quitamos todavía)
     const idABuscar = ordenDirecta ? ordenDirecta.id : (activeOrderId || editingVentaId);
-    setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
+    if (ordenDirecta || activeOrderId) {
+      setOrdenesCobradas(prev => prev.includes(idABuscar) ? prev : [...prev, idABuscar]);
+    } else {
+      setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
+    }
 
     if (editingVentaId) {
       const log: AuditLog = {
@@ -1194,6 +1238,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       horasEstadia,
       precioEstadia,
       descuento,
+      recargo,
       productosBar: [...productosBar],
       productosCosmeticos: [...productosCosmeticos],
       servicio,
@@ -1201,6 +1246,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       descLavadero,
       descBar,
       descCosmetica,
+      recargoLavadero,
+      recargoBar,
+      recargoCosmetica,
       marca: vehiculoSeleccionado?.brand,
       modelo: vehiculoSeleccionado?.model,
       tamano: vehiculoSeleccionado?.size,
@@ -1238,6 +1286,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     }
 
     setDescuento(orden.descuento);
+    setRecargo(orden.recargo || 0);
     setMetodoPago(orden.metodoPago);
     setPagosMixtos(
       orden.pagosMixtos?.length ? orden.pagosMixtos : crearPagosMixtosInicial()
@@ -1247,9 +1296,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setPrecioEstadia(orden.precioEstadia || 0);
     setProductosBar(orden.productosBar);
     setProductosCosmeticos(orden.productosCosmeticos);
-    setDescLavadero(orden.descLavadero ?? true);
-    setDescBar(orden.descBar ?? true);
-    setDescCosmetica(orden.descCosmetica ?? true);
+    setDescLavadero(orden.descLavadero ?? false);
+    setDescBar(orden.descBar ?? false);
+    setDescCosmetica(orden.descCosmetica ?? false);
+    setRecargoLavadero(orden.recargoLavadero ?? false);
+    setRecargoBar(orden.recargoBar ?? false);
+    setRecargoCosmetica(orden.recargoCosmetica ?? false);
   };
 
   const limpiarFormulario = () => {
@@ -1267,9 +1319,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setServicio('');
     setDescuento(0);
     setDescuentoPorcentaje(0);
-    setDescLavadero(true);
-    setDescBar(true);
-    setDescCosmetica(true);
+    setRecargo(0);
+    setRecargoPorcentaje(0);
+    setDescLavadero(false);
+    setDescBar(false);
+    setDescCosmetica(false);
+    setRecargoLavadero(false);
+    setRecargoBar(false);
+    setRecargoCosmetica(false);
     setMetodoPago('Efectivo');
     setPagosMixtos(crearPagosMixtosInicial());
     setNumeroCliente('');
@@ -1350,6 +1407,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     aplicarExtrasYOrden(venta);
     setServicio(venta.servicio || '');
     setDescuento(venta.descuento);
+    setRecargo(venta.recargo || 0);
     setMetodoPago(venta.metodoPago);
     setPagosMixtos(
       venta.pagosMixtos?.length ? venta.pagosMixtos : crearPagosMixtosInicial()
@@ -1360,9 +1418,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setPrecioEstadia(venta.precioEstadia || 0);
     setProductosBar(venta.productosBar);
     setProductosCosmeticos(venta.productosCosmeticos);
-    setDescLavadero(venta.descLavadero ?? true);
-    setDescBar(venta.descBar ?? true);
-    setDescCosmetica(venta.descCosmetica ?? true);
+    setDescLavadero(venta.descLavadero ?? false);
+    setDescBar(venta.descBar ?? false);
+    setDescCosmetica(venta.descCosmetica ?? false);
+    setRecargoLavadero(venta.recargoLavadero ?? false);
+    setRecargoBar(venta.recargoBar ?? false);
+    setRecargoCosmetica(venta.recargoCosmetica ?? false);
     
     // Buscar el vehículo en la lista si existe
     if (venta.marca && venta.modelo) {
@@ -1766,50 +1827,120 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     // Desglosar ventas por sector
     const ventasDelDiaFecha = ventasDelDia.filter(v => v.fecha === fechaCierre);
     
+    // Calcular detalles por sector (Lavadero, Bar, Cosmética)
     const detallesPorSector = {
       lavadero: {
         ventas: ventasDelDiaFecha.filter(v => v.lavado > 0),
         total: ventasDelDiaFecha.reduce((sum, v) => sum + (v.lavado || 0), 0),
         cantidad: ventasDelDiaFecha.filter(v => v.lavado > 0).length,
+        clientes: ventasDelDiaFecha.filter(v => v.lavado > 0).length,
+        descuentoTotal: ventasDelDiaFecha.filter(v => v.lavado > 0).reduce((sum, v) => sum + (v.descuento || 0), 0),
+        recargoTotal: ventasDelDiaFecha.filter(v => v.lavado > 0).reduce((sum, v) => sum + (v.recargo || 0), 0),
+        metodoPago: {
+          efectivo: ventasDelDiaFecha.filter(v => v.lavado > 0 && v.metodoPago === 'Efectivo').reduce((sum, v) => sum + (v.lavado || 0), 0),
+          transferencia: ventasDelDiaFecha.filter(v => v.lavado > 0 && v.metodoPago === 'Transferencia').reduce((sum, v) => sum + (v.lavado || 0), 0),
+          digital: ventasDelDiaFecha.filter(v => v.lavado > 0 && (v.metodoPago === 'Digital' || v.metodoPago === 'Billetera')).reduce((sum, v) => sum + (v.lavado || 0), 0),
+        },
       },
       bar: {
         ventas: ventasDelDiaFecha.filter(v => v.bar > 0),
         total: ventasDelDiaFecha.reduce((sum, v) => sum + (v.bar || 0), 0),
         cantidad: ventasDelDiaFecha.filter(v => v.bar > 0).length,
+        clientes: ventasDelDiaFecha.filter(v => v.bar > 0).length,
+        descuentoTotal: ventasDelDiaFecha.filter(v => v.bar > 0).reduce((sum, v) => sum + (v.descuento || 0), 0),
+        recargoTotal: ventasDelDiaFecha.filter(v => v.bar > 0).reduce((sum, v) => sum + (v.recargo || 0), 0),
+        metodoPago: {
+          efectivo: ventasDelDiaFecha.filter(v => v.bar > 0 && v.metodoPago === 'Efectivo').reduce((sum, v) => sum + (v.bar || 0), 0),
+          transferencia: ventasDelDiaFecha.filter(v => v.bar > 0 && v.metodoPago === 'Transferencia').reduce((sum, v) => sum + (v.bar || 0), 0),
+          digital: ventasDelDiaFecha.filter(v => v.bar > 0 && (v.metodoPago === 'Digital' || v.metodoPago === 'Billetera')).reduce((sum, v) => sum + (v.bar || 0), 0),
+        },
       },
       cosmetica: {
         ventas: ventasDelDiaFecha.filter(v => v.cosmeticos > 0),
         total: ventasDelDiaFecha.reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
         cantidad: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).length,
+        clientes: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).length,
+        descuentoTotal: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).reduce((sum, v) => sum + (v.descuento || 0), 0),
+        recargoTotal: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).reduce((sum, v) => sum + (v.recargo || 0), 0),
+        metodoPago: {
+          efectivo: ventasDelDiaFecha.filter(v => v.cosmeticos > 0 && v.metodoPago === 'Efectivo').reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
+          transferencia: ventasDelDiaFecha.filter(v => v.cosmeticos > 0 && v.metodoPago === 'Transferencia').reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
+          digital: ventasDelDiaFecha.filter(v => v.cosmeticos > 0 && (v.metodoPago === 'Digital' || v.metodoPago === 'Billetera')).reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
+        },
       },
     };
 
     // Obtener gastos del día
-    const gastosDelDia: Array<{ fecha: string; monto: number; categoria: string; concepto: string }> = 
+    const gastosDelDia: Array<{ fecha: string; monto: number; categoria: string; concepto: string; sector?: string }> = 
       JSON.parse(localStorage.getItem('gowash-gastos') || '[]')
         .filter((g: any) => g.fecha === fechaCierre);
     
     const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
 
+    // Desglosar gastos por sector
+    const gastosPorSector = {
+      lavadero: gastosDelDia.filter(g => g.sector === 'Lavadero').reduce((sum, g) => sum + (g.monto || 0), 0),
+      bar: gastosDelDia.filter(g => g.sector === 'Bar').reduce((sum, g) => sum + (g.monto || 0), 0),
+      cosmetica: gastosDelDia.filter(g => g.sector === 'Cosmética').reduce((sum, g) => sum + (g.monto || 0), 0),
+    };
+
     const cierre = {
       id: cierreId,
       fecha: fechaCierre,
       horaCierre: getCurrentTimeString(),
+      
+      // COMPOSICIÓN DEL CIERRE
+      composicion: {
+        ventasPorSector: {
+          lavadero: detallesPorSector.lavadero.total,
+          bar: detallesPorSector.bar.total,
+          cosmetica: detallesPorSector.cosmetica.total,
+        },
+        clientesPorSector: {
+          lavadero: detallesPorSector.lavadero.clientes,
+          bar: detallesPorSector.bar.clientes,
+          cosmetica: detallesPorSector.cosmetica.clientes,
+        },
+        metodosPago: {
+          efectivo: totalEfectivo,
+          transferencia: totalTransferencia,
+          digital: totalBilletera,
+        },
+        resumen: {
+          montoCajaInicio,
+          totalVentas: totalGeneral,
+          totalGastos,
+          totalEsperado: totalGeneral - totalGastos + montoCajaInicio,
+        },
+      },
+
+      // ARQUEO FÍSICO DE BILLETES
+      arqueo: {
+        totalContado: totalContadoBilletes,
+        diferencia: diferenciaArqueo,
+        detalleBilletes: denominacionesBilletes.map((valor) => {
+          const cantidad = conteoBilletes[String(valor)] || 0;
+          return { valor, cantidad, subtotal: cantidad * valor };
+        }),
+      },
+
+      // GASTOS DIARIOS
+      gastos: {
+        total: totalGastos,
+        porSector: gastosPorSector,
+        detalle: gastosDelDia,
+      },
+
+      // DETALLE DE VENTAS POR MÉTODO DE PAGO
+      detalleMetodos: resumenMetodosPago,
+
+      // DETALLES SECTORIZADOS COMPLETOS
+      detallesPorSector,
+
+      // INFORMACIÓN GENERAL
       totalEfectivoSistema: totalEfectivo,
-      montoCajaInicio,
-      totalEsperadoEfectivo: totalEfectivo + montoCajaInicio,
-      totalContado: totalContadoBilletes,
-      diferencia: diferenciaArqueo,
       totalGeneral,
       cantidadVentas: ventasDelDia.length,
-      detalleMetodos: resumenMetodosPago,
-      detalleBilletes: denominacionesBilletes.map((valor) => {
-        const cantidad = conteoBilletes[String(valor)] || 0;
-        return { valor, cantidad, subtotal: cantidad * valor };
-      }),
-      detallesPorSector,
-      gastosDelDia,
-      totalGastos,
       empleado: empleado || undefined,
     };
 
@@ -1847,8 +1978,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setConsumosEmpleados({});
       setHistorialConsumosEmpleados([]);
       setEmpleadoConsumoSeleccionado(null);
+      setAuditLogs([]);
       localStorage.removeItem('gowash-consumos-empleados');
       localStorage.removeItem('gowash-historial-consumos');
+      localStorage.removeItem('gowash-audit-logs');
 
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido';
@@ -2195,7 +2328,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <SelectValue placeholder="Seleccionar servicio..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {serviciosLavado.map((s, idx) => (
+                  {serviciosLavado.filter(s => s.nombre && s.nombre.trim() !== '').map((s, idx) => (
                     <SelectItem key={idx} value={s.nombre} className="text-xs font-bold text-slate-800">
                       {s.nombre} <span className="font-black text-indigo-700 ml-1">({formatMoney(s.precio)})</span>
                     </SelectItem>
@@ -2337,10 +2470,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           )}
         </Card>
 
-        {/* Cosméticos */}
+        {/* Cosmética/Accesorios */}
         <Card className="p-3 bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200">
           <h3 className="font-bold mb-2 text-teal-900 text-xs uppercase tracking-tight flex items-center gap-1">
-            <span className="w-2 h-2 bg-teal-500 rounded-full"></span> Cosméticos
+            <span className="w-2 h-2 bg-teal-500 rounded-full"></span> Cosmética/Accesorios
           </h3>
           <div className="mb-2">
             <Input
@@ -2394,7 +2527,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 ))}
               </ul>
               <div className="mt-1.5 text-right font-black text-sm text-teal-900">
-                Total Cosméticos: {formatMoney(calcularTotalCosmeticos())}
+                Total Cosmética/Accesorios: {formatMoney(calcularTotalCosmeticos())}
               </div>
             </div>
           )}
@@ -2404,63 +2537,121 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         <Card className="p-4 bg-slate-50 border border-slate-200 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Sección Descuento */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-xs uppercase tracking-tight text-purple-900 flex items-center gap-2">
-                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                Descuento
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="descuentoPorcentaje" className="text-[10px]">Porcentaje (%)</Label>
-                  <Select
-                    value={descuentoPorcentaje.toString()}
-                    onValueChange={(value) => actualizarDescuentoPorcentaje(parseFloat(value))}
-                  >
-                    <SelectTrigger className="bg-white h-8 text-xs">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">0%</SelectItem>
-                      <SelectItem value="5">5%</SelectItem>
-                      <SelectItem value="10">10%</SelectItem>
-                      <SelectItem value="15">15%</SelectItem>
-                      <SelectItem value="20">20%</SelectItem>
-                      <SelectItem value="25">25%</SelectItem>
-                      <SelectItem value="50">50%</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="descuento" className="text-[10px]">Monto Fijo</Label>
-                  <Input
-                    id="descuento"
-                    type="number"
-                    value={descuento || ''}
-                    onChange={(e) => {
-                      setDescuento(parseFloat(e.target.value) || 0);
-                      setDescuentoPorcentaje(0);
-                    }}
-                    className="bg-white h-8 text-xs"
-                    placeholder="$0"
-                  />
+            {/* Sección Descuento y Recargo - Lado a lado */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Descuento */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
+                <h3 className="font-bold text-xs uppercase tracking-tight text-purple-900 flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                  Descuento
+                </h3>
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="descuentoPorcentaje" className="text-[9px] font-bold text-purple-800">%</Label>
+                    <Select
+                      value={descuentoPorcentaje.toString()}
+                      onValueChange={(value) => actualizarDescuentoPorcentaje(parseFloat(value))}
+                    >
+                      <SelectTrigger className="bg-white h-7 text-xs">
+                        <SelectValue placeholder="0%" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="10">10%</SelectItem>
+                        <SelectItem value="15">15%</SelectItem>
+                        <SelectItem value="20">20%</SelectItem>
+                        <SelectItem value="25">25%</SelectItem>
+                        <SelectItem value="50">50%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="descuento" className="text-[9px] font-bold text-purple-800">Monto</Label>
+                    <Input
+                      id="descuento"
+                      type="number"
+                      value={descuento || ''}
+                      onChange={(e) => {
+                        setDescuento(parseFloat(e.target.value) || 0);
+                        setDescuentoPorcentaje(0);
+                      }}
+                      className="bg-white h-7 text-xs"
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="pt-1 space-y-1">
+                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
+                      <input type="checkbox" checked={descLavadero} onChange={(e) => setDescLavadero(e.target.checked)} className="text-purple-600 rounded w-3 h-3" />
+                      <span className="text-[9px] font-bold text-gray-800">Lavadero</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
+                      <input type="checkbox" checked={descBar} onChange={(e) => setDescBar(e.target.checked)} className="text-purple-600 rounded w-3 h-3" />
+                      <span className="text-[9px] font-bold text-gray-800">Bar</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
+                      <input type="checkbox" checked={descCosmetica} onChange={(e) => setDescCosmetica(e.target.checked)} className="text-purple-600 rounded w-3 h-3" />
+                      <span className="text-[9px] font-bold text-gray-800">Cosmética</span>
+                    </label>
+                  </div>
                 </div>
               </div>
-              <div className="pt-2">
-                <Label className="mb-2 block text-[10px] font-bold text-purple-800 uppercase">Aplicar a:</Label>
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
-                    <input type="checkbox" checked={descLavadero} onChange={(e) => setDescLavadero(e.target.checked)} className="text-purple-600 rounded w-3.5 h-3.5" />
-                    <span className="text-xs font-bold text-gray-800">Lavadero</span>
-                  </label>
-                  <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
-                    <input type="checkbox" checked={descBar} onChange={(e) => setDescBar(e.target.checked)} className="text-purple-600 rounded w-3.5 h-3.5" />
-                    <span className="text-xs font-bold text-gray-800">Bar</span>
-                  </label>
-                  <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1.5 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
-                    <input type="checkbox" checked={descCosmetica} onChange={(e) => setDescCosmetica(e.target.checked)} className="text-purple-600 rounded w-3.5 h-3.5" />
-                    <span className="text-xs font-bold text-gray-800">Cosmética</span>
-                  </label>
+
+              {/* Recargo */}
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
+                <h3 className="font-bold text-xs uppercase tracking-tight text-orange-900 flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                  Recargo
+                </h3>
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="recargoPorcentaje" className="text-[9px] font-bold text-orange-800">%</Label>
+                    <Select
+                      value={recargoPorcentaje.toString()}
+                      onValueChange={(value) => actualizarRecargoPorcentaje(parseFloat(value))}
+                    >
+                      <SelectTrigger className="bg-white h-7 text-xs">
+                        <SelectValue placeholder="0%" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="1.5">1.5%</SelectItem>
+                        <SelectItem value="2">2%</SelectItem>
+                        <SelectItem value="2.5">2.5%</SelectItem>
+                        <SelectItem value="3">3%</SelectItem>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="10">10%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="recargo" className="text-[9px] font-bold text-orange-800">Monto</Label>
+                    <Input
+                      id="recargo"
+                      type="number"
+                      value={recargo || ''}
+                      onChange={(e) => {
+                        setRecargo(parseFloat(e.target.value) || 0);
+                        setRecargoPorcentaje(0);
+                      }}
+                      className="bg-white h-7 text-xs"
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="pt-1 space-y-1">
+                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
+                      <input type="checkbox" checked={recargoLavadero} onChange={(e) => setRecargoLavadero(e.target.checked)} className="text-orange-600 rounded w-3 h-3" />
+                      <span className="text-[9px] font-bold text-gray-800">Lavadero</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
+                      <input type="checkbox" checked={recargoBar} onChange={(e) => setRecargoBar(e.target.checked)} className="text-orange-600 rounded w-3 h-3" />
+                      <span className="text-[9px] font-bold text-gray-800">Bar</span>
+                    </label>
+                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
+                      <input type="checkbox" checked={recargoCosmetica} onChange={(e) => setRecargoCosmetica(e.target.checked)} className="text-orange-600 rounded w-3 h-3" />
+                      <span className="text-[9px] font-bold text-gray-800">Cosmética</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2490,7 +2681,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                     <SelectValue placeholder="Seleccionar método" />
                   </SelectTrigger>
                   <SelectContent>
-                    {metodosPago.map(m => (
+                    {metodosPago.filter(m => m && m.trim() !== '').map(m => (
                       <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
                     ))}
                     <SelectItem value="NEW_METODO_PAGO" className="text-blue-600 font-bold border-t">
@@ -2571,7 +2762,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {metodosParaPagoMixto(metodosPago).map((m) => (
+                          {metodosParaPagoMixto(metodosPago).filter(m => m && m.trim() !== '').map((m) => (
                             <SelectItem key={m} value={m} className="text-xs">
                               {m}
                             </SelectItem>
@@ -2653,6 +2844,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
                 <p className="text-[10px] font-bold text-green-800 uppercase tracking-wider mb-1">Monto a Cobrar</p>
                 <p className="text-2xl font-black text-green-600 leading-none">{formatMoney(calcularTotal())}</p>
+                <p className="text-[9px] text-green-700 mt-1">
+                  Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)} | Rec: {formatMoney(recargo)}
+                </p>
               </div>
             </div>
 
@@ -2672,11 +2866,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               <div className="text-xl md:text-2xl font-black text-green-800 leading-none">
                 TOTAL: {formatMoney(calcularTotal())}
               </div>
-              {descuento > 0 && (
-                <div className="text-[10px] font-bold text-green-700 mt-1 uppercase tracking-tight">
-                  Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)}
-                </div>
-              )}
+              <div className="text-[10px] font-bold text-green-700 mt-1 uppercase tracking-tight">
+                Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)} | Rec: {formatMoney(recargo)}
+              </div>
             </div>
 
             <div className="flex gap-2 w-full md:w-auto">
@@ -2763,6 +2955,20 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         >
                           <Check className="w-3 h-3 mr-1" /> Cobrar
                         </Button>
+                        {ordenesCobradas.includes(orden.id) && (
+                          <Button
+                            size="sm"
+                            className="flex-1 h-8 text-[10px] bg-amber-600 hover:bg-amber-700 text-white"
+                            onClick={() => {
+                              setOrdenesAbiertas(prev => prev.filter(o => o.id !== orden.id));
+                              setOrdenesCobradas(prev => prev.filter(id => id !== orden.id));
+                              if (activeOrderId === orden.id) setActiveOrderId(null);
+                              toast.success('Vehículo retirado', { description: `${orden.patente} retirado del lavadero.` });
+                            }}
+                          >
+                            ✓ Retirado
+                          </Button>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -2816,7 +3022,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <SelectItem value="Todos">Todos los sectores</SelectItem>
                   <SelectItem value="Lavadero">Lavadero</SelectItem>
                   <SelectItem value="Bar">Bar</SelectItem>
-                  <SelectItem value="Cosmetica">Cosmética</SelectItem>
+                  <SelectItem value="Cosmetica/Accesorios">Cosmética/Accesorios</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -2853,17 +3059,19 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-blue-600 text-white">
-                    <th className="border p-2">Foto</th>
+                    <th className="border p-2">Contador</th>
+                    <th className="border p-2">Nº Cliente</th>
                     <th className="border p-2">Fecha</th>
                     <th className="border p-2">Entrada</th>
                     <th className="border p-2">Salida</th>
                     <th className="border p-2">Patente</th>
                     <th className="border p-2">Vehículo</th>
                     <th className="border p-2">Cliente</th>
-                    <th className="border p-2">Nº Cliente</th>
                     <th className="border p-2 bg-cyan-500">Lavado</th>
                     <th className="border p-2 bg-amber-500">Bar</th>
-                    <th className="border p-2 bg-teal-500">Cosméticos</th>
+                    <th className="border p-2 bg-teal-500">Cosmética/Accesorios</th>
+                    <th className="border p-2 bg-purple-500">Descuento</th>
+                    <th className="border p-2 bg-orange-500">Recargo</th>
                     <th className="border p-2 bg-green-600">Total</th>
                     <th className="border p-2 text-xs">Estadía</th>
                     <th className="border p-2">Pago</th>
@@ -2874,10 +3082,20 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   {ventasFiltradas.map((venta) => (
                     <tr key={venta.id} className="hover:bg-gray-50">
                       <td className="border p-2 text-center">
-                        {venta.imageUrl ? (
-                          <img src={venta.imageUrl} alt="Car" className="w-8 h-8 object-cover rounded shadow-sm mx-auto" />
+                        {venta.numeroCliente ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="font-black text-blue-600 text-sm">{(washCounts[venta.numeroCliente] || 0) % 6}</span>
+                            <span className="text-[8px] text-gray-500">/5</span>
+                          </div>
                         ) : (
-                          <Car className="w-5 h-5 text-gray-300 mx-auto" />
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="border p-2 text-center">
+                        {venta.numeroCliente ? (
+                          <span className="font-bold text-blue-600">{venta.numeroCliente}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
                         )}
                       </td>
                       <td className="border p-2 text-center">{venta.fecha}</td>
@@ -2894,19 +3112,25 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         ) : '-'}
                       </td>
                       <td className="border p-2">{venta.cliente}</td>
-                      <td className="border p-2">{venta.numeroCliente}</td>
                       <td className="border p-2 text-right bg-cyan-50">{formatMoney(venta.lavado)}</td>
                       <td className="border p-2 text-right bg-amber-50">{formatMoney(venta.bar)}</td>
                       <td className="border p-2 text-right bg-teal-50">{formatMoney(venta.cosmeticos)}</td>
-                      <td className="border p-2 text-right bg-green-50 font-bold">
-                        <div className="flex flex-col items-end gap-0.5">
-                          <span>{formatMoney(venta.total)}</span>
-                          {venta.descuento > 0 && (
-                            <span className="text-xs text-red-600 font-semibold">
-                              (−{formatMoney(venta.descuento)})
-                            </span>
-                          )}
-                        </div>
+                      <td className="border p-2 text-right bg-purple-50">
+                        {venta.descuento > 0 ? (
+                          <span className="font-bold text-purple-600">{formatMoney(venta.descuento)}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="border p-2 text-right bg-orange-50">
+                        {venta.recargo > 0 ? (
+                          <span className="font-bold text-orange-600">{formatMoney(venta.recargo)}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="border p-2 text-right bg-green-50 font-bold text-lg">
+                        {formatMoney(venta.total)}
                       </td>
                       <td className="border p-2 text-center">{venta.estadia ? 'Sí' : '-'}</td>
                       <td className="border p-2 text-center text-sm max-w-[200px]">
@@ -3008,7 +3232,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
                                   {ventaSeleccionada.productosCosmeticos.length > 0 && (
                                     <div className="bg-teal-50 p-4 rounded-lg">
-                                      <h4 className="font-bold text-teal-900 mb-2">Cosméticos</h4>
+                                      <h4 className="font-bold text-teal-900 mb-2">Cosmética/Accesorios</h4>
                                       <ul className="space-y-1 mb-2">
                                         {ventaSeleccionada.productosCosmeticos.map((p, idx) => (
                                           <li key={idx} className="flex justify-between text-sm">
@@ -3018,7 +3242,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                         ))}
                                       </ul>
                                       <div className="flex justify-between font-bold border-t border-teal-200 pt-2 text-sm">
-                                        <span>Total Cosméticos:</span>
+                                        <span>Total Cosmética/Accesorios:</span>
                                         <span>{formatMoney(ventaSeleccionada.cosmeticos)}</span>
                                       </div>
                                     </div>
@@ -3096,19 +3320,19 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
         {/* Auditoría de Ventas (Solo Admin) Compacta */}
         {isAdmin && (
-          <Card className="p-3 border border-indigo-200 bg-indigo-50/20 mt-3">
-            <h3 className="font-bold text-xs mb-2 text-indigo-900 flex items-center gap-2 uppercase tracking-tighter">
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+          <Card className="p-3 border border-indigo-300 bg-gradient-to-br from-indigo-900 to-indigo-800 mt-3 shadow-lg">
+            <h3 className="font-bold text-xs mb-2 text-indigo-200 flex items-center gap-2 uppercase tracking-tighter">
+              <ShieldCheck className="w-4 h-4 text-indigo-300" />
               Cambios y Registro
             </h3>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {auditLogs.filter(l => l.tipo === 'VENTA_LAVADO').length === 0 ? (
-                <p className="text-slate-400 text-center py-2 italic text-[10px]">Sin modificaciones hoy</p>
+                <p className="text-indigo-300 text-center py-2 italic text-[10px]">Sin modificaciones hoy</p>
               ) : (
                 auditLogs.filter(l => l.tipo === 'VENTA_LAVADO').map((log) => (
-                  <div key={log.id} className="bg-white p-2 rounded border border-indigo-100 flex justify-between items-center shadow-sm">
+                  <div key={log.id} className="bg-indigo-700/50 p-2 rounded border border-indigo-500 flex justify-between items-center shadow-sm">
                     <div className="flex items-center gap-3 flex-1">
-                      <span className={`px-1.5 py-0 rounded text-[8px] font-black ${log.accion === 'ELIMINACION' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                      <span className={`px-1.5 py-0 rounded text-[8px] font-black ${log.accion === 'ELIMINACION' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}`}>
                         {log.accion}
                       </span>
                       <div className="flex-1">
@@ -3117,14 +3341,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                             <Input 
                               value={editingLogText} 
                               onChange={(e) => setEditingLogText(e.target.value)}
-                              className="h-6 text-[10px] py-0"
+                              className="h-6 text-[10px] py-0 bg-indigo-600 border-indigo-500 text-white"
                             />
-                            <Button size="sm" className="h-6 px-1.5 bg-green-600" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
+                            <Button size="sm" className="h-6 px-1.5 bg-green-600 hover:bg-green-700" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
                           </div>
                         ) : (
                           <>
-                            <p className="text-[10px] font-bold text-slate-800">{log.detalles}</p>
-                            <p className="text-[9px] text-slate-400">{log.fecha}</p>
+                            <p className="text-[10px] font-bold text-indigo-100">{log.detalles}</p>
+                            <p className="text-[9px] text-indigo-300">{log.fecha}</p>
                           </>
                         )}
                       </div>
@@ -3490,19 +3714,19 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
           {/* Cambios y Registro (Solo Admin) */}
           {isAdmin && (
-            <Card className="p-6 border-2 border-amber-200 bg-amber-50/30">
-              <h3 className="font-bold text-xl mb-4 text-amber-900 flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-amber-600" />
+            <Card className="p-6 border-2 border-amber-300 bg-gradient-to-br from-amber-900 to-amber-800 shadow-lg">
+              <h3 className="font-bold text-xl mb-4 text-amber-200 flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6 text-amber-300" />
                 Cambios y Registro (Empleados)
               </h3>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {auditLogs.filter(l => l.tipo === 'CONSUMO_EMPLEADO').length === 0 ? (
-                  <p className="text-slate-400 text-center py-4 italic text-sm">No hay actividad sospechosa registrada</p>
+                  <p className="text-amber-300 text-center py-4 italic text-sm">No hay actividad sospechosa registrada</p>
                 ) : (
                   auditLogs.filter(l => l.tipo === 'CONSUMO_EMPLEADO').map((log) => (
-                    <div key={log.id} className="bg-white p-3 rounded-lg border border-amber-100 flex justify-between items-center shadow-sm">
+                    <div key={log.id} className="bg-amber-700/50 p-3 rounded-lg border border-amber-500 flex justify-between items-center shadow-sm">
                       <div className="flex items-center gap-4 flex-1">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.accion === 'ELIMINACION' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${log.accion === 'ELIMINACION' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}`}>
                           {log.accion}
                         </span>
                         <div className="flex-1">
@@ -3511,14 +3735,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               <Input 
                                 value={editingLogText} 
                                 onChange={(e) => setEditingLogText(e.target.value)}
-                                className="h-7 text-xs"
+                                className="h-7 text-xs bg-amber-600 border-amber-500 text-white"
                               />
-                              <Button size="sm" className="h-7 px-2 bg-green-600 text-white" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
+                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
                             </div>
                           ) : (
                             <>
-                              <p className="text-xs font-bold text-slate-800">{log.detalles}</p>
-                              <p className="text-[10px] text-slate-400">{log.fecha}</p>
+                              <p className="text-xs font-bold text-amber-100">{log.detalles}</p>
+                              <p className="text-[10px] text-amber-300">{log.fecha}</p>
                             </>
                           )}
                         </div>
@@ -3527,12 +3751,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-amber-600"
+                          className="h-6 w-6 p-0 text-amber-300 hover:text-amber-100 hover:bg-amber-700"
                           onClick={() => { setEditingLogId(log.id); setEditingLogText(log.detalles); }}
                         >
                           ✎
                         </Button>
-                        <span className="text-[9px] font-mono text-slate-300">ID: {log.registroId}</span>
+                        <span className="text-[9px] font-mono text-amber-300">ID: {log.registroId}</span>
                       </div>
                     </div>
                   ))

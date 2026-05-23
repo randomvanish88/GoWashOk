@@ -394,7 +394,7 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                 <SelectValue placeholder="Sector" />
               </SelectTrigger>
               <SelectContent>
-                {sectores.map(s => (
+                {sectores.filter(s => s && s.trim() !== '').map(s => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
                 <SelectItem value="NEW_SECTOR" className="text-blue-600 font-bold border-t text-xs">
@@ -428,7 +428,7 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
               <SelectContent>
-                {categorias.map(cat => (
+                {categorias.filter(c => c && c.trim() !== '').map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
                 <SelectItem value="NEW_CATEGORIA" className="text-blue-600 font-bold border-t text-xs">
@@ -462,7 +462,7 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                 <SelectValue placeholder="Proveedor" />
               </SelectTrigger>
               <SelectContent>
-                {proveedores.map(p => (
+                {proveedores.filter(p => p && p.trim() !== '').map(p => (
                   <SelectItem key={p} value={p}>{p}</SelectItem>
                 ))}
                 <SelectItem value="NEW_PROVEEDOR" className="text-blue-600 font-bold border-t text-xs">
@@ -533,7 +533,7 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {metodosPago.map(m => (
+                {metodosPago.filter(m => m && m.trim() !== '').map(m => (
                   <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>
                 ))}
                 <SelectItem value="NEW_METODO_PAGO" className="text-blue-600 font-bold border-t text-xs">

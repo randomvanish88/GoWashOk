@@ -280,7 +280,7 @@ function App() {
                 <Coffee className="w-2.5 h-2.5" /> Bar
               </span>
               <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/5 border border-emerald-500/10 rounded-full text-[9px] font-bold text-emerald-400/80 uppercase tracking-widest">
-                <Users className="w-2.5 h-2.5" /> Cosmetica Vehicular
+                <Users className="w-2.5 h-2.5" /> Cosmética/Accesorios
               </span>
             </div>
           </div>
