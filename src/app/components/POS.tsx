@@ -1763,6 +1763,34 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setCierreEnProceso(true);
     const cierreId = `cierre-${fechaCierre}-${Date.now()}`;
 
+    // Desglosar ventas por sector
+    const ventasDelDiaFecha = ventasDelDia.filter(v => v.fecha === fechaCierre);
+    
+    const detallesPorSector = {
+      lavadero: {
+        ventas: ventasDelDiaFecha.filter(v => v.lavado > 0),
+        total: ventasDelDiaFecha.reduce((sum, v) => sum + (v.lavado || 0), 0),
+        cantidad: ventasDelDiaFecha.filter(v => v.lavado > 0).length,
+      },
+      bar: {
+        ventas: ventasDelDiaFecha.filter(v => v.bar > 0),
+        total: ventasDelDiaFecha.reduce((sum, v) => sum + (v.bar || 0), 0),
+        cantidad: ventasDelDiaFecha.filter(v => v.bar > 0).length,
+      },
+      cosmetica: {
+        ventas: ventasDelDiaFecha.filter(v => v.cosmeticos > 0),
+        total: ventasDelDiaFecha.reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
+        cantidad: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).length,
+      },
+    };
+
+    // Obtener gastos del día
+    const gastosDelDia: Array<{ fecha: string; monto: number; categoria: string; concepto: string }> = 
+      JSON.parse(localStorage.getItem('gowash-gastos') || '[]')
+        .filter((g: any) => g.fecha === fechaCierre);
+    
+    const totalGastos = gastosDelDia.reduce((sum, g) => sum + (g.monto || 0), 0);
+
     const cierre = {
       id: cierreId,
       fecha: fechaCierre,
@@ -1779,6 +1807,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         const cantidad = conteoBilletes[String(valor)] || 0;
         return { valor, cantidad, subtotal: cantidad * valor };
       }),
+      detallesPorSector,
+      gastosDelDia,
+      totalGastos,
       empleado: empleado || undefined,
     };
 
@@ -1811,6 +1842,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       const gastosRestantes = gastosGuardados.filter(g => g.fecha !== fechaCierre);
       localStorage.setItem('gowash-gastos', JSON.stringify(gastosRestantes));
       window.dispatchEvent(new Event('gastos-updated'));
+
+      // Reiniciar "Cambios y Registro" (consumos de empleados)
+      setConsumosEmpleados({});
+      setHistorialConsumosEmpleados([]);
+      setEmpleadoConsumoSeleccionado(null);
+      localStorage.removeItem('gowash-consumos-empleados');
+      localStorage.removeItem('gowash-historial-consumos');
 
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Error desconocido';
@@ -2860,7 +2898,16 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                       <td className="border p-2 text-right bg-cyan-50">{formatMoney(venta.lavado)}</td>
                       <td className="border p-2 text-right bg-amber-50">{formatMoney(venta.bar)}</td>
                       <td className="border p-2 text-right bg-teal-50">{formatMoney(venta.cosmeticos)}</td>
-                      <td className="border p-2 text-right bg-green-50 font-bold">{formatMoney(venta.total)}</td>
+                      <td className="border p-2 text-right bg-green-50 font-bold">
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span>{formatMoney(venta.total)}</span>
+                          {venta.descuento > 0 && (
+                            <span className="text-xs text-red-600 font-semibold">
+                              (−{formatMoney(venta.descuento)})
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="border p-2 text-center">{venta.estadia ? 'Sí' : '-'}</td>
                       <td className="border p-2 text-center text-sm max-w-[200px]">
                         {formatMetodoPagoDisplay(venta, formatMoney)}

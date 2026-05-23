@@ -112,7 +112,7 @@ export const googleSheetsSync = {
   },
 
   /**
-   * Registra el cierre de caja del día en Google Sheets
+   * Registra el cierre de caja del día en Google Sheets con detalles por sector
    */
   async syncCierreCaja(cierre: {
     id: string;
@@ -125,6 +125,13 @@ export const googleSheetsSync = {
     cantidadVentas: number;
     detalleMetodos: { metodo: string; total: number; cantidad: number }[];
     detalleBilletes: { valor: number; cantidad: number; subtotal: number }[];
+    detallesPorSector?: {
+      lavadero: { ventas: any[]; total: number; cantidad: number };
+      bar: { ventas: any[]; total: number; cantidad: number };
+      cosmetica: { ventas: any[]; total: number; cantidad: number };
+    };
+    gastosDelDia?: any[];
+    totalGastos?: number;
     empleado?: string;
   }) {
     if (!this.getSpreadsheetId()) {
@@ -141,6 +148,25 @@ export const googleSheetsSync = {
       .map((b) => `$${b.valor}×${b.cantidad}=${b.subtotal}`)
       .join(' | ');
 
+    // Detalles por sector
+    const detallesLavaderoTexto = cierre.detallesPorSector?.lavadero
+      ? `Lavadero: ${cierre.detallesPorSector.lavadero.cantidad} venta(s) — $${cierre.detallesPorSector.lavadero.total.toLocaleString('es-AR')}`
+      : 'Lavadero: 0 ventas — $0';
+
+    const detallesBarTexto = cierre.detallesPorSector?.bar
+      ? `Bar: ${cierre.detallesPorSector.bar.cantidad} venta(s) — $${cierre.detallesPorSector.bar.total.toLocaleString('es-AR')}`
+      : 'Bar: 0 ventas — $0';
+
+    const detallesCosmeticaTexto = cierre.detallesPorSector?.cosmetica
+      ? `Cosmética: ${cierre.detallesPorSector.cosmetica.cantidad} venta(s) — $${cierre.detallesPorSector.cosmetica.total.toLocaleString('es-AR')}`
+      : 'Cosmética: 0 ventas — $0';
+
+    const detallesGastosTexto = cierre.gastosDelDia && cierre.gastosDelDia.length > 0
+      ? cierre.gastosDelDia
+          .map((g) => `${g.categoria}: $${g.monto.toLocaleString('es-AR')} (${g.concepto})`)
+          .join(' | ')
+      : 'Sin gastos';
+
     const data = {
       Fecha: cierre.fecha,
       Hora_Cierre: cierre.horaCierre,
@@ -151,6 +177,11 @@ export const googleSheetsSync = {
       Cantidad_Ventas: cierre.cantidadVentas,
       Detalle_Metodos: detalleMetodosTexto,
       Detalle_Billetes: detalleBilletesTexto,
+      Detalle_Lavadero: detallesLavaderoTexto,
+      Detalle_Bar: detallesBarTexto,
+      Detalle_Cosmetica: detallesCosmeticaTexto,
+      Detalle_Gastos: detallesGastosTexto,
+      Total_Gastos: cierre.totalGastos || 0,
       Empleado: cierre.empleado || '',
       ID: cierre.id,
     };
@@ -164,7 +195,7 @@ export const googleSheetsSync = {
       if (result?.success === false) {
         return { success: false, error: result.error || 'Error al guardar en Sheets' };
       }
-      console.log('[GoogleSheetsSync] Cierre de caja sincronizado.');
+      console.log('[GoogleSheetsSync] Cierre de caja sincronizado con detalles por sector.');
       return { success: true };
     } catch (error: any) {
       console.error('[GoogleSheetsSync] Error sincronizando cierre:', error);

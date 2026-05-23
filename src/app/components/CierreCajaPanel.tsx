@@ -100,7 +100,7 @@ export function CierreCajaPanel({
   const [filtroCategoria, setFiltroCategoria] = useState('Todas');
   const [filtroProveedor, setFiltroProveedor] = useState('Todos');
   const [filtroOrden, setFiltroOrden] = useState('Más reciente');
-  const [incluirGastosEnCierre, setIncluirGastosEnCierre] = useState(false);
+  const [incluirGastosEnCierre, setIncluirGastosEnCierre] = useState(true);
 
   let gastosDelDia = gastos.filter(g => {
     if (g.fecha !== fechaCierre) return false;
