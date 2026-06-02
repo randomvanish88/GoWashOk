@@ -1,18 +1,32 @@
 {
-  "name": "GoWash POS & Patio",
+  "name": "GoWash Lavadero",
   "short_name": "GoWash",
-  "description": "Sistema de gestión y lavado artesanal de vehículos GoWash Del Viso",
+  "description": "Sistema de gestión para lavadero artesanal GoWash",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0f1d",
   "theme_color": "#0a0f1d",
   "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
   "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

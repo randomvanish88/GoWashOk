@@ -15,7 +15,7 @@ GoWash POS es una aplicación móvil para gestionar el lavado de vehículos. Con
 ### Paso 1: Abrir el enlace
 1. Abre este enlace en el navegador Chrome de tu teléfono:
    ```
-   [TU_URL_AQUI]
+   https://go-wash-ok.vercel.app
    ```
 
 ### Paso 2: Agregar a pantalla de inicio
@@ -33,7 +33,7 @@ GoWash POS es una aplicación móvil para gestionar el lavado de vehículos. Con
 ### Paso 1: Abrir el enlace
 1. Abre este enlace en Safari (navegador de Apple):
    ```
-   [TU_URL_AQUI]
+   https://go-wash-ok.vercel.app
    ```
    ⚠️ **Importante:** Debe ser Safari, no Chrome ni otro navegador
 
@@ -244,7 +244,7 @@ Gracias por usar nuestra aplicación.
 
 **Enlace de instalación:**
 ```
-[REEMPLAZA_CON_TU_URL_DE_VERCEL]
+https://go-wash-ok.vercel.app
 ```
 
 **Comparte este documento con todos los usuarios nuevos.**

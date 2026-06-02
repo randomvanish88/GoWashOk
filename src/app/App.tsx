@@ -127,8 +127,8 @@ function App() {
       if (savedLicense === 'true') {
         setIsLicensed(true);
       }
-      // Desarrollo en navegador: no hay electronAPI; la licencia es solo para Electron
-      if (import.meta.env.DEV && typeof window !== 'undefined' && !window.electronAPI) {
+      // La licencia solo aplica en Electron. En navegador (web/PWA) siempre está activa.
+      if (typeof window !== 'undefined' && !window.electronAPI) {
         setIsLicensed(true);
       }
       const savedAuth = localStorage.getItem('gowash-auth');
@@ -293,7 +293,13 @@ function App() {
   // Eliminamos el bloqueo total anterior
   const handleOpenLogin = () => setShowLoginModal(true);
 
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    // Detectar móvil en el render inicial para evitar flash de la app de escritorio
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
 
   useEffect(() => {
     const handleResize = () => {
