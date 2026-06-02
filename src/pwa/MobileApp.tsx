@@ -103,6 +103,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [productosBarSeleccionados, setProductosBarSeleccionados] = useState<{ nombre: string; precio: number }[]>([]);
   const [productosCosmeticosSeleccionados, setProductosCosmeticosSeleccionados] = useState<{ nombre: string; precio: number }[]>([]);
   const [descuento, setDescuento] = useState(0);
+  const [descuentoTipo, setDescuentoTipo] = useState<'$' | '%'>('$');
   
   // Estados para fotos
   const [fotos, setFotos] = useState<string[]>([]);
@@ -196,7 +197,18 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     const totalBar = productosBarSeleccionados.reduce((sum, p) => sum + p.precio, 0);
     const totalCosmeticos = productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0);
     const subtotal = servicioSeleccionado.precio + totalBar + totalCosmeticos;
-    return subtotal - descuento;
+    const montoDescuento = descuentoTipo === '%'
+      ? (subtotal * descuento) / 100
+      : descuento;
+    return Math.max(0, subtotal - montoDescuento);
+  };
+
+  // Calcular monto de descuento para mostrar en resumen
+  const calcularMontoDescuento = () => {
+    const totalBar = productosBarSeleccionados.reduce((sum, p) => sum + p.precio, 0);
+    const totalCosmeticos = productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0);
+    const subtotal = servicioSeleccionado.precio + totalBar + totalCosmeticos;
+    return descuentoTipo === '%' ? (subtotal * descuento) / 100 : descuento;
   };
 
   // Calcular tiempo en patio
@@ -303,6 +315,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setProductosBarSeleccionados([]);
     setProductosCosmeticosSeleccionados([]);
     setDescuento(0);
+    setDescuentoTipo('$');
     setFotos([]);
     // No limpiar empleadoRecibe para que se mantenga
     
@@ -404,6 +417,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setProductosBarSeleccionados([]);
     setProductosCosmeticosSeleccionados([]);
     setDescuento(0);
+    setDescuentoTipo('$');
     setFotos([]);
   };
 
@@ -542,18 +556,22 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
   // Enviar por WhatsApp
   const enviarWhatsApp = (vehiculo: Vehiculo) => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vehiculo.id)}`;
     const mensaje = encodeURIComponent(
-      `✨ *GOWASH - Sistema de Lavadero* ✨\n\n` +
+      `✨ *GOWASH - Lavadero Artesanal* ✨\n\n` +
       `¡Hola ${vehiculo.cliente}!\n\n` +
       `Tu vehículo ha ingresado exitosamente:\n\n` +
       `🚗 *Patente:* ${vehiculo.patente}\n` +
+      `🚘 *Vehículo:* ${vehiculo.marcaModelo}\n` +
       `📝 *Servicio:* ${vehiculo.servicio}\n` +
       `💰 *Precio:* ${formatMoney(vehiculo.precio)}\n` +
-      `⏰ *Hora Ingreso:* ${vehiculo.horaIngreso}\n` +
-      `👤 *Empleado:* ${vehiculo.empleado}\n\n` +
-      `*Código de Retiro:* ${vehiculo.id}\n\n` +
-      `Presenta este mensaje al retirar tu vehículo.\n` +
-      `¡Gracias por confiar en nosotros!`
+      `💳 *Pago:* ${vehiculo.metodoPago}\n` +
+      `⏰ *Hora Ingreso:* ${vehiculo.horaIngreso} hs\n` +
+      `👤 *Recibió:* ${vehiculo.empleado}\n\n` +
+      `🔑 *Código de Retiro:* \`${vehiculo.id}\`\n\n` +
+      `📲 *Tu QR de retiro:*\n${qrUrl}\n\n` +
+      `_Presenta este mensaje o el QR al retirar tu vehículo._\n` +
+      `¡Gracias por confiar en GoWash! 🏆`
     );
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -563,7 +581,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     
     if (vehiculo.telefono) {
       const telefono = vehiculo.telefono.replace(/\D/g, '');
-      window.open(`${whatsappUrl}&phone=549${telefono}`, '_blank');
+      window.open(`https://api.whatsapp.com/send?phone=549${telefono}&text=${mensaje}`, '_blank');
     } else {
       window.open(whatsappUrl, '_blank');
     }
@@ -740,6 +758,20 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   <div className="text-left">
                     <p className="font-black">Vehículos en Patio</p>
                     <p className="text-xs text-slate-400 font-normal">Ver lista completa</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
+              </button>
+
+              <button
+                onClick={() => setPantalla('reportes')}
+                className="w-full bg-slate-900/70 border border-slate-700 hover:border-slate-600 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-between group transition-all active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="w-6 h-6 text-slate-300" />
+                  <div className="text-left">
+                    <p className="font-black">Reportes del Día</p>
+                    <p className="text-xs text-slate-400 font-normal">Ver estadísticas</p>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
@@ -1016,7 +1048,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 )}
               </div>
 
-              {/* Descuento (antes: Ajustes de Precio) */}
+              {/* Descuento */}
               <div className="bg-gradient-to-br from-orange-900/30 to-slate-900/50 border border-orange-500/20 rounded-2xl p-5 space-y-4">
                 <h3 className="text-sm font-bold text-orange-300 uppercase tracking-wider flex items-center gap-2">
                   <Percent className="w-4 h-4" />
@@ -1025,17 +1057,56 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-300 uppercase">Monto del Descuento</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 font-bold">$</span>
-                    <input
-                      type="number"
-                      value={descuento}
-                      onChange={(e) => setDescuento(Math.max(0, parseFloat(e.target.value) || 0))}
-                      placeholder="0"
-                      className="w-full bg-slate-950/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
-                    />
+                  <div className="flex gap-2">
+                    {/* Toggle $ / % */}
+                    <div className="flex rounded-xl overflow-hidden border border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setDescuentoTipo('$')}
+                        className={`px-4 py-3 text-sm font-black transition-all ${
+                          descuentoTipo === '$'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        $
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDescuentoTipo('%')}
+                        className={`px-4 py-3 text-sm font-black transition-all ${
+                          descuentoTipo === '%'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 font-bold">
+                        {descuentoTipo}
+                      </span>
+                      <input
+                        type="number"
+                        value={descuento}
+                        onChange={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0);
+                          setDescuento(descuentoTipo === '%' ? Math.min(100, val) : val);
+                        }}
+                        placeholder="0"
+                        max={descuentoTipo === '%' ? 100 : undefined}
+                        className="w-full bg-slate-950/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500 italic">Se restará del total final</p>
+                  {descuento > 0 && (
+                    <p className="text-xs text-orange-300 font-bold">
+                      {descuentoTipo === '%'
+                        ? `= ${formatMoney(calcularMontoDescuento())} de descuento`
+                        : `${descuento}% del subtotal`}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1180,8 +1251,8 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     )}
                     {descuento > 0 && (
                       <div className="flex justify-between">
-                        <span>Descuento:</span>
-                        <span className="text-red-400 font-bold">-{formatMoney(descuento)}</span>
+                        <span>Descuento{descuentoTipo === '%' ? ` (${descuento}%)` : ''}:</span>
+                        <span className="text-red-400 font-bold">-{formatMoney(calcularMontoDescuento())}</span>
                       </div>
                     )}
                   </div>
