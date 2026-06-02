@@ -1,0 +1,140 @@
+{
+  "gowash-ordenes-abiertas": [
+    {
+      "id": "GW9018EUA010",
+      "patente": "EUA010",
+      "marcaModelo": "",
+      "color": "Blanco",
+      "cliente": "",
+      "telefono": "",
+      "servicio": "Lavado Básico",
+      "precio": 15000,
+      "observaciones": "",
+      "formaPago": "Efectivo",
+      "ingreso": "1/6/2026 - 14:10 hs",
+      "empleado": "Sin asignar",
+      "estado": "En Lavado",
+      "fechaTimestamp": "2026-06-01T17:10:45.777Z"
+    }
+  ],
+  "gowash-ordenes-cobradas": [],
+  "gowash-ventas": [],
+  "gowash-washCounts": {},
+  "carwash-sizes": [],
+  "carwash-brands": [],
+  "carwash-prices": [],
+  "gowash-extras-lavado": [
+    {
+      "nombre": "Embarrado",
+      "precio": 5000
+    }
+  ],
+  "gowash-lista-empleados": [
+    "Recepción",
+    "Lavador 1",
+    "Lavador 2"
+  ],
+  "gowash-lavado-precios": [
+    {
+      "nombre": "Lavado Básico",
+      "precio": 15000
+    },
+    {
+      "nombre": "Lavado Premium",
+      "precio": 25000
+    },
+    {
+      "nombre": "Lavado Premium + Encerado",
+      "precio": 35000
+    },
+    {
+      "nombre": "Lavado Completo",
+      "precio": 45000
+    },
+    {
+      "nombre": "Detailing Completo",
+      "precio": 80000
+    }
+  ],
+  "gowash-bar-precios": [
+    {
+      "group": "Cafetería",
+      "name": "Café Negro",
+      "value": 3000
+    },
+    {
+      "group": "Cafetería",
+      "name": "Café con Leche",
+      "value": 4000
+    },
+    {
+      "group": "Cafetería",
+      "name": "Té",
+      "value": 3000
+    },
+    {
+      "group": "Bebidas",
+      "name": "CocaCola 500cc",
+      "value": 2300
+    },
+    {
+      "group": "Bebidas",
+      "name": "Agua Mineral",
+      "value": 2000
+    },
+    {
+      "group": "Comidas",
+      "name": "Medialuna",
+      "value": 1200
+    },
+    {
+      "group": "Comidas",
+      "name": "Tostado JyQ",
+      "value": 6500
+    },
+    {
+      "group": "Cervezas",
+      "name": "Heineken 330cc",
+      "value": 4000
+    },
+    {
+      "group": "Promos",
+      "name": "Café + 2 Medialunas",
+      "value": 7600
+    }
+  ],
+  "gowash-cosmeticos-precios": [
+    {
+      "nombre": "Aromatizante Walker",
+      "contenido": "10g",
+      "pvp": 2164
+    },
+    {
+      "nombre": "Silicona Perfumada 120cc",
+      "contenido": "120cm³",
+      "pvp": 6537
+    },
+    {
+      "nombre": "Cera 250cc",
+      "contenido": "250cm³",
+      "pvp": 5410
+    },
+    {
+      "nombre": "Revividor de Negro 250cc",
+      "contenido": "250cm³",
+      "pvp": 5840
+    },
+    {
+      "nombre": "Desengrasante Spray 500cc",
+      "contenido": "500cm³",
+      "pvp": 9738
+    },
+    {
+      "nombre": "Shampoo Siliconado 250cc",
+      "contenido": "250cm³",
+      "pvp": 5193
+    }
+  ],
+  "_lastUpdate": "2026-06-01T17:10:45.796Z",
+  "_version": "1.0.0"
+}

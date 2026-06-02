@@ -9,7 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { AlertCircle, Trash2, FileText, RotateCcw } from 'lucide-react';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
-
+import { EditableNumberInput } from './EditableNumberInput';
+import {
+  PAGO_MIXTO,
+  PagoParcial,
+  metodosParaPagoMixto,
+  desglosePagosGasto,
+  formatMetodoPagoGastoDisplay
+} from './pagoMixto';
 
 export interface Gasto {
   id: string;
@@ -20,6 +27,7 @@ export interface Gasto {
   descripcion: string;
   monto: number;
   metodoPago: string;
+  pagosMixtos?: PagoParcial[];
   empleado: string;
 }
 
@@ -66,6 +74,7 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState(0);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [pagosMixtos, setPagosMixtos] = useState<PagoParcial[]>([{ metodo: 'Efectivo', monto: 0 }]);
   const [metodosPago, setMetodosPago] = useState<string[]>(['Efectivo', 'Digital']);
   const [showNewMetodoPagoDialog, setShowNewMetodoPagoDialog] = useState(false);
   const [newMetodoPagoName, setNewMetodoPagoName] = useState('');
@@ -98,6 +107,19 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
       const customEvent = e as CustomEvent;
       if (customEvent.detail) {
         setEditingGasto(customEvent.detail);
+        setFecha(customEvent.detail.fecha);
+        setSector(customEvent.detail.sector);
+        setCategoria(customEvent.detail.categoria);
+        setProveedor(customEvent.detail.proveedor || '');
+        setDescripcion(customEvent.detail.descripcion);
+        setMonto(customEvent.detail.monto);
+        setMetodoPago(customEvent.detail.metodoPago);
+        if (customEvent.detail.pagosMixtos?.length) {
+          setPagosMixtos(customEvent.detail.pagosMixtos);
+        } else {
+          setPagosMixtos([{ metodo: 'Efectivo', monto: 0 }]);
+        }
+        setEmpleado(customEvent.detail.empleado);
         // Scroll to top where the form is located
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -264,13 +286,23 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
       return;
     }
 
+    if (metodoPago === PAGO_MIXTO) {
+      const totalPagos = pagosMixtos.reduce((acc, p) => acc + (Number(p.monto) || 0), 0);
+      if (Math.abs(totalPagos - monto) > 0.01) {
+        alert('En pago mixto, la suma de los montos parciales debe coincidir con el monto total.');
+        return;
+      }
+    }
+
     if (editingGasto) {
       const gastosActualizados = gastos.map(g => 
         g.id === editingGasto.id 
-          ? { ...g, fecha, sector, categoria, proveedor, descripcion, monto, metodoPago, empleado } 
+          ? { ...g, fecha, sector, categoria, proveedor, descripcion, monto, metodoPago, pagosMixtos, empleado } 
           : g
       );
       setGastos(gastosActualizados);
+      localStorage.setItem('gowash-gastos', JSON.stringify(gastosActualizados));
+      window.dispatchEvent(new Event('gastos-updated'));
       setEditingGasto(null);
     } else {
       const nuevoGasto: Gasto = {
@@ -282,9 +314,12 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
         descripcion,
         monto,
         metodoPago,
+        pagosMixtos,
         empleado
       };
       setGastos([...gastos, nuevoGasto]);
+      localStorage.setItem('gowash-gastos', JSON.stringify([...gastos, nuevoGasto]));
+      window.dispatchEvent(new Event('gastos-updated'));
       
       // Sincronizar con Google Sheets
       googleSheetsSync.syncGasto(nuevoGasto);
@@ -301,6 +336,7 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
     setDescripcion('');
     setMonto(0);
     setMetodoPago('Efectivo');
+    setPagosMixtos([{ metodo: 'Efectivo', monto: 0 }]);
     setEmpleado('');
     setEditingGasto(null);
   };
@@ -314,12 +350,20 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
     setDescripcion(gasto.descripcion);
     setMonto(gasto.monto);
     setMetodoPago(gasto.metodoPago);
+    if (gasto.pagosMixtos?.length) {
+      setPagosMixtos(gasto.pagosMixtos);
+    } else {
+      setPagosMixtos([{ metodo: 'Efectivo', monto: 0 }]);
+    }
     setEmpleado(gasto.empleado);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const eliminarGasto = (id: string) => {
-    setGastos(gastos.filter(g => g.id !== id));
+    const nuevosGastos = gastos.filter(g => g.id !== id);
+    setGastos(nuevosGastos);
+    localStorage.setItem('gowash-gastos', JSON.stringify(nuevosGastos));
+    window.dispatchEvent(new Event('gastos-updated'));
   };
 
   // Filtrar gastos
@@ -536,6 +580,10 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                 {metodosPago.filter(m => m && m.trim() !== '').map(m => (
                   <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>
                 ))}
+                {/* Asegurar que Pago mixto esté */}
+                {!metodosPago.includes(PAGO_MIXTO) && (
+                  <SelectItem value={PAGO_MIXTO} className="text-xs font-bold text-green-700">{PAGO_MIXTO}</SelectItem>
+                )}
                 <SelectItem value="NEW_METODO_PAGO" className="text-blue-600 font-bold border-t text-xs">
                   + Nuevo Método
                 </SelectItem>
@@ -555,6 +603,76 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
             />
           </div>
         </div>
+
+        {/* Pago Mixto UI para Gastos */}
+        {metodoPago === PAGO_MIXTO && (
+          <div className="mt-3 space-y-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <p className="text-[10px] font-bold text-slate-800 uppercase">Dividir pago del gasto</p>
+            {pagosMixtos.map((linea, idx) => (
+              <div key={idx} className="flex gap-2 items-center">
+                <Select
+                  value={linea.metodo}
+                  onValueChange={(val) => {
+                    const next = [...pagosMixtos];
+                    next[idx] = { ...next[idx], metodo: val };
+                    setPagosMixtos(next);
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs flex-1 bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {metodosParaPagoMixto(metodosPago).filter(m => m && m.trim() !== '').map((m) => (
+                      <SelectItem key={m} value={m} className="text-xs">
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <EditableNumberInput
+                  value={linea.monto}
+                  onChange={(nuevoMonto) => {
+                    const next = [...pagosMixtos];
+                    next[idx] = { ...next[idx], monto: nuevoMonto };
+                    if (pagosMixtos.length === 2) {
+                      const otroIdx = idx === 0 ? 1 : 0;
+                      next[otroIdx] = { ...next[otroIdx], monto: Math.max(0, monto - nuevoMonto) };
+                    }
+                    setPagosMixtos(next);
+                  }}
+                  className="h-8 w-28 text-xs"
+                  placeholder="Monto"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-red-500 shrink-0"
+                  disabled={pagosMixtos.length <= 2}
+                  onClick={() => setPagosMixtos(pagosMixtos.filter((_, i) => i !== idx))}
+                >
+                  ✕
+                </Button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px]"
+                onClick={() =>
+                  setPagosMixtos([
+                    ...pagosMixtos,
+                    { metodo: metodosParaPagoMixto(metodosPago)[0] || 'Efectivo', monto: 0 },
+                  ])
+                }
+              >
+                + Línea
+              </Button>
+            </div>
+          </div>
+        )}
         
         <div className="flex gap-4 mt-4">
           <Button
@@ -649,10 +767,11 @@ export function Gastos({ isAdmin = false }: { isAdmin?: boolean }) {
                           const method = gasto.metodoPago.toLowerCase();
                           if (method === 'efectivo') return 'bg-green-100 text-green-800';
                           if (method === 'digital') return 'bg-blue-100 text-blue-800';
+                          if (method === PAGO_MIXTO.toLowerCase()) return 'bg-purple-100 text-purple-800';
                           return 'bg-gray-100 text-gray-800';
                         })()
                       }`}>
-                        {gasto.metodoPago}
+                        {formatMetodoPagoGastoDisplay(gasto, formatMoney)}
                       </span>
                     </td>
                     <td className="border p-1.5 text-[10px]">{gasto.empleado}</td>

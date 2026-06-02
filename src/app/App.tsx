@@ -10,13 +10,16 @@ import { Card } from './components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
-import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram, Settings } from 'lucide-react';
+import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram, Settings, Upload } from 'lucide-react';
 import { LicenseLock } from './components/LicenseLock';
 import { googleSheetsSync } from './lib/googleSheetsSync';
 import { GoogleSheetsSettings } from './components/GoogleSheetsSettings';
+import { MigrarDatos } from './components/MigrarDatos';
+import { UserPermissionsPanel } from './components/UserPermissionsPanel';
 import { VirtualAssistant } from './components/VirtualAssistant';
 import { restoreFromBackupIfNeeded, startAutoBackup } from './lib/dataBackup';
 import { Toaster } from 'sonner';
+import { MobileApp } from '../pwa/MobileApp';
 const logoImage = "./logo.png";
 
 export interface Price {
@@ -32,6 +35,67 @@ export interface Price {
 
 const DEFAULT_SIZES = ['Pequeño', 'Mediano', 'Grande', 'SUV', 'Camioneta', 'Van'];
 const DEFAULT_BRANDS = ['Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'Mazda', 'Volkswagen', 'Hyundai', 'Kia', 'BMW', 'Mercedes-Benz', 'Audi'];
+
+// ─── Panel de Configuración con sub-solapas ────────────────────────────────────
+function ConfigPanel() {
+  const [activeConfigTab, setActiveConfigTab] = useState<'sheets' | 'users' | 'migrate'>('sheets');
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs de Configuración */}
+      <div className="flex gap-2 p-1 bg-slate-800/60 rounded-2xl border border-slate-700/50 backdrop-blur-md w-fit flex-wrap">
+        <button
+          onClick={() => setActiveConfigTab('sheets')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeConfigTab === 'sheets'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40'
+          }`}
+        >
+          <Settings className="w-3.5 h-3.5" />
+          Google Sheets
+        </button>
+        <button
+          onClick={() => setActiveConfigTab('migrate')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeConfigTab === 'migrate'
+              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40'
+          }`}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          Migrar Datos
+        </button>
+        <button
+          onClick={() => setActiveConfigTab('users')}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+            activeConfigTab === 'users'
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          Gestión de Usuarios
+        </button>
+      </div>
+
+      {/* Contenido de la sub-solapa activa */}
+      <div className="transition-all duration-300">
+        {activeConfigTab === 'sheets' && (
+          <GoogleSheetsSettings />
+        )}
+        {activeConfigTab === 'migrate' && (
+          <MigrarDatos />
+        )}
+        {activeConfigTab === 'users' && (
+          <div className="rounded-2xl border border-slate-700/50 bg-slate-800/40 backdrop-blur-md p-6">
+            <UserPermissionsPanel />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [prices, setPrices] = useState<Price[]>([]);
@@ -229,6 +293,28 @@ function App() {
   // Eliminamos el bloqueo total anterior
   const handleOpenLogin = () => setShowLoginModal(true);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Detecta móvil si el ancho es menor a 768px
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <MobileApp 
+        user={user} 
+        onLogout={handleLogout} 
+        onLogin={handleLogin} 
+      />
+    );
+  }
+
   if (!isLicensed) {
     return <LicenseLock onActivated={() => setIsLicensed(true)} />;
   }
@@ -407,7 +493,7 @@ function App() {
           
           {isAdmin && (
             <TabsContent value="settings">
-              <GoogleSheetsSettings />
+              <ConfigPanel />
             </TabsContent>
           )}
         </Tabs>

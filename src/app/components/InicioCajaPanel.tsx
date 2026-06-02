@@ -26,6 +26,7 @@ interface InicioCajaPanelProps {
   onFechaInicioChange: (fecha: string) => void;
   formatMoney: (amount: number) => string;
   denominacionesBilletes: number[];
+  onInicioCajaRegistrado?: () => void;
 }
 
 export function InicioCajaPanel({
@@ -33,6 +34,7 @@ export function InicioCajaPanel({
   onFechaInicioChange,
   formatMoney,
   denominacionesBilletes,
+  onInicioCajaRegistrado,
 }: InicioCajaPanelProps) {
   const inicioYaEnviado = !!localStorage.getItem(`gowash-inicio-caja-${fechaInicio}`);
 
@@ -87,6 +89,7 @@ export function InicioCajaPanel({
 
       localStorage.setItem(`gowash-inicio-caja-${fechaInicio}`, data.ID);
       localStorage.setItem(`gowash-inicio-monto-${fechaInicio}`, String(totalContado));
+      if (onInicioCajaRegistrado) onInicioCajaRegistrado();
       toast.success('Inicio de caja registrado', {
         description: `${fechaInicio} — ${formatMoney(totalContado)} en caja`,
       });

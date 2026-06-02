@@ -114,38 +114,20 @@ export const googleSheetsSync = {
   /**
    * Registra el cierre de caja del día en Google Sheets con detalles por sector
    */
-  async syncCierreCaja(cierre: {
-    id: string;
-    fecha: string;
-    horaCierre: string;
-    totalEfectivoSistema: number;
-    totalContado: number;
-    diferencia: number;
-    totalGeneral: number;
-    cantidadVentas: number;
-    detalleMetodos: { metodo: string; total: number; cantidad: number }[];
-    detalleBilletes: { valor: number; cantidad: number; subtotal: number }[];
-    detallesPorSector?: {
-      lavadero: { ventas: any[]; total: number; cantidad: number };
-      bar: { ventas: any[]; total: number; cantidad: number };
-      cosmetica: { ventas: any[]; total: number; cantidad: number };
-    };
-    gastosDelDia?: any[];
-    totalGastos?: number;
-    empleado?: string;
-  }) {
+  async syncCierreCaja(cierre: any) {
     if (!this.getSpreadsheetId()) {
       return { success: false, error: 'No hay hoja de Google configurada.' };
     }
 
-    const detalleMetodosTexto = cierre.detalleMetodos
-      .filter((m) => m.cantidad > 0)
-      .map((m) => `${m.metodo}: ${m.cantidad} venta(s) — $${m.total.toLocaleString('es-AR')}`)
+    const detalleMetodosTexto = (cierre.detalleMetodos || [])
+      .filter((m: any) => m.cantidad > 0)
+      .map((m: any) => `${m.metodo}: ${m.cantidad} venta(s) — $${m.total.toLocaleString('es-AR')}`)
       .join(' | ');
 
-    const detalleBilletesTexto = cierre.detalleBilletes
-      .filter((b) => b.cantidad > 0)
-      .map((b) => `$${b.valor}×${b.cantidad}=${b.subtotal}`)
+    const detalleBilletes = cierre.detalleBilletes || cierre.arqueo?.detalleBilletes || [];
+    const detalleBilletesTexto = detalleBilletes
+      .filter((b: any) => b.cantidad > 0)
+      .map((b: any) => `$${b.valor}×${b.cantidad}=${b.subtotal}`)
       .join(' | ');
 
     // Detalles por sector
@@ -161,9 +143,10 @@ export const googleSheetsSync = {
       ? `Cosmética/Accesorios: ${cierre.detallesPorSector.cosmetica.cantidad} venta(s) — $${cierre.detallesPorSector.cosmetica.total.toLocaleString('es-AR')}`
       : 'Cosmética/Accesorios: 0 ventas — $0';
 
-    const detallesGastosTexto = cierre.gastosDelDia && cierre.gastosDelDia.length > 0
-      ? cierre.gastosDelDia
-          .map((g) => `${g.categoria}: $${g.monto.toLocaleString('es-AR')} (${g.concepto})`)
+    const gastosDelDia = cierre.gastosDelDia || cierre.gastos?.detalle || [];
+    const detallesGastosTexto = gastosDelDia.length > 0
+      ? gastosDelDia
+          .map((g: any) => `${g.categoria}: $${g.monto.toLocaleString('es-AR')} (${g.concepto})`)
           .join(' | ')
       : 'Sin gastos';
 
@@ -171,8 +154,8 @@ export const googleSheetsSync = {
       Fecha: cierre.fecha,
       Hora_Cierre: cierre.horaCierre,
       Total_Efectivo_Sistema: cierre.totalEfectivoSistema,
-      Total_Contado: cierre.totalContado,
-      Diferencia: cierre.diferencia,
+      Total_Contado: cierre.totalContado ?? cierre.arqueo?.totalContado ?? 0,
+      Diferencia: cierre.diferencia ?? cierre.arqueo?.diferencia ?? 0,
       Total_General: cierre.totalGeneral,
       Cantidad_Ventas: cierre.cantidadVentas,
       Detalle_Metodos: detalleMetodosTexto,
@@ -181,7 +164,7 @@ export const googleSheetsSync = {
       Detalle_Bar: detallesBarTexto,
       Detalle_Cosmetica: detallesCosmeticaTexto,
       Detalle_Gastos: detallesGastosTexto,
-      Total_Gastos: cierre.totalGastos || 0,
+      Total_Gastos: cierre.totalGastos ?? cierre.gastos?.total ?? 0,
       Empleado: cierre.empleado || '',
       ID: cierre.id,
     };

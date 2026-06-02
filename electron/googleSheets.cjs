@@ -137,6 +137,70 @@ class GoogleSheetsHandler {
     }
     return { success: false, error: 'Fila no encontrada' };
   }
+
+  /**
+   * Limpia todas las filas de una hoja (mantiene los headers)
+   * @param {string} sheetTitle Nombre de la pestaña
+   */
+  async clearSheet(sheetTitle) {
+    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    
+    let sheet = this.doc.sheetsByTitle[sheetTitle];
+    if (!sheet) {
+      console.log(`[GoogleSheets] La hoja "${sheetTitle}" no existe. Creándola...`);
+      sheet = await this.doc.addSheet({ title: sheetTitle });
+      return { success: true };
+    }
+
+    const rows = await sheet.getRows();
+    for (const row of rows) {
+      await row.delete();
+    }
+    return { success: true };
+  }
+
+  /**
+   * Escribe datos en una hoja (headers + filas)
+   * @param {string} sheetTitle Nombre de la pestaña
+   * @param {array} data Array de arrays: primera fila son headers, resto son datos
+   */
+  async writeSheet(sheetTitle, data) {
+    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    if (!data || data.length === 0) return { success: false, error: 'Sin datos para escribir' };
+
+    let sheet = this.doc.sheetsByTitle[sheetTitle];
+    
+    // Si la hoja no existe, la creamos con los headers
+    if (!sheet) {
+      console.log(`[GoogleSheets] La hoja "${sheetTitle}" no existe. Creándola...`);
+      const headers = data[0];
+      sheet = await this.doc.addSheet({ title: sheetTitle, headerValues: headers });
+    } else {
+      // Si existe, limpiamos primero
+      const rows = await sheet.getRows();
+      for (const row of rows) {
+        await row.delete();
+      }
+      // Actualizamos los headers si es necesario
+      const headers = data[0];
+      await sheet.setHeaderRow(headers);
+    }
+
+    // Escribimos las filas de datos (saltamos la primera que son headers)
+    for (let i = 1; i < data.length; i++) {
+      const rowData = data[i];
+      const headers = data[0];
+      const rowObj = {};
+      
+      headers.forEach((header, idx) => {
+        rowObj[header] = rowData[idx] || '';
+      });
+
+      await sheet.addRow(rowObj);
+    }
+
+    return { success: true, rowsWritten: data.length - 1 };
+  }
 }
 
 module.exports = new GoogleSheetsHandler();

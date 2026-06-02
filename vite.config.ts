@@ -27,20 +27,19 @@ export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? './' : '/',
   plugins: [
     gaunaAssetResolver(),
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
-    // obfuscator desactivado temporalmente
-    // obfuscator({ ... })
   ],
   resolve: {
     alias: {
-      // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
   },
-
-  // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  server: {
+    port: 5173,
+    // Sirve el build de la PWA en /pwa/*
+    proxy: {},
+    fs: { allow: ['..'] },
+  },
 }))

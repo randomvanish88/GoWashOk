@@ -285,6 +285,24 @@ ipcMain.handle('google-sheets-update-row', async (event, { sheetTitle, searchCol
   }
 });
 
+ipcMain.handle('google-sheets-clear-sheet', async (event, sheetTitle) => {
+  try {
+    return await googleSheets.clearSheet(sheetTitle);
+  } catch (error) {
+    console.error('[GoogleSheets] Error al limpiar hoja:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('google-sheets-write-sheet', async (event, { sheetTitle, data }) => {
+  try {
+    return await googleSheets.writeSheet(sheetTitle, data);
+  } catch (error) {
+    console.error('[GoogleSheets] Error al escribir hoja:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 // Nuevo: Seleccionar y guardar archivo de credenciales
 ipcMain.handle('google-sheets-upload-creds', async () => {
   const result = await dialog.showOpenDialog({

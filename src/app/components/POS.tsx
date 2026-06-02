@@ -70,6 +70,11 @@ interface Venta {
   modelo?: string;
   tamano?: string;
   imageUrl?: string;
+  descSectorsDetails?: {
+    lavadero?: { activo: boolean; tipo: 'porcentaje' | 'monto'; valor: number };
+    bar?:      { activo: boolean; tipo: 'porcentaje' | 'monto'; valor: number };
+    cosmetica?: { activo: boolean; tipo: 'porcentaje' | 'monto'; valor: number };
+  };
 }
 
 interface VentaEmpleado {
@@ -285,6 +290,14 @@ const crearPagosMixtosInicial = (): PagoParcial[] => [
 const getCurrentTimeString = () => {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
+
+const esLavaderoVenta = (v: any): boolean => {
+  if (!v) return false;
+  const tieneLavado = Number(v.lavado) > 0;
+  const tieneServicio = typeof v.servicio === 'string' && v.servicio.trim() !== '';
+  const tieneVehiculo = (typeof v.marca === 'string' && v.marca.trim() !== '') || (typeof v.modelo === 'string' && v.modelo.trim() !== '');
+  return tieneLavado || tieneServicio || tieneVehiculo;
 };
 
 interface EditorPreciosProps {
@@ -597,6 +610,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [washCounts, setWashCounts] = useState<Record<string, number>>({});
   const [filtroSectorVentas, setFiltroSectorVentas] = useState<string>("Todos");
   const [filtroPagoVentas, setFiltroPagoVentas] = useState<string>("Todos");
+  const [ordenVentas, setOrdenVentas] = useState<'asc' | 'desc'>('desc');
 
   const ventasFiltradas = ventas.filter(venta => {
     // Filtro por sector
@@ -616,6 +630,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     else if (filtroPagoVentas === "Otro" && !["Efectivo", "Transferencia", "Mercado Pago", "Tarjeta", "Cuenta Corriente"].includes(venta.metodoPago || "")) pagoMatch = true;
 
     return sectorMatch && pagoMatch;
+  }).sort((a, b) => {
+    const timeA = parseInt(a.id) || 0;
+    const timeB = parseInt(b.id) || 0;
+    return ordenVentas === 'desc' ? timeB - timeA : timeA - timeB;
   });
 
   // Estados nuevos para Consumo Empleados
@@ -654,24 +672,40 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const key = `gowash-inicio-monto-${fechaCierre}`;
     return parseFloat(localStorage.getItem(key) || '0') || 0;
   }, [fechaCierre, inicioCajaVersion]);
-  const [denominacionesBilletes, setDenominacionesBilletes] = useState<number[]>(DEFAULT_DENOMINACIONES_ARS);
-  const [conteoBilletes, setConteoBilletes] = useState<Record<string, number>>(() =>
-    crearConteoBilletesVacio(DEFAULT_DENOMINACIONES_ARS)
-  );
+  const [denominacionesBilletes, setDenominacionesBilletes] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('gowash-denominaciones-billetes');
+      if (saved) return JSON.parse(saved) as number[];
+    } catch { /* defaults */ }
+    return DEFAULT_DENOMINACIONES_ARS;
+  });
+
+  const [conteoBilletes, setConteoBilletes] = useState<Record<string, number>>(() => {
+    const base = crearConteoBilletesVacio(DEFAULT_DENOMINACIONES_ARS);
+    try {
+      // Intentamos inicializar con la fecha de hoy, ya que fechaCierre empieza con la fecha de hoy.
+      const hoy = new Date().toISOString().split('T')[0];
+      const saved = localStorage.getItem(`gowash-arqueo-${hoy}`);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Record<string, number>;
+        return { ...base, ...parsed };
+      }
+    } catch { /* defaults */ }
+    return base;
+  });
   const [cierreEnProceso, setCierreEnProceso] = useState(false);
   const [empleado, setEmpleado] = useState('');
   const [patente, setPatente] = useState('');
   const [cliente, setCliente] = useState('');
   const [lavado, setLavado] = useState(0);
   const [servicio, setServicio] = useState('');
-  const [descuento, setDescuento] = useState(0);
-  const [descuentoPorcentaje, setDescuentoPorcentaje] = useState(0);
   const [recargo, setRecargo] = useState(0);
   const [recargoPorcentaje, setRecargoPorcentaje] = useState(0);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [metodosPago, setMetodosPago] = useState<string[]>([
     'Efectivo',
     PAGO_MIXTO,
+    'Promo',
     'Transferencia',
     'Billetera Virtual',
     'Cupón de descuento',
@@ -686,15 +720,22 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [horasEstadia, setHorasEstadia] = useState(1);
   const [precioEstadia, setPrecioEstadia] = useState(0);
 
-  // Estados de Descuento
-  const [descLavadero, setDescLavadero] = useState(false);
-  const [descBar, setDescBar] = useState(false);
-  const [descCosmetica, setDescCosmetica] = useState(false);
+  // Descuentos independientes por sector
+  const [descSectors, setDescSectors] = useState<{
+    lavadero: { activo: boolean; tipo: 'porcentaje' | 'monto'; valor: number };
+    bar:      { activo: boolean; tipo: 'porcentaje' | 'monto'; valor: number };
+    cosmetica:{ activo: boolean; tipo: 'porcentaje' | 'monto'; valor: number };
+  }>({
+    lavadero:  { activo: false, tipo: 'porcentaje', valor: 0 },
+    bar:       { activo: false, tipo: 'porcentaje', valor: 0 },
+    cosmetica: { activo: false, tipo: 'porcentaje', valor: 0 },
+  });
 
-  // Estados de Recargo (separados de Descuento)
-  const [recargoLavadero, setRecargoLavadero] = useState(false);
-  const [recargoBar, setRecargoBar] = useState(false);
-  const [recargoCosmetica, setRecargoCosmetica] = useState(false);
+  const updateDescSector = (sector: 'lavadero' | 'bar' | 'cosmetica', patch: Partial<typeof descSectors.lavadero>) => {
+    setDescSectors(prev => {
+      return { ...prev, [sector]: { ...prev[sector], ...patch } };
+    });
+  };
 
   // Calcula si debe habilitarse la estadía (> 1 hora)
   const puedeEstadia = () => {
@@ -717,6 +758,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   // Estados para anulación
   const [showAnulacionDialog, setShowAnulacionDialog] = useState(false);
+  const [borradorRecuperado, setBorradorRecuperado] = useState<any>(null);
+  const [showBorradorDialog, setShowBorradorDialog] = useState(false);
   const [motivoAnulacion, setMotivoAnulacion] = useState('');
   const [itemAAnular, setItemAAnular] = useState<{ id: string, type: 'venta' | 'orden' } | null>(null);
   const [editingVentaId, setEditingVentaId] = useState<string | null>(null);
@@ -772,6 +815,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const savedCosmeticos = localStorage.getItem('gowash-cosmeticos-precios');
     const savedBar = localStorage.getItem('gowash-bar-precios');
     const savedLavado = localStorage.getItem('gowash-lavado-precios');
+    const savedOrdenesCobradas = localStorage.getItem('gowash-ordenes-cobradas');
     const savedOrdenesAbiertas = localStorage.getItem('gowash-ordenes-abiertas');
 
     const savedAnuladas = localStorage.getItem('gowash-ventas-anuladas');
@@ -796,21 +840,16 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         const idx = parsed.includes('Efectivo') ? 1 : 0;
         parsed.splice(idx, 0, PAGO_MIXTO);
       }
+      if (!parsed.some(m => m.toLowerCase() === 'promo')) {
+        parsed.push('Promo');
+      }
       setMetodosPago(parsed);
     }
 
-    const savedDenoms = localStorage.getItem('gowash-denominaciones-billetes');
-    if (savedDenoms) {
-      try {
-        const denoms = JSON.parse(savedDenoms) as number[];
-        setDenominacionesBilletes(denoms);
-        setConteoBilletes(crearConteoBilletesVacio(denoms));
-      } catch {
-        /* defaults */
-      }
-    }
+    // denominacionesBilletes y conteoBilletes ya se inicializan en el useState
     
     if (savedOrdenesAbiertas) setOrdenesAbiertas(JSON.parse(savedOrdenesAbiertas));
+    if (savedOrdenesCobradas) setOrdenesCobradas(JSON.parse(savedOrdenesCobradas));
     if (savedWashCounts) setWashCounts(JSON.parse(savedWashCounts));
     if (savedCosmeticos) {
       const parsed = JSON.parse(savedCosmeticos);
@@ -838,6 +877,17 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const timeString = getCurrentTimeString();
     setHoraEntrada(timeString);
     setHoraSalida(timeString);
+
+    const savedBorrador = localStorage.getItem('gowash-pos-borrador-edicion');
+    if (savedBorrador) {
+      try {
+        const parsed = JSON.parse(savedBorrador);
+        setBorradorRecuperado(parsed);
+        setShowBorradorDialog(true);
+      } catch (e) {
+        console.error("Error al cargar el borrador de edición:", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -873,12 +923,54 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   }, [ordenesAbiertas]);
 
   useEffect(() => {
+    localStorage.setItem('gowash-ordenes-cobradas', JSON.stringify(ordenesCobradas));
+  }, [ordenesCobradas]);
+
+  useEffect(() => {
     localStorage.setItem('gowash-ventas-anuladas', JSON.stringify(ventasAnuladas));
   }, [ventasAnuladas]);
 
   useEffect(() => {
     localStorage.setItem('gowash-washCounts', JSON.stringify(washCounts));
   }, [washCounts]);
+
+  // Persistir borrador de edición/pedido activo para evitar pérdidas ante apagados
+  useEffect(() => {
+    if (editingVentaId || activeOrderId) {
+      const borrador = {
+        editingVentaId,
+        activeOrderId,
+        fecha,
+        horaEntrada,
+        horaSalida,
+        empleado,
+        patente,
+        cliente,
+        precioServicioLavado,
+        extrasSeleccionados,
+        servicio,
+        descSectors,
+        metodoPago,
+        pagosMixtos,
+        numeroCliente,
+        estadia,
+        horasEstadia,
+        precioEstadia,
+        productosBar,
+        productosCosmeticos,
+        vehiculoSeleccionado
+      };
+      localStorage.setItem('gowash-pos-borrador-edicion', JSON.stringify(borrador));
+    } else {
+      localStorage.removeItem('gowash-pos-borrador-edicion');
+    }
+  }, [
+    editingVentaId, activeOrderId, fecha, horaEntrada, horaSalida,
+    empleado, patente, cliente, precioServicioLavado, extrasSeleccionados,
+    servicio, descSectors, metodoPago, pagosMixtos, numeroCliente,
+    estadia, horasEstadia, precioEstadia, productosBar, productosCosmeticos,
+    vehiculoSeleccionado
+  ]);
 
   useEffect(() => {
     if (cosmeticosData.length > 0) {
@@ -914,18 +1006,33 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     localStorage.setItem('gowash-audit-logs', JSON.stringify(auditLogs));
   }, [auditLogs]);
 
-  // Recalcular descuento dinámicamente si hay porcentaje y cambian los items o alcances
-  useEffect(() => {
-    if (descuentoPorcentaje > 0) {
-      let base = 0;
-      if (descLavadero) base += lavado;
-      if (descBar) base += productosBar.reduce((sum, p) => sum + p.precio, 0);
-      if (descCosmetica) base += productosCosmeticos.reduce((sum, p) => sum + p.precio, 0);
-      setDescuento((base * descuentoPorcentaje) / 100);
-    }
-  }, [lavado, productosBar, productosCosmeticos, descLavadero, descBar, descCosmetica, descuentoPorcentaje]);
+  // Recalcular descuento total a partir de los tres sectores
+  const calcularDescuentoSector = (sector: 'lavadero' | 'bar' | 'cosmetica') => {
+    const s = descSectors[sector];
+    if (!s.activo || s.valor <= 0) return 0;
+    let base = 0;
+    if (sector === 'lavadero') base = lavado + (estadia ? precioEstadia : 0);
+    if (sector === 'bar') base = productosBar.reduce((sum, p) => sum + p.precio, 0);
+    if (sector === 'cosmetica') base = productosCosmeticos.reduce((sum, p) => sum + p.precio, 0);
+    if (s.tipo === 'porcentaje') return Math.min((base * s.valor) / 100, base);
+    return Math.min(s.valor, base);
+  };
 
-  // Recalcular recargo dinámicamente si hay porcentaje y cambian los items o alcances
+  const descuentoLavadero = calcularDescuentoSector('lavadero');
+  const descuentoBar      = calcularDescuentoSector('bar');
+  const descuentoCosmetica = calcularDescuentoSector('cosmetica');
+  const descuento = descuentoLavadero + descuentoBar + descuentoCosmetica;
+
+  // Compat: flags para indicar qué sectores tienen descuento (para guardado en Venta)
+  const descLavadero  = descSectors.lavadero.activo  && descSectors.lavadero.valor  > 0;
+  const descBar       = descSectors.bar.activo       && descSectors.bar.valor       > 0;
+  const descCosmetica = descSectors.cosmetica.activo && descSectors.cosmetica.valor > 0;
+
+  // Recargo sector flags (recargo UI was removed, keep for compat)
+  const recargoLavadero = false;
+  const recargoBar = false;
+  const recargoCosmetica = false;
+
   useEffect(() => {
     if (recargoPorcentaje > 0) {
       let base = 0;
@@ -973,10 +1080,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setProductosCosmeticos(productosCosmeticos.filter((_, i) => i !== index));
   };
 
-  const actualizarDescuentoPorcentaje = (porcentaje: number) => {
-    setDescuentoPorcentaje(porcentaje);
-    if (porcentaje === 0) setDescuento(0);
-  };
 
   const actualizarRecargoPorcentaje = (porcentaje: number) => {
     setRecargoPorcentaje(porcentaje);
@@ -1061,13 +1164,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       return;
     }
 
-    // Si viene una ordenDirecta, usamos sus datos. Si no, usamos el estado actual.
-    const vBase = ordenDirecta || {
-      id: editingVentaId || Date.now().toString(),
-      fecha,
-      hora: horaEntrada,
-      horaEntrada,
-      horaSalida,
+    const nowTime = getCurrentTimeString();
+
+    // Si viene una ordenDirecta, usamos sus datos, pero actualizamos la hora de salida a la hora actual real.
+    const vBase = ordenDirecta
+      ? { ...ordenDirecta, horaSalida: nowTime }
+      : {
+          id: editingVentaId || Date.now().toString(),
+          fecha,
+          hora: horaEntrada,
+          horaEntrada,
+          // Al cerrar la venta, la hora de salida es la hora real actual, a menos que estemos editando una venta vieja.
+          horaSalida: editingVentaId ? horaSalida : nowTime,
       empleado,
       patente,
       cliente,
@@ -1097,6 +1205,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       descLavadero,
       descBar,
       descCosmetica,
+      descSectorsDetails: {
+        lavadero: { ...descSectors.lavadero },
+        bar: { ...descSectors.bar },
+        cosmetica: { ...descSectors.cosmetica }
+      },
       recargoLavadero,
       recargoBar,
       recargoCosmetica
@@ -1195,7 +1308,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       fecha: orden.fecha || fecha,
       hora: orden.horaEntrada || horaEntrada,
       empleado: orden.empleado || empleado || 'Sin Empleado',
-      horaSalida: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+      horaSalida: getCurrentTimeString(),
       total: orden.total || (orden.lavado + orden.bar + orden.cosmeticos),
     };
     registrarVenta(ordenCobrada);
@@ -1246,6 +1359,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       descLavadero,
       descBar,
       descCosmetica,
+      descSectorsDetails: {
+        lavadero: { ...descSectors.lavadero },
+        bar: { ...descSectors.bar },
+        cosmetica: { ...descSectors.cosmetica }
+      },
       recargoLavadero,
       recargoBar,
       recargoCosmetica,
@@ -1285,8 +1403,28 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setVehiculoSeleccionado(null);
     }
 
-    setDescuento(orden.descuento);
-    setRecargo(orden.recargo || 0);
+    // Restore descSectors from order compat fields
+    if (orden.descSectorsDetails) {
+      setDescSectors({
+        lavadero: orden.descSectorsDetails.lavadero || { activo: false, tipo: 'porcentaje', valor: 0 },
+        bar: orden.descSectorsDetails.bar || { activo: false, tipo: 'porcentaje', valor: 0 },
+        cosmetica: orden.descSectorsDetails.cosmetica || { activo: false, tipo: 'porcentaje', valor: 0 },
+      });
+    } else {
+      setDescSectors({
+        lavadero:  { activo: orden.descLavadero ?? false, tipo: 'porcentaje', valor: 0 },
+        bar:       { activo: orden.descBar ?? false, tipo: 'porcentaje', valor: 0 },
+        cosmetica: { activo: orden.descCosmetica ?? false, tipo: 'porcentaje', valor: 0 },
+      });
+      if ((orden.descuento || 0) > 0) {
+        const hasLav = orden.descLavadero ?? false;
+        const hasBar = orden.descBar ?? false;
+        const hasCos = orden.descCosmetica ?? false;
+        if (hasLav) updateDescSector('lavadero', { activo: true, tipo: 'monto', valor: orden.descuento });
+        else if (hasBar) updateDescSector('bar', { activo: true, tipo: 'monto', valor: orden.descuento });
+        else if (hasCos) updateDescSector('cosmetica', { activo: true, tipo: 'monto', valor: orden.descuento });
+      }
+    }
     setMetodoPago(orden.metodoPago);
     setPagosMixtos(
       orden.pagosMixtos?.length ? orden.pagosMixtos : crearPagosMixtosInicial()
@@ -1296,12 +1434,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setPrecioEstadia(orden.precioEstadia || 0);
     setProductosBar(orden.productosBar);
     setProductosCosmeticos(orden.productosCosmeticos);
-    setDescLavadero(orden.descLavadero ?? false);
-    setDescBar(orden.descBar ?? false);
-    setDescCosmetica(orden.descCosmetica ?? false);
-    setRecargoLavadero(orden.recargoLavadero ?? false);
-    setRecargoBar(orden.recargoBar ?? false);
-    setRecargoCosmetica(orden.recargoCosmetica ?? false);
   };
 
   const limpiarFormulario = () => {
@@ -1317,16 +1449,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setPrecioServicioLavado(0);
     setExtrasSeleccionados([]);
     setServicio('');
-    setDescuento(0);
-    setDescuentoPorcentaje(0);
+    setDescSectors({
+      lavadero:  { activo: false, tipo: 'porcentaje', valor: 0 },
+      bar:       { activo: false, tipo: 'porcentaje', valor: 0 },
+      cosmetica: { activo: false, tipo: 'porcentaje', valor: 0 },
+    });
     setRecargo(0);
     setRecargoPorcentaje(0);
-    setDescLavadero(false);
-    setDescBar(false);
-    setDescCosmetica(false);
-    setRecargoLavadero(false);
-    setRecargoBar(false);
-    setRecargoCosmetica(false);
     setMetodoPago('Efectivo');
     setPagosMixtos(crearPagosMixtosInicial());
     setNumeroCliente('');
@@ -1395,6 +1524,43 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     toast.success('Empleado actualizado.');
   };
 
+  const recuperarBorrador = () => {
+    if (!borradorRecuperado) return;
+    const b = borradorRecuperado;
+    setEditingVentaId(b.editingVentaId);
+    setActiveOrderId(b.activeOrderId);
+    setFecha(b.fecha);
+    setHoraEntrada(b.horaEntrada);
+    setHoraSalida(b.horaSalida);
+    setEmpleado(b.empleado);
+    setPatente(b.patente);
+    setCliente(b.cliente);
+    setPrecioServicioLavado(b.precioServicioLavado);
+    setExtrasSeleccionados(b.extrasSeleccionados);
+    setServicio(b.servicio);
+    setDescSectors(b.descSectors);
+    setMetodoPago(b.metodoPago);
+    setPagosMixtos(b.pagosMixtos);
+    setNumeroCliente(b.numeroCliente);
+    setEstadia(b.estadia);
+    setHorasEstadia(b.horasEstadia);
+    setPrecioEstadia(b.precioEstadia);
+    setProductosBar(b.productosBar);
+    setProductosCosmeticos(b.productosCosmeticos);
+    setVehiculoSeleccionado(b.vehiculoSeleccionado);
+    
+    setBorradorRecuperado(null);
+    setShowBorradorDialog(false);
+    toast.success("Edición recuperada", { description: "Se cargaron los datos de la edición anterior." });
+  };
+
+  const descartarBorrador = () => {
+    localStorage.removeItem('gowash-pos-borrador-edicion');
+    setBorradorRecuperado(null);
+    setShowBorradorDialog(false);
+    toast.info("Borrador descartado");
+  };
+
   const iniciarEdicionVenta = (venta: Venta) => {
     setActiveOrderId(null);
     setEditingVentaId(venta.id);
@@ -1406,8 +1572,28 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setCliente(venta.cliente);
     aplicarExtrasYOrden(venta);
     setServicio(venta.servicio || '');
-    setDescuento(venta.descuento);
-    setRecargo(venta.recargo || 0);
+    // Restore descSectors from venta compat fields
+    if (venta.descSectorsDetails) {
+      setDescSectors({
+        lavadero: venta.descSectorsDetails.lavadero || { activo: false, tipo: 'porcentaje', valor: 0 },
+        bar: venta.descSectorsDetails.bar || { activo: false, tipo: 'porcentaje', valor: 0 },
+        cosmetica: venta.descSectorsDetails.cosmetica || { activo: false, tipo: 'porcentaje', valor: 0 },
+      });
+    } else {
+      setDescSectors({
+        lavadero:  { activo: venta.descLavadero ?? false, tipo: 'porcentaje', valor: 0 },
+        bar:       { activo: venta.descBar ?? false, tipo: 'porcentaje', valor: 0 },
+        cosmetica: { activo: venta.descCosmetica ?? false, tipo: 'porcentaje', valor: 0 },
+      });
+      if ((venta.descuento || 0) > 0) {
+        const hasLav = venta.descLavadero ?? false;
+        const hasBar = venta.descBar ?? false;
+        const hasCos = venta.descCosmetica ?? false;
+        if (hasLav) updateDescSector('lavadero', { activo: true, tipo: 'monto', valor: venta.descuento });
+        else if (hasBar) updateDescSector('bar', { activo: true, tipo: 'monto', valor: venta.descuento });
+        else if (hasCos) updateDescSector('cosmetica', { activo: true, tipo: 'monto', valor: venta.descuento });
+      }
+    }
     setMetodoPago(venta.metodoPago);
     setPagosMixtos(
       venta.pagosMixtos?.length ? venta.pagosMixtos : crearPagosMixtosInicial()
@@ -1418,12 +1604,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setPrecioEstadia(venta.precioEstadia || 0);
     setProductosBar(venta.productosBar);
     setProductosCosmeticos(venta.productosCosmeticos);
-    setDescLavadero(venta.descLavadero ?? false);
-    setDescBar(venta.descBar ?? false);
-    setDescCosmetica(venta.descCosmetica ?? false);
-    setRecargoLavadero(venta.recargoLavadero ?? false);
-    setRecargoBar(venta.recargoBar ?? false);
-    setRecargoCosmetica(venta.recargoCosmetica ?? false);
     
     // Buscar el vehículo en la lista si existe
     if (venta.marca && venta.modelo) {
@@ -1651,10 +1831,59 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     [ventas, fechaCierre]
   );
 
+  const mapeoOrdenLlegadaLavadero = useMemo(() => {
+    const mapByDate: Record<string, { id: string; horaEntrada: string }[]> = {};
+
+    // Ventas cerradas con lavado
+    ventas.forEach(v => {
+      if (esLavaderoVenta(v)) {
+        if (!mapByDate[v.fecha]) mapByDate[v.fecha] = [];
+        mapByDate[v.fecha].push({ id: v.id, horaEntrada: v.horaEntrada });
+      }
+    });
+
+    // Órdenes abiertas con lavado
+    ordenesAbiertas.forEach(o => {
+      if (esLavaderoVenta(o)) {
+        if (!mapByDate[o.fecha]) mapByDate[o.fecha] = [];
+        if (!mapByDate[o.fecha].some(item => item.id === o.id)) {
+          mapByDate[o.fecha].push({ id: o.id, horaEntrada: o.horaEntrada });
+        }
+      }
+    });
+
+    const compareHoras = (a: { id: string; horaEntrada: string }, b: { id: string; horaEntrada: string }) => {
+      const h1 = a.horaEntrada;
+      const h2 = b.horaEntrada;
+      if (!h1) return 1;
+      if (!h2) return -1;
+      const [hrs1, min1] = h1.split(':').map(Number);
+      const [hrs2, min2] = h2.split(':').map(Number);
+      if (hrs1 !== hrs2) return hrs1 - hrs2;
+      if (min1 !== min2) return min1 - min2;
+      return a.id.localeCompare(b.id);
+    };
+
+    const finalMap: Record<string, number> = {};
+    Object.keys(mapByDate).forEach(date => {
+      const list = mapByDate[date];
+      list.sort(compareHoras);
+      list.forEach((item, index) => {
+        finalMap[item.id] = index + 1;
+      });
+    });
+
+    return finalMap;
+  }, [ventas, ordenesAbiertas]);
+
   const sumaPorMetodoEnVentas = (metodoLower: string) =>
     ventasDelDia.reduce((sum, v) => {
       const parte = desglosePagosVenta(v)
-        .filter((p) => p.metodo.toLowerCase() === metodoLower)
+        .filter((p) => {
+          const m = p.metodo.toLowerCase();
+          if (metodoLower === 'efectivo' && m === 'promo') return true;
+          return m === metodoLower;
+        })
         .reduce((s, p) => s + p.monto, 0);
       return sum + parte;
     }, 0);
@@ -1681,6 +1910,43 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     () => ventasDelDia.reduce((sum, v) => sum + v.total, 0),
     [ventasDelDia]
   );
+
+  const cantidadPromos = useMemo(() => {
+    let count = 0;
+    ventasDelDia.forEach((v) => {
+      const baseLavadero = (v.lavado || 0) + (v.estadia && v.precioEstadia ? v.precioEstadia : 0);
+      const isLavadero100 = v.descSectorsDetails?.lavadero?.activo && (
+        (v.descSectorsDetails.lavadero.tipo === 'porcentaje' && v.descSectorsDetails.lavadero.valor === 100) ||
+        (v.descSectorsDetails.lavadero.tipo === 'monto' && baseLavadero > 0 && v.descSectorsDetails.lavadero.valor >= baseLavadero)
+      );
+
+      const baseBar = v.productosBar?.reduce((sum, p) => sum + p.precio, 0) || 0;
+      const isBar100 = v.descSectorsDetails?.bar?.activo && (
+        (v.descSectorsDetails.bar.tipo === 'porcentaje' && v.descSectorsDetails.bar.valor === 100) ||
+        (v.descSectorsDetails.bar.tipo === 'monto' && baseBar > 0 && v.descSectorsDetails.bar.valor >= baseBar)
+      );
+
+      const baseCosmetica = v.productosCosmeticos?.reduce((sum, p) => sum + p.precio, 0) || 0;
+      const isCosmetica100 = v.descSectorsDetails?.cosmetica?.activo && (
+        (v.descSectorsDetails.cosmetica.tipo === 'porcentaje' && v.descSectorsDetails.cosmetica.valor === 100) ||
+        (v.descSectorsDetails.cosmetica.tipo === 'monto' && baseCosmetica > 0 && v.descSectorsDetails.cosmetica.valor >= baseCosmetica)
+      );
+
+      let hasSector100 = false;
+      if (isLavadero100) { count++; hasSector100 = true; }
+      if (isBar100) { count++; hasSector100 = true; }
+      if (isCosmetica100) { count++; hasSector100 = true; }
+
+      if (!hasSector100) {
+        const isPromoPayment = v.metodoPago?.toLowerCase() === 'promo' ||
+          (v.metodoPago === 'Pago mixto' && v.pagosMixtos?.some(p => p.metodo.toLowerCase() === 'promo'));
+        if (isPromoPayment) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [ventasDelDia]);
 
   const resumenMetodosPago = useMemo(() => {
     const map = new Map<string, { total: number; cantidad: number }>();
@@ -1714,6 +1980,73 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     return filas.sort((a, b) => b.total - a.total);
   }, [ventasDelDia, metodosPago]);
+
+  // Desglose de ventas por sector con métodos de pago
+  const detallesPorSector = useMemo(() => {
+    const sectoresDef = [
+      { nombre: 'Lavadero', getAmount: (v: Venta) => v.lavado, sectorKey: 'lavadero' as const },
+      { nombre: 'Bar', getAmount: (v: Venta) => v.bar, sectorKey: 'bar' as const },
+      { nombre: 'Cosmética', getAmount: (v: Venta) => v.cosmeticos, sectorKey: 'cosmetica' as const },
+    ];
+
+    return sectoresDef.map(({ nombre, getAmount, sectorKey }) => {
+      // Función para verificar si un sector tiene descuento al 100%
+      const isSector100Discount = (v: Venta): boolean => {
+        const sectorDesc = v.descSectorsDetails?.[sectorKey];
+        if (!sectorDesc?.activo) return false;
+        
+        const baseAmount = getAmount(v);
+        if (baseAmount <= 0) return false;
+        
+        if (sectorDesc.tipo === 'porcentaje') {
+          return sectorDesc.valor === 100;
+        } else if (sectorDesc.tipo === 'monto') {
+          return sectorDesc.valor >= baseAmount;
+        }
+        return false;
+      };
+
+      // Filtrar ventas que tengan monto en este sector Y NO tengan descuento al 100%
+      const ventasConSector = ventasDelDia.filter(v => getAmount(v) > 0 && !isSector100Discount(v));
+
+      // Mapa de método de pago → { total del sector, cantidad de ventas }
+      const metodoMap = new Map<string, { total: number; cantidad: number }>();
+
+      ventasConSector.forEach(v => {
+        const sectorAmount = getAmount(v);
+        const ventaTotal = v.total > 0 ? v.total : 1;
+        const proporcion = sectorAmount / ventaTotal;
+
+        const desglose = desglosePagosVenta(v);
+        const metodosEnEstaVenta = new Set<string>();
+
+        desglose.forEach(p => {
+          if (p.monto <= 0) return;
+          const metodo = p.metodo?.trim() || 'Sin método';
+          const cur = metodoMap.get(metodo) ?? { total: 0, cantidad: 0 };
+          metodoMap.set(metodo, { total: cur.total + p.monto * proporcion, cantidad: cur.cantidad });
+          metodosEnEstaVenta.add(metodo);
+        });
+
+        metodosEnEstaVenta.forEach(metodo => {
+          const cur = metodoMap.get(metodo)!;
+          metodoMap.set(metodo, { ...cur, cantidad: cur.cantidad + 1 });
+        });
+      });
+
+      const metodosPagoSector = Array.from(metodoMap.entries())
+        .map(([metodo, data]) => ({ metodo, total: data.total, cantidad: data.cantidad }))
+        .filter(m => m.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+      return {
+        nombre,
+        totalVentas: ventasConSector.reduce((sum, v) => sum + getAmount(v), 0),
+        cantidadVentas: ventasConSector.length,
+        metodosPago: metodosPagoSector,
+      };
+    });
+  }, [ventasDelDia]);
 
   const totalContadoBilletes = useMemo(
     () =>
@@ -1835,7 +2168,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         cantidad: ventasDelDiaFecha.filter(v => v.lavado > 0).length,
         clientes: ventasDelDiaFecha.filter(v => v.lavado > 0).length,
         descuentoTotal: ventasDelDiaFecha.filter(v => v.lavado > 0).reduce((sum, v) => sum + (v.descuento || 0), 0),
-        recargoTotal: ventasDelDiaFecha.filter(v => v.lavado > 0).reduce((sum, v) => sum + (v.recargo || 0), 0),
         metodoPago: {
           efectivo: ventasDelDiaFecha.filter(v => v.lavado > 0 && v.metodoPago === 'Efectivo').reduce((sum, v) => sum + (v.lavado || 0), 0),
           transferencia: ventasDelDiaFecha.filter(v => v.lavado > 0 && v.metodoPago === 'Transferencia').reduce((sum, v) => sum + (v.lavado || 0), 0),
@@ -1848,7 +2180,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         cantidad: ventasDelDiaFecha.filter(v => v.bar > 0).length,
         clientes: ventasDelDiaFecha.filter(v => v.bar > 0).length,
         descuentoTotal: ventasDelDiaFecha.filter(v => v.bar > 0).reduce((sum, v) => sum + (v.descuento || 0), 0),
-        recargoTotal: ventasDelDiaFecha.filter(v => v.bar > 0).reduce((sum, v) => sum + (v.recargo || 0), 0),
         metodoPago: {
           efectivo: ventasDelDiaFecha.filter(v => v.bar > 0 && v.metodoPago === 'Efectivo').reduce((sum, v) => sum + (v.bar || 0), 0),
           transferencia: ventasDelDiaFecha.filter(v => v.bar > 0 && v.metodoPago === 'Transferencia').reduce((sum, v) => sum + (v.bar || 0), 0),
@@ -1861,7 +2192,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         cantidad: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).length,
         clientes: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).length,
         descuentoTotal: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).reduce((sum, v) => sum + (v.descuento || 0), 0),
-        recargoTotal: ventasDelDiaFecha.filter(v => v.cosmeticos > 0).reduce((sum, v) => sum + (v.recargo || 0), 0),
         metodoPago: {
           efectivo: ventasDelDiaFecha.filter(v => v.cosmeticos > 0 && v.metodoPago === 'Efectivo').reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
           transferencia: ventasDelDiaFecha.filter(v => v.cosmeticos > 0 && v.metodoPago === 'Transferencia').reduce((sum, v) => sum + (v.cosmeticos || 0), 0),
@@ -2537,123 +2867,161 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         <Card className="p-4 bg-slate-50 border border-slate-200 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Sección Descuento y Recargo - Lado a lado */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Descuento */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
-                <h3 className="font-bold text-xs uppercase tracking-tight text-purple-900 flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                  Descuento
-                </h3>
-                <div className="space-y-2">
-                  <div>
-                    <Label htmlFor="descuentoPorcentaje" className="text-[9px] font-bold text-purple-800">%</Label>
-                    <Select
-                      value={descuentoPorcentaje.toString()}
-                      onValueChange={(value) => actualizarDescuentoPorcentaje(parseFloat(value))}
-                    >
-                      <SelectTrigger className="bg-white h-7 text-xs">
-                        <SelectValue placeholder="0%" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">0%</SelectItem>
-                        <SelectItem value="5">5%</SelectItem>
-                        <SelectItem value="10">10%</SelectItem>
-                        <SelectItem value="15">15%</SelectItem>
-                        <SelectItem value="20">20%</SelectItem>
-                        <SelectItem value="25">25%</SelectItem>
-                        <SelectItem value="50">50%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="descuento" className="text-[9px] font-bold text-purple-800">Monto</Label>
-                    <Input
-                      id="descuento"
-                      type="number"
-                      value={descuento || ''}
-                      onChange={(e) => {
-                        setDescuento(parseFloat(e.target.value) || 0);
-                        setDescuentoPorcentaje(0);
-                      }}
-                      className="bg-white h-7 text-xs"
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="pt-1 space-y-1">
-                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
-                      <input type="checkbox" checked={descLavadero} onChange={(e) => setDescLavadero(e.target.checked)} className="text-purple-600 rounded w-3 h-3" />
-                      <span className="text-[9px] font-bold text-gray-800">Lavadero</span>
-                    </label>
-                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
-                      <input type="checkbox" checked={descBar} onChange={(e) => setDescBar(e.target.checked)} className="text-purple-600 rounded w-3 h-3" />
-                      <span className="text-[9px] font-bold text-gray-800">Bar</span>
-                    </label>
-                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-purple-100 hover:bg-purple-50 transition-colors">
-                      <input type="checkbox" checked={descCosmetica} onChange={(e) => setDescCosmetica(e.target.checked)} className="text-purple-600 rounded w-3 h-3" />
-                      <span className="text-[9px] font-bold text-gray-800">Cosmética</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+            {/* Descuentos por Sector */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-xs uppercase tracking-tight text-purple-900 flex items-center gap-2">
+                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                Descuentos por Sector
+                {descuento > 0 && (
+                  <span className="ml-auto text-xs font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
+                    Total: {formatMoney(descuento)}
+                  </span>
+                )}
+              </h3>
+              {(() => {
+                const isPromoPayment = metodoPago?.toLowerCase() === 'promo' ||
+                  (metodoPago === PAGO_MIXTO && pagosMixtos?.some(p => p.metodo.toLowerCase() === 'promo'));
+                return (
+                  <>
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Lavadero */}
+                      <div className={`rounded-lg p-2.5 border transition-all ${descSectors.lavadero.activo ? 'bg-cyan-50 border-cyan-300 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-70'}`}>
+                        <label className="flex items-center gap-1.5 cursor-pointer mb-2">
+                          <input
+                            type="checkbox"
+                            checked={descSectors.lavadero.activo}
+                            onChange={(e) => updateDescSector('lavadero', { activo: e.target.checked })}
+                            className="rounded w-3.5 h-3.5 text-cyan-600"
+                          />
+                          <span className="text-[10px] font-black text-cyan-900 uppercase">Lavadero</span>
+                        </label>
+                        {descSectors.lavadero.activo && (
+                          <div className="space-y-1.5">
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                className={`flex-1 text-[9px] font-bold py-1 rounded ${descSectors.lavadero.tipo === 'porcentaje' ? 'bg-cyan-600 text-white' : 'bg-white text-cyan-700 border border-cyan-200'}`}
+                                onClick={() => updateDescSector('lavadero', { tipo: 'porcentaje', valor: 0 })}
+                              >%</button>
+                              <button
+                                type="button"
+                                className={`flex-1 text-[9px] font-bold py-1 rounded ${descSectors.lavadero.tipo === 'monto' ? 'bg-cyan-600 text-white' : 'bg-white text-cyan-700 border border-cyan-200'}`}
+                                onClick={() => updateDescSector('lavadero', { tipo: 'monto', valor: 0 })}
+                              >$</button>
+                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={descSectors.lavadero.tipo === 'porcentaje' ? 100 : undefined}
+                              value={descSectors.lavadero.valor || ''}
+                              onChange={(e) => {
+                                let val = parseFloat(e.target.value) || 0;
+                                if (descSectors.lavadero.tipo === 'porcentaje' && val > 100) val = 100;
+                                updateDescSector('lavadero', { valor: val });
+                              }}
+                              className="bg-white h-6 text-xs"
+                              placeholder={descSectors.lavadero.tipo === 'porcentaje' ? '0%' : '$0'}
+                            />
+                            {descuentoLavadero > 0 && (
+                              <p className="text-[9px] font-bold text-cyan-700 text-right">-{formatMoney(descuentoLavadero)}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-              {/* Recargo */}
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
-                <h3 className="font-bold text-xs uppercase tracking-tight text-orange-900 flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                  Recargo
-                </h3>
-                <div className="space-y-2">
-                  <div>
-                    <Label htmlFor="recargoPorcentaje" className="text-[9px] font-bold text-orange-800">%</Label>
-                    <Select
-                      value={recargoPorcentaje.toString()}
-                      onValueChange={(value) => actualizarRecargoPorcentaje(parseFloat(value))}
-                    >
-                      <SelectTrigger className="bg-white h-7 text-xs">
-                        <SelectValue placeholder="0%" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">0%</SelectItem>
-                        <SelectItem value="1.5">1.5%</SelectItem>
-                        <SelectItem value="2">2%</SelectItem>
-                        <SelectItem value="2.5">2.5%</SelectItem>
-                        <SelectItem value="3">3%</SelectItem>
-                        <SelectItem value="5">5%</SelectItem>
-                        <SelectItem value="10">10%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="recargo" className="text-[9px] font-bold text-orange-800">Monto</Label>
-                    <Input
-                      id="recargo"
-                      type="number"
-                      value={recargo || ''}
-                      onChange={(e) => {
-                        setRecargo(parseFloat(e.target.value) || 0);
-                        setRecargoPorcentaje(0);
-                      }}
-                      className="bg-white h-7 text-xs"
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="pt-1 space-y-1">
-                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
-                      <input type="checkbox" checked={recargoLavadero} onChange={(e) => setRecargoLavadero(e.target.checked)} className="text-orange-600 rounded w-3 h-3" />
-                      <span className="text-[9px] font-bold text-gray-800">Lavadero</span>
-                    </label>
-                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
-                      <input type="checkbox" checked={recargoBar} onChange={(e) => setRecargoBar(e.target.checked)} className="text-orange-600 rounded w-3 h-3" />
-                      <span className="text-[9px] font-bold text-gray-800">Bar</span>
-                    </label>
-                    <label className="flex items-center space-x-1.5 cursor-pointer bg-white px-2 py-1 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
-                      <input type="checkbox" checked={recargoCosmetica} onChange={(e) => setRecargoCosmetica(e.target.checked)} className="text-orange-600 rounded w-3 h-3" />
-                      <span className="text-[9px] font-bold text-gray-800">Cosmética</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+                      {/* Bar */}
+                      <div className={`rounded-lg p-2.5 border transition-all ${descSectors.bar.activo ? 'bg-amber-50 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-70'}`}>
+                        <label className="flex items-center gap-1.5 cursor-pointer mb-2">
+                          <input
+                            type="checkbox"
+                            checked={descSectors.bar.activo}
+                            onChange={(e) => updateDescSector('bar', { activo: e.target.checked })}
+                            className="rounded w-3.5 h-3.5 text-amber-600"
+                          />
+                          <span className="text-[10px] font-black text-amber-900 uppercase">Bar</span>
+                        </label>
+                        {descSectors.bar.activo && (
+                          <div className="space-y-1.5">
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                className={`flex-1 text-[9px] font-bold py-1 rounded ${descSectors.bar.tipo === 'porcentaje' ? 'bg-amber-600 text-white' : 'bg-white text-amber-700 border border-amber-200'}`}
+                                onClick={() => updateDescSector('bar', { tipo: 'porcentaje', valor: 0 })}
+                              >%</button>
+                              <button
+                                type="button"
+                                className={`flex-1 text-[9px] font-bold py-1 rounded ${descSectors.bar.tipo === 'monto' ? 'bg-amber-600 text-white' : 'bg-white text-amber-700 border border-amber-200'}`}
+                                onClick={() => updateDescSector('bar', { tipo: 'monto', valor: 0 })}
+                              >$</button>
+                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={descSectors.bar.tipo === 'porcentaje' ? 100 : undefined}
+                              value={descSectors.bar.valor || ''}
+                              onChange={(e) => {
+                                let val = parseFloat(e.target.value) || 0;
+                                if (descSectors.bar.tipo === 'porcentaje' && val > 100) val = 100;
+                                updateDescSector('bar', { valor: val });
+                              }}
+                              className="bg-white h-6 text-xs"
+                              placeholder={descSectors.bar.tipo === 'porcentaje' ? '0%' : '$0'}
+                            />
+                            {descuentoBar > 0 && (
+                              <p className="text-[9px] font-bold text-amber-700 text-right">-{formatMoney(descuentoBar)}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Cosmética */}
+                      <div className={`rounded-lg p-2.5 border transition-all ${descSectors.cosmetica.activo ? 'bg-teal-50 border-teal-300 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-70'}`}>
+                        <label className="flex items-center gap-1.5 cursor-pointer mb-2">
+                          <input
+                            type="checkbox"
+                            checked={descSectors.cosmetica.activo}
+                            onChange={(e) => updateDescSector('cosmetica', { activo: e.target.checked })}
+                            className="rounded w-3.5 h-3.5 text-teal-600"
+                          />
+                          <span className="text-[10px] font-black text-teal-900 uppercase">Cosmética</span>
+                        </label>
+                        {descSectors.cosmetica.activo && (
+                          <div className="space-y-1.5">
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                className={`flex-1 text-[9px] font-bold py-1 rounded ${descSectors.cosmetica.tipo === 'porcentaje' ? 'bg-teal-600 text-white' : 'bg-white text-teal-700 border border-teal-200'}`}
+                                onClick={() => updateDescSector('cosmetica', { tipo: 'porcentaje', valor: 0 })}
+                              >%</button>
+                              <button
+                                type="button"
+                                className={`flex-1 text-[9px] font-bold py-1 rounded ${descSectors.cosmetica.tipo === 'monto' ? 'bg-teal-600 text-white' : 'bg-white text-teal-700 border border-teal-200'}`}
+                                onClick={() => updateDescSector('cosmetica', { tipo: 'monto', valor: 0 })}
+                              >$</button>
+                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={descSectors.cosmetica.tipo === 'porcentaje' ? 100 : undefined}
+                              value={descSectors.cosmetica.valor || ''}
+                              onChange={(e) => {
+                                let val = parseFloat(e.target.value) || 0;
+                                if (descSectors.cosmetica.tipo === 'porcentaje' && val > 100) val = 100;
+                                updateDescSector('cosmetica', { valor: val });
+                              }}
+                              className="bg-white h-6 text-xs"
+                              placeholder={descSectors.cosmetica.tipo === 'porcentaje' ? '0%' : '$0'}
+                            />
+                            {descuentoCosmetica > 0 && (
+                              <p className="text-[9px] font-bold text-teal-700 text-right">-{formatMoney(descuentoCosmetica)}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* Sección Pago */}
@@ -2774,6 +3142,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         onChange={(monto) => {
                           const next = [...pagosMixtos];
                           next[idx] = { ...next[idx], monto };
+                          if (pagosMixtos.length === 2) {
+                            const otroIdx = idx === 0 ? 1 : 0;
+                            const total = calcularTotal();
+                            next[otroIdx] = { ...next[otroIdx], monto: Math.max(0, total - monto) };
+                          }
                           setPagosMixtos(next);
                         }}
                         className="h-8 w-28 text-xs"
@@ -2845,7 +3218,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 <p className="text-[10px] font-bold text-green-800 uppercase tracking-wider mb-1">Monto a Cobrar</p>
                 <p className="text-2xl font-black text-green-600 leading-none">{formatMoney(calcularTotal())}</p>
                 <p className="text-[9px] text-green-700 mt-1">
-                  Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)} | Rec: {formatMoney(recargo)}
+                  Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)}
                 </p>
               </div>
             </div>
@@ -2867,7 +3240,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 TOTAL: {formatMoney(calcularTotal())}
               </div>
               <div className="text-[10px] font-bold text-green-700 mt-1 uppercase tracking-tight">
-                Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)} | Rec: {formatMoney(recargo)}
+                Sub: {formatMoney(calcularSubtotal())} | Desc: {formatMoney(descuento)}
               </div>
             </div>
 
@@ -2889,6 +3262,33 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   >
                     En Progreso
                   </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        className="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white h-8 px-4 text-xs font-bold uppercase tracking-tight shadow-sm"
+                        size="sm"
+                      >
+                        <Check className="w-3 h-3 mr-1" /> Cobrar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Cerrar Venta?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Se registrará la venta y el vehículo quedará pendiente de retiro. Podrás marcarlo como retirado desde el panel de vehículos en lavadero.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => registrarVenta()}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Confirmar Cobro
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <Button
                     onClick={limpiarFormulario}
                     variant="outline"
@@ -2940,22 +3340,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button
-                          variant={activeOrderId === orden.id ? "outline" : "default"}
-                          size="sm"
-                          className={`flex-1 h-8 text-[10px] ${activeOrderId === orden.id ? 'border-blue-500 text-blue-700 hover:bg-blue-50' : 'bg-blue-600 hover:bg-blue-700'}`}
-                          onClick={() => cargarOrden(orden)}
-                        >
-                          {activeOrderId === orden.id ? 'Editando...' : 'Retomar'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 h-8 text-[10px] bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => registrarVenta(orden)}
-                        >
-                          <Check className="w-3 h-3 mr-1" /> Cobrar
-                        </Button>
-                        {ordenesCobradas.includes(orden.id) && (
+                        {!ordenesCobradas.includes(orden.id) ? (
+                          <>
+                            <Button
+                              variant={activeOrderId === orden.id ? "outline" : "default"}
+                              size="sm"
+                              className={`flex-1 h-8 text-[10px] ${activeOrderId === orden.id ? 'border-blue-500 text-blue-700 hover:bg-blue-50' : 'bg-blue-600 hover:bg-blue-700'}`}
+                              onClick={() => cargarOrden(orden)}
+                            >
+                              {activeOrderId === orden.id ? 'Editando...' : 'Retomar'}
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             size="sm"
                             className="flex-1 h-8 text-[10px] bg-amber-600 hover:bg-amber-700 text-white"
@@ -2966,7 +3362,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               toast.success('Vehículo retirado', { description: `${orden.patente} retirado del lavadero.` });
                             }}
                           >
-                            ✓ Retirado
+                            ✓ Marcar como Retirado
                           </Button>
                         )}
                         <AlertDialog>
@@ -3039,16 +3435,16 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <SelectItem value="Cuenta Corriente">Cta Corriente</SelectItem>
                 </SelectContent>
               </Select>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-9 text-xs font-bold border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100"
-                onClick={() => onNavigateToPrices && onNavigateToPrices()}
-              >
-                <Sparkles className="w-3 h-3 mr-1" />
-                Agregar o Editar
-              </Button>
+
+              <Select value={ordenVentas} onValueChange={(val: 'asc' | 'desc') => setOrdenVentas(val)}>
+                <SelectTrigger className="w-[140px] h-9 text-xs font-semibold border-indigo-200 text-indigo-700 bg-indigo-50">
+                  <SelectValue placeholder="Orden" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">Más recientes primero</SelectItem>
+                  <SelectItem value="asc">Más antiguas primero</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -3061,34 +3457,29 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <tr className="bg-blue-600 text-white">
                     <th className="border p-2">Contador</th>
                     <th className="border p-2">Nº Cliente</th>
-                    <th className="border p-2">Fecha</th>
                     <th className="border p-2">Entrada</th>
                     <th className="border p-2">Salida</th>
                     <th className="border p-2">Patente</th>
                     <th className="border p-2">Vehículo</th>
-                    <th className="border p-2">Cliente</th>
                     <th className="border p-2 bg-cyan-500">Lavado</th>
                     <th className="border p-2 bg-amber-500">Bar</th>
                     <th className="border p-2 bg-teal-500">Cosmética/Accesorios</th>
                     <th className="border p-2 bg-purple-500">Descuento</th>
-                    <th className="border p-2 bg-orange-500">Recargo</th>
                     <th className="border p-2 bg-green-600">Total</th>
-                    <th className="border p-2 text-xs">Estadía</th>
                     <th className="border p-2">Pago</th>
                     <th className="border p-2">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {ventasFiltradas.map((venta) => (
+                  {ventasFiltradas.map((venta) => {
+                    const ordenLlegada = esLavaderoVenta(venta) ? (mapeoOrdenLlegadaLavadero[venta.id] || '-') : '-';
+                    return (
                     <tr key={venta.id} className="hover:bg-gray-50">
                       <td className="border p-2 text-center">
-                        {venta.numeroCliente ? (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="font-black text-blue-600 text-sm">{(washCounts[venta.numeroCliente] || 0) % 6}</span>
-                            <span className="text-[8px] text-gray-500">/5</span>
-                          </div>
-                        ) : (
+                        {ordenLlegada === '-' ? (
                           <span className="text-gray-400">-</span>
+                        ) : (
+                          <span className="font-black text-blue-600 text-sm">#{ordenLlegada}</span>
                         )}
                       </td>
                       <td className="border p-2 text-center">
@@ -3098,8 +3489,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="border p-2 text-center">{venta.fecha}</td>
-                      <td className="border p-2 text-center text-blue-600 font-medium">{venta.horaEntrada}</td>
+                      <td className="border p-2 text-center">{venta.horaEntrada}</td>
                       <td className="border p-2 text-center text-green-600 font-medium">{venta.horaSalida}</td>
                       <td className="border p-2 text-center font-bold">{venta.patente}</td>
                       <td className="border p-2">
@@ -3111,7 +3501,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           </div>
                         ) : '-'}
                       </td>
-                      <td className="border p-2">{venta.cliente}</td>
                       <td className="border p-2 text-right bg-cyan-50">{formatMoney(venta.lavado)}</td>
                       <td className="border p-2 text-right bg-amber-50">{formatMoney(venta.bar)}</td>
                       <td className="border p-2 text-right bg-teal-50">{formatMoney(venta.cosmeticos)}</td>
@@ -3122,17 +3511,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="border p-2 text-right bg-orange-50">
-                        {venta.recargo > 0 ? (
-                          <span className="font-bold text-orange-600">{formatMoney(venta.recargo)}</span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
                       <td className="border p-2 text-right bg-green-50 font-bold text-lg">
                         {formatMoney(venta.total)}
                       </td>
-                      <td className="border p-2 text-center">{venta.estadia ? 'Sí' : '-'}</td>
                       <td className="border p-2 text-center text-sm max-w-[200px]">
                         {formatMetodoPagoDisplay(venta, formatMoney)}
                       </td>
@@ -3311,7 +3692,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -3400,30 +3782,20 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               totalBilletera={totalBilletera}
               totalGeneral={totalGeneral}
               montoCajaInicio={montoCajaInicio}
-              ventasEfectivoCount={
-                ventasDelDia.filter((v) =>
-                  desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'efectivo' && p.monto > 0)
-                ).length
-              }
-              ventasTransferenciaCount={
-                ventasDelDia.filter((v) =>
-                  desglosePagosVenta(v).some((p) => p.metodo.toLowerCase() === 'transferencia' && p.monto > 0)
-                ).length
-              }
-              ventasOtrosCount={
-                ventasDelDia.filter((v) =>
-                  desglosePagosVenta(v).some((p) => {
-                    const m = p.metodo.toLowerCase();
-                    return m !== 'efectivo' && m !== 'transferencia' && p.monto > 0;
-                  })
-                ).length
-              }
+              clientesLavadero={ventasDelDia.filter(v => v.lavado > 0).length}
+              clientesBar={ventasDelDia.filter(v => v.bar > 0).length}
+              clientesCosmetica={ventasDelDia.filter(v => v.cosmeticos > 0).length}
+              ventasLavadero={ventasDelDia.reduce((s, v) => s + v.lavado, 0)}
+              ventasBar={ventasDelDia.reduce((s, v) => s + v.bar, 0)}
+              ventasCosmetica={ventasDelDia.reduce((s, v) => s + v.cosmeticos, 0)}
+              detallesPorSector={detallesPorSector}
               conteoBilletes={conteoBilletes}
               onConteoChange={actualizarConteoBillete}
               onLimpiarConteo={limpiarConteoBilletes}
               totalContadoBilletes={totalContadoBilletes}
               diferenciaArqueo={diferenciaArqueo}
               resumenMetodosPago={resumenMetodosPago}
+              cantidadPromos={cantidadPromos}
               cierreYaEnviado={cierreYaEnviado}
               cierreEnProceso={cierreEnProceso}
               onCerrarCaja={realizarCierreCaja}
@@ -3829,6 +4201,39 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowNewMetodoPagoDialog(false)}>Cancelar</Button>
             <Button onClick={agregarMetodoPago} className="bg-blue-600 text-white">Guardar Método</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBorradorDialog} onOpenChange={setShowBorradorDialog}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              ⚠️ Edición en Progreso Detectada
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 mt-2">
+              Se detectó una edición o un pedido en proceso que quedó sin guardar (posiblemente por un apagado o corte inesperado).
+              <br /><br />
+              {borradorRecuperado && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 space-y-1">
+                  <p><strong>Tipo:</strong> {borradorRecuperado.editingVentaId ? "Edición de venta cerrada" : "Pedido/Orden en progreso"}</p>
+                  {borradorRecuperado.patente && <p><strong>Patente:</strong> {borradorRecuperado.patente}</p>}
+                  {borradorRecuperado.cliente && <p><strong>Cliente:</strong> {borradorRecuperado.cliente}</p>}
+                  {borradorRecuperado.servicio && <p><strong>Servicio:</strong> {borradorRecuperado.servicio}</p>}
+                  {borradorRecuperado.horaEntrada && <p><strong>Hora entrada:</strong> {borradorRecuperado.horaEntrada}</p>}
+                </div>
+              )}
+              <br />
+              ¿Deseás recuperar los datos para continuar o descartarlos?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={descartarBorrador} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+              Descartar Borrador
+            </Button>
+            <Button onClick={recuperarBorrador} className="bg-green-600 hover:bg-green-700 text-white font-bold">
+              Recuperar Edición
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

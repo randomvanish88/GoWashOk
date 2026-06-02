@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
-import { LogIn } from 'lucide-react';
+import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { loadUsers } from './UserPermissionsPanel';
 
 interface LoginProps {
   onLogin: (username: string) => void;
@@ -13,18 +14,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate users
-    if (username === 'admin' && password === 'tomadmin') {
-      onLogin(username);
-    } else if (username === 'supervisor' && password === 'admin1') {
-      onLogin(username);
-    } else if (username === 'empleado' && password === 'admin2') {
-      onLogin(username);
+    const users = loadUsers();
+    const match = users.find(
+      u => u.username === username.trim().toLowerCase() && u.password === password && u.active
+    );
+    if (match) {
+      onLogin(match.username);
     } else {
-      setError('Credenciales incorrectas. Verificá tu usuario y contraseña.');
+      // Verificar si el usuario existe pero está inactivo
+      const exists = users.find(u => u.username === username.trim().toLowerCase());
+      if (exists && !exists.active) {
+        setError('Tu usuario está desactivado. Contactá al administrador.');
+      } else {
+        setError('Credenciales incorrectas. Verificá tu usuario y contraseña.');
+      }
     }
   };
 
@@ -56,15 +63,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-gray-200 focus:ring-blue-500"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="border-gray-200 focus:ring-blue-500 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             {error && (
               <p className="text-sm text-red-500 font-medium animate-bounce">
