@@ -21,7 +21,7 @@ import {
   metodosParaPagoMixto,
 } from './pagoMixto';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
-import { obtenerVehiculosDelPatio } from '../../services/patioSync';
+import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio } from '../../services/patioSync';
 import { toast } from 'sonner';
 
 
@@ -1304,6 +1304,19 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
     }
 
+    // Si viene del patio móvil, marcar como entregado en Google Sheets
+    if (idABuscar && idABuscar.startsWith('movil-')) {
+      const patioId = idABuscar.replace('movil-', '');
+      actualizarVehiculoEnPatio(patioId, {
+        horaSalida: nuevaVenta.horaSalida || getCurrentTimeString(),
+        estado: 'Entregado',
+      }).then(() => {
+        console.log('[POS] ✅ Vehículo móvil marcado como entregado en Sheets');
+        // Actualizar la lista del móvil inmediatamente
+        cargarVehiculosMovil();
+      }).catch(err => console.error('[POS] Error actualizando patio móvil:', err));
+    }
+
     if (editingVentaId) {
       const log: AuditLog = {
         id: Date.now().toString(),
@@ -1411,6 +1424,89 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     }
 
     limpiarFormulario();
+  };
+
+  // Carga un vehículo del patio móvil en el formulario POS para cerrar la venta
+  const cargarVehiculoMovilEnPOS = (v: any) => {
+    const now = new Date();
+    const hora = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    // Limpiar formulario primero
+    limpiarFormulario();
+
+    // Llenar con los datos del móvil
+    setPatente(v.patente || '');
+    setCliente(v.cliente || '');
+    setEmpleado(v.empleado || '');
+    setHoraEntrada(v.horaIngreso || hora);
+    setHoraSalida(hora);
+    setMetodoPago(v.metodoPago || 'Efectivo');
+
+    // Precio del lavado
+    if (v.precio > 0) {
+      setPrecioServicioLavado(v.precio);
+      setLavado(v.precio);
+    }
+
+    // Servicio
+    if (v.servicio) setServicio(v.servicio);
+
+    // Buscar vehículo en catálogo por nombre
+    if (v.marcaModelo) {
+      const partes = v.marcaModelo.trim().split(' ');
+      const marca = partes[0] || '';
+      const modelo = partes.slice(1).join(' ') || '';
+      const encontrado = prices.find(p =>
+        p.brand.toLowerCase() === marca.toLowerCase() ||
+        `${p.brand} ${p.model}`.toLowerCase() === v.marcaModelo.toLowerCase()
+      );
+      if (encontrado) setVehiculoSeleccionado(encontrado);
+    }
+
+    // Guardar el ID del vehículo móvil para marcarlo como entregado al cobrar
+    setActiveOrderId(`movil-${v.id}`);
+
+    // Agregar como orden abierta temporalmente para que quede en el panel
+    const ordenMovil: Venta = {
+      id: `movil-${v.id}`,
+      fecha: v.fecha || now.toISOString().split('T')[0],
+      hora: hora,
+      horaEntrada: v.horaIngreso || hora,
+      horaSalida: hora,
+      empleado: v.empleado || '',
+      patente: v.patente || '',
+      cliente: v.cliente || '',
+      lavado: v.precio || 0,
+      bar: 0,
+      cosmeticos: 0,
+      total: v.precio || 0,
+      metodoPago: v.metodoPago || 'Efectivo',
+      pagosMixtos: [],
+      descuento: 0,
+      recargo: 0,
+      productosBar: [],
+      productosCosmeticos: [],
+      servicio: v.servicio || '',
+      extrasLavado: [],
+      marca: v.marcaModelo?.split(' ')[0] || '',
+      modelo: v.marcaModelo?.split(' ').slice(1).join(' ') || '',
+    };
+
+    // Solo agregar si no existe ya
+    setOrdenesAbiertas(prev => {
+      if (prev.some(o => o.id === ordenMovil.id)) return prev;
+      return [...prev, ordenMovil];
+    });
+
+    // Marcar como en proceso en Sheets
+    actualizarVehiculoEnPatio(v.id, { estado: 'En Lavado' }).catch(() => {});
+
+    toast.success(`Vehículo ${v.patente} cargado en el POS`, {
+      description: 'Completá el cobro y registrá la venta normalmente.'
+    });
+
+    // Scroll al formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const cargarOrden = (orden: Venta) => {
@@ -3493,6 +3589,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           'Listo': 'bg-green-500',
                         };
                         const color = estadoColor[v.estado] || 'bg-slate-500';
+                        const yaCargado = ordenesAbiertas.some(o => o.id === `movil-${v.id}`);
                         return (
                           <Card key={v.id} className="p-3 bg-slate-800/80 border border-slate-600 text-white">
                             <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -3504,15 +3601,26 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 {v.estado}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between text-[10px] text-slate-400">
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2">
                               <span>👤 {v.cliente || 'Particular'}</span>
                               <span>🕐 {v.horaIngreso}</span>
                             </div>
                             {v.servicio && (
-                              <div className="mt-1 text-[10px] text-purple-300 font-medium">
-                                🚿 {v.servicio} · {v.empleado}
+                              <div className="mb-2 text-[10px] text-purple-300 font-medium">
+                                🚿 {v.servicio} · ${(v.precio || 0).toLocaleString('es-AR')}
                               </div>
                             )}
+                            <Button
+                              size="sm"
+                              className={`w-full h-7 text-[10px] font-bold ${
+                                yaCargado
+                                  ? 'bg-green-700 hover:bg-green-800 text-white'
+                                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+                              }`}
+                              onClick={() => cargarVehiculoMovilEnPOS(v)}
+                            >
+                              {yaCargado ? '✓ Cargado en POS' : '💰 Cerrar venta'}
+                            </Button>
                           </Card>
                         );
                       })}

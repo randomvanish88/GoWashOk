@@ -90,8 +90,12 @@ export default defineConfig(({ mode }) => ({
   assetsInclude: ['**/*.svg', '**/*.csv'],
   server: {
     port: 5173,
-    // Sirve el build de la PWA en /pwa/*
-    proxy: {},
+    proxy: {
+      '/api/patio': {
+        target: 'http://localhost:3001',
+        rewrite: (path) => path.replace('/api/patio', '/patio'),
+      },
+    },
     fs: { allow: ['..'] },
   },
 }))
