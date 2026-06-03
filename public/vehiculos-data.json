@@ -1,6 +1,6 @@
 {
-  "total": 195,
-  "timestamp": "2026-06-03T00:55:55.726Z",
+  "total": 200,
+  "timestamp": "2026-06-03T02:52:54.162Z",
   "headers": [
     "Marca",
     "Modelo",
@@ -10,1369 +10,1404 @@
   ],
   "rows": [
     {
-      "Marca": "106",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/106.webp"
-    },
-    {
-      "Marca": "206",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/206.avif"
-    },
-    {
-      "Marca": "206",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/206.jpg"
-    },
-    {
-      "Marca": "207",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/207.jfif"
-    },
-    {
-      "Marca": "208",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/208.jfif"
-    },
-    {
-      "Marca": "318 IS",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/318 IS.jpg"
-    },
-    {
-      "Marca": "ARGO",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/ARGO.jfif"
-    },
-    {
-      "Marca": "CELTA",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/CELTA.jpg"
-    },
-    {
-      "Marca": "CLIO",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/CLIO.jfif"
-    },
-    {
-      "Marca": "ESCORT 18",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/ESCORT 18.jfif"
-    },
-    {
-      "Marca": "FIAT UNO",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/FIAT UNO.png"
-    },
-    {
-      "Marca": "FORD KA",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/FORD KA.jfif"
-    },
-    {
-      "Marca": "FOX",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/FOX.jpg"
-    },
-    {
-      "Marca": "GLC43",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/GLC43.jpg"
-    },
-    {
-      "Marca": "GOL",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/GOL.jfif"
-    },
-    {
-      "Marca": "GOLF",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/GOLF.jfif"
-    },
-    {
-      "Marca": "MOBI",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/MOBI.jpg"
-    },
-    {
-      "Marca": "PALIO",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/PALIO.webp"
-    },
-    {
-      "Marca": "RIO",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/RIO.jfif"
-    },
-    {
-      "Marca": "TRACK",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/TRACK.jpg"
-    },
-    {
-      "Marca": "UP",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/UP.jpg"
-    },
-    {
-      "Marca": "FIESTA-KINETIC-1",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/fiesta-kinetic-1.jpg"
-    },
-    {
-      "Marca": "HONDA-FIT-",
-      "Modelo": "3-5 Puertas",
-      "Tamaño": "Pequeño",
-      "Precio": 25000,
-      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/honda-fit-.jpg"
-    },
-    {
-      "Marca": "280C",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/280C.jfif"
-    },
-    {
-      "Marca": "307",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/307.jfif"
-    },
-    {
-      "Marca": "308",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/308.jpg"
-    },
-    {
-      "Marca": "408",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/408.jfif"
-    },
-    {
-      "Marca": "A3",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/A3.jfif"
-    },
-    {
-      "Marca": "A4",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/A4.jfif"
-    },
-    {
-      "Marca": "ARGO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ARGO.jfif"
-    },
-    {
-      "Marca": "ASTRA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ASTRA.jfif"
-    },
-    {
-      "Marca": "BERLINGO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BERLINGO.jfif"
-    },
-    {
-      "Marca": "BMW 235",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BMW 235.jfif"
-    },
-    {
-      "Marca": "BMW_318I",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BMW_318i.jpg"
-    },
-    {
-      "Marca": "BMW_330I",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BMW_330i.jpg"
-    },
-    {
-      "Marca": "BORA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BORA.jfif"
-    },
-    {
-      "Marca": "C20",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/C20.webp"
-    },
-    {
-      "Marca": "C3",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/C3.png"
-    },
-    {
-      "Marca": "C4 MODELO 2010",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/C4 MODELO 2010.jpg"
-    },
-    {
-      "Marca": "CAMRY",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CAMRY.jpg"
-    },
-    {
-      "Marca": "CITY",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CITY.jfif"
-    },
-    {
-      "Marca": "CIVIC",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CIVIC.jfif"
-    },
-    {
-      "Marca": "COOPER S",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/COOPER S.webp"
-    },
-    {
-      "Marca": "COROLLA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/COROLLA.jpg"
-    },
-    {
-      "Marca": "CORSA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CORSA.webp"
-    },
-    {
-      "Marca": "COURIER",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/COURIER.jfif"
-    },
-    {
-      "Marca": "CRONOS",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CRONOS.webp"
-    },
-    {
-      "Marca": "CRUZE",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CRUZE.jfif"
-    },
-    {
-      "Marca": "DS3",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/DS3.webp"
-    },
-    {
-      "Marca": "E200 MERCEDES",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/E200 mercedes.webp"
-    },
-    {
-      "Marca": "ETIOS",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ETIOS.jpg"
-    },
-    {
-      "Marca": "FASTBACK",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FASTBACK.avif"
-    },
-    {
-      "Marca": "FIESTA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FIESTA.jfif"
-    },
-    {
-      "Marca": "FIORINO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FIORINO.jfif"
-    },
-    {
-      "Marca": "FLUENCE",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FLUENCE.jfif"
-    },
-    {
-      "Marca": "FOCUS",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FOCUS.jfif"
-    },
-    {
-      "Marca": "FOREST",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FOREST.avif"
-    },
-    {
-      "Marca": "FIAT PALIO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Fiat Palio.jfif"
-    },
-    {
-      "Marca": "GLI (SEDAN)",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/GLI (SEDAN).webp"
-    },
-    {
-      "Marca": "GR FOUR",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/GR FOUR.png"
-    },
-    {
-      "Marca": "GTS (POLO)",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/GTS (POLO).jpg"
-    },
-    {
-      "Marca": "GULIETTA ALFA ROMEO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Gulietta alfa romeo.jfif"
-    },
-    {
-      "Marca": "HB20",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/HB20.jpg"
-    },
-    {
-      "Marca": "HONDA FIT",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/HONDA FIT.jpg"
-    },
-    {
-      "Marca": "KANGOO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/KANGOO.webp"
-    },
-    {
-      "Marca": "LOGAN",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/LOGAN.webp"
-    },
-    {
-      "Marca": "MERIVA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/MERIVA.jfif"
-    },
-    {
-      "Marca": "ONIX",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ONIX.jfif"
-    },
-    {
-      "Marca": "PARTNER",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PARTNER.jfif"
-    },
-    {
-      "Marca": "PASSAT",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PASSAT.jfif"
-    },
-    {
-      "Marca": "PICASSO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PICASSO.jfif"
-    },
-    {
-      "Marca": "POLO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/POLO.jpg"
-    },
-    {
-      "Marca": "PRISMA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PRISMA.jfif"
-    },
-    {
-      "Marca": "RENAUL QUBO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/RENAUL QUBO.jfif"
-    },
-    {
-      "Marca": "SAIVERO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SAIVERO.jfif"
-    },
-    {
-      "Marca": "SANDERO STEPWAY 1",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SANDERO STEPWAY 1.jpg"
-    },
-    {
-      "Marca": "SANDERO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SANDERO.jfif"
-    },
-    {
-      "Marca": "SEDAN",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SEDAN.png"
-    },
-    {
-      "Marca": "SIENA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SIENA.jfif"
-    },
-    {
-      "Marca": "SURAN",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SURAN.avif"
-    },
-    {
-      "Marca": "TIIDA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TIIDA.jpg"
-    },
-    {
-      "Marca": "TIPO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TIPO.jfif"
-    },
-    {
-      "Marca": "TIPO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TIPO.webp"
-    },
-    {
-      "Marca": "TT AUDI",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TT Audi.jfif"
-    },
-    {
-      "Marca": "TERA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Tera.jfif"
-    },
-    {
-      "Marca": "VENTO",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VENTO.jfif"
-    },
-    {
-      "Marca": "VERSA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VERSA.jpg"
-    },
-    {
-      "Marca": "VIRTUS",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VIRTUS.jpg"
-    },
-    {
-      "Marca": "VOLVO 850",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VOLVO 850.jfif"
-    },
-    {
-      "Marca": "VOYAGE",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VOYAGE.jfif"
-    },
-    {
-      "Marca": "VOLKSWAGEN-VOYAGE-",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Volkswagen-Voyage-.webp"
-    },
-    {
-      "Marca": "X3 KAIYI",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/X3 KAIYI.jfif"
-    },
-    {
-      "Marca": "YARIS",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/YARIS.jfif"
-    },
-    {
-      "Marca": "ZAFIRA",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ZAFIRA.jpg"
-    },
-    {
-      "Marca": "BMW 125I",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/bmw 125i.jpg"
-    },
-    {
-      "Marca": "RENAULT-MEGANE",
-      "Modelo": "5 Puertas",
-      "Tamaño": "Mediano",
-      "Precio": 28000,
-      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/renault-megane.jpg"
-    },
-    {
-      "Marca": "20008",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/20008.webp"
-    },
-    {
-      "Marca": "500X",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/500x.jfif"
-    },
-    {
-      "Marca": "AIRCROSS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/AIRCROSS.webp"
-    },
-    {
-      "Marca": "ARKANA",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/ARKANA.webp"
-    },
-    {
-      "Marca": "ABARTH",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/Abarth.jpg"
-    },
-    {
-      "Marca": "AIRCROSS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/Aircross.png"
-    },
-    {
-      "Marca": "B180 MERCEDES",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/B180 MERCEDES.jpg"
-    },
-    {
-      "Marca": "B200",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/B200.webp"
-    },
-    {
-      "Marca": "BYD ATTO",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/BYD ATTO.webp"
-    },
-    {
-      "Marca": "C3 AIRCROSS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/C3 AIRCROSS.jfif"
-    },
-    {
-      "Marca": "C4 CACTUS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/C4 CACTUS.jfif"
-    },
-    {
-      "Marca": "CRETA",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/CRETA.jfif"
-    },
-    {
-      "Marca": "CROSS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/CROSS.webp"
-    },
-    {
-      "Marca": "DS7",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/DS7.jfif"
-    },
-    {
-      "Marca": "DUSTER",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/DUSTER.webp"
-    },
-    {
-      "Marca": "ECO SPORT",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/ECO SPORT.jfif"
-    },
-    {
-      "Marca": "ECOSPORT",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/ECOSPORT.jpg"
-    },
-    {
-      "Marca": "FIAT 500X",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/FIAT 500X.webp"
-    },
-    {
-      "Marca": "HR-V",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/HR-V.jpg"
-    },
-    {
-      "Marca": "HRV HONDA",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/HRV HONDA.jfif"
-    },
-    {
-      "Marca": "KAIYI X3",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KAIYI X3.webp"
-    },
-    {
-      "Marca": "KARDIAN",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KARDIAN.jfif"
-    },
-    {
-      "Marca": "KICKS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KICKS.webp"
-    },
-    {
-      "Marca": "KOLEOS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KOLEOS.webp"
-    },
-    {
-      "Marca": "KUGA",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KUGA.jpg"
-    },
-    {
-      "Marca": "NIVUS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/NIVUS.jpg"
-    },
-    {
-      "Marca": "Q3",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/Q3.jpg"
-    },
-    {
-      "Marca": "RAV4",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/RAV4.png"
-    },
-    {
-      "Marca": "RENEGADE",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/RENEGADE.jfif"
-    },
-    {
-      "Marca": "SPIN",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/SPIN.avif"
-    },
-    {
-      "Marca": "T-CROSS-2024 VW",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/T-cross-2024 VW.png"
-    },
-    {
-      "Marca": "TERA",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/TERA.webp"
-    },
-    {
-      "Marca": "TRACKER",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/TRACKER.jfif"
-    },
-    {
-      "Marca": "VOLVO",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/VOLVO.jfif"
-    },
-    {
-      "Marca": "WEEKEND",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/WEEKEND.jpg"
-    },
-    {
-      "Marca": "X TRIAL",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/X TRIAL.jpg"
-    },
-    {
-      "Marca": "X1",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/X1.webp"
-    },
-    {
-      "Marca": "X3",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/X3.webp"
-    },
-    {
-      "Marca": "COROLLA-CROSS",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/corolla-cross.jpg"
-    },
-    {
-      "Marca": "CRV SCOUT",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/crv scout.jpg"
-    },
-    {
-      "Marca": "JAC",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/jac.webp"
-    },
-    {
-      "Marca": "JOLION",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/jolion.jfif"
-    },
-    {
-      "Marca": "PULSE",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/pulse.webp"
-    },
-    {
-      "Marca": "X50",
-      "Modelo": "SUV Pequeño-Medio",
-      "Tamaño": "Mediano",
-      "Precio": 30000,
-      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/x50.jfif"
-    },
-    {
-      "Marca": "5003",
+      "Marca": "Hiace toyota",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/5003.jfif"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1YZ1rpfinzE4AkujHWZWcHZQGqrWiIh1k"
     },
     {
-      "Marca": "AMAROK",
+      "Marca": "F150",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/AMAROK.webp"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1r9_s-WAx8Eg3PmNAeOPO4nnOG_iOvSqo"
     },
     {
-      "Marca": "BRONCO",
+      "Marca": "Land crusier vx",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/BRONCO.webp"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1iSGu4iwlRw2S4cZjtoSnm-J6mhmhNPpI"
     },
     {
-      "Marca": "CAPTIVA",
+      "Marca": "JUMPY",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/CAPTIVA.jfif"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1OnLpqgjfE-iNVuQlZEjxdkWWviI1uq9k"
     },
     {
-      "Marca": "COMPASS",
+      "Marca": "VITTO 119 MERCEDE",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/COMPASS.jfif"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1oo_6rQZtwJxezJ5-NlmH-a7Y9xmlvrhJ"
     },
     {
-      "Marca": "CRV",
+      "Marca": "RAM",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/CRV.webp"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1gRdKQmeGWmtvCl_NAHogNHqjR5KIztPf"
     },
     {
-      "Marca": "CRV HONDA",
+      "Marca": "PATRIOT JEEP",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/CRv Honda.webp"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/10SSCIiwHQREq0i72x3eFsnh-N2JujOXs"
     },
     {
-      "Marca": "CHANGAN-CS55",
+      "Marca": "CARNIVAL",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/Changan-CS55.jpg"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/181FaniZHfC6HTbNNATNUUzxhbRI4DZ-e"
     },
     {
-      "Marca": "EQUINOX",
+      "Marca": "RAPTOR",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/EQUINOX.jpg"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1jfmw7LGH0zgIWuEMfgW-St_m7Hu5hGVB"
     },
     {
-      "Marca": "FORESTER",
+      "Marca": "$40.000",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/FORESTER.jfif"
-    },
-    {
-      "Marca": "FRONTIER",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/FRONTIER.jfif"
-    },
-    {
-      "Marca": "GLA250 4MATIC",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLA250 4matic.jpg"
-    },
-    {
-      "Marca": "GLC 43 ,,",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLC 43 ,,.jpg"
-    },
-    {
-      "Marca": "GLC300",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLC300.jpg"
-    },
-    {
-      "Marca": "GLC43",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLC43.avif"
-    },
-    {
-      "Marca": "GRAND CHEROKEE",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GRAND CHEROKEE.jfif"
-    },
-    {
-      "Marca": "HILUX",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/HILUX.jfif"
-    },
-    {
-      "Marca": "HILUX",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/HILUX.png"
-    },
-    {
-      "Marca": "INNOVA",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/Innova.jpg"
-    },
-    {
-      "Marca": "JEEP MERCEDES",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/JEEP MERCEDES.avif"
-    },
-    {
-      "Marca": "JEEP MERCEDES",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/JEEP MERCEDES.webp"
-    },
-    {
-      "Marca": "JOURNEY",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/JOURNEY.jfif"
-    },
-    {
-      "Marca": "L200",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/L200.jpg"
-    },
-    {
-      "Marca": "LIMITED JEEP",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/LIMITED JEEP.jpg"
-    },
-    {
-      "Marca": "MAVERCIK",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/Mavercik.jfif"
-    },
-    {
-      "Marca": "OROCH",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/OROCH.jfif"
-    },
-    {
-      "Marca": "RAM RAMPAGE",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RAM RAMPAGE.jpg"
-    },
-    {
-      "Marca": "RANGER",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RANGER.webp"
-    },
-    {
-      "Marca": "RAV 4",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RAV 4.jpg"
-    },
-    {
-      "Marca": "RAV4",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RAV4.png"
-    },
-    {
-      "Marca": "SORENTO",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/SORENTO.jfif"
-    },
-    {
-      "Marca": "SPIN LTZ",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/SPIN LTZ.jfif"
-    },
-    {
-      "Marca": "STRADA",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/STRADA.jfif"
-    },
-    {
-      "Marca": "SW4",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/SW4.jpg"
-    },
-    {
-      "Marca": "TAOS",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TAOS.jfif"
-    },
-    {
-      "Marca": "TERRITORY",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TERRITORY.jfif"
-    },
-    {
-      "Marca": "TIGUON",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TIGUON.jfif"
-    },
-    {
-      "Marca": "TORO",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TORO.png"
-    },
-    {
-      "Marca": "TUCSON HYUNDAI",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TUCSON HYUNDAI.jpg"
-    },
-    {
-      "Marca": "X3",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/X3.webp"
-    },
-    {
-      "Marca": "X6",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/X6.webp"
-    },
-    {
-      "Marca": "XGEAR",
-      "Modelo": "SUV Grande",
-      "Tamaño": "Grande",
-      "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/XGEAR.jfif"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1N7bdnelOwJCqgOZkEllHAJJYmyp1Xxvn"
     },
     {
       "Marca": "XTERRA",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/XTERRA.jfif"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/145BMhyq4_Niy3u556RzXDKbk_ft-n9a1"
     },
     {
-      "Marca": "BAIC X55",
+      "Marca": "XGEAR",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/baic x55.jfif"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/17fN3Y-4h8rxd7Rnr9Il3yleY6L1bSecj"
     },
     {
-      "Marca": "RANGER-LIMITED",
+      "Marca": "X6",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/ranger-limited.webp"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1hVZtLW0hg2xqBzCA05vb4PT008KOkN02"
     },
     {
-      "Marca": "S10",
+      "Marca": "TAOS",
       "Modelo": "SUV Grande",
       "Tamaño": "Grande",
       "Precio": 35000,
-      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/s10.jpg"
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1g--HESs6RoPe8FtlMtlA8sFwZERCDj9V"
     },
     {
-      "Marca": "CARNIVAL",
-      "Modelo": "Camioneta Premium",
+      "Marca": "SW4",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/CARNIVAL.jfif"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ICCA74-WVOhWC_cUvmCb-mFcp09HUk-O"
     },
     {
-      "Marca": "F150",
-      "Modelo": "Camioneta Premium",
+      "Marca": "STRADA",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/F150.jfif"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1qyLbjGxaUn1asl7Kq1GRoteZxqxLAvJ8"
     },
     {
-      "Marca": "HIACE TOYOTA",
-      "Modelo": "Camioneta Premium",
+      "Marca": "TERRITORY",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/Hiace toyota.png"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1XXfZrs1x2HlsfhiZMeg4W5XmyEOFF8pU"
     },
     {
-      "Marca": "JUMPY",
-      "Modelo": "Camioneta Premium",
+      "Marca": "X3",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/JUMPY.jfif"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1-BOs4X1iS22oLUj8o6fo5alE62JrejL0"
     },
     {
-      "Marca": "LAND CRUSIER VX",
-      "Modelo": "Camioneta Premium",
+      "Marca": "TUCSON HYUNDAI",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/Land crusier vx.jpg"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1EAX2yTVag9B_2UM_rag0nB9Q1XnCvALq"
     },
     {
-      "Marca": "PATRIOT JEEP",
-      "Modelo": "Camioneta Premium",
+      "Marca": "TIGUON",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/PATRIOT JEEP.jfif"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1R3J0jRGHJMtXapW60Y4fJXBhWRnULHRB"
     },
     {
-      "Marca": "RAM",
-      "Modelo": "Camioneta Premium",
+      "Marca": "TORO",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/RAM.jpg"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/19G8_w2SodNdACx_YgyHYrLoHI9fjDP0X"
     },
     {
-      "Marca": "RAPTOR",
-      "Modelo": "Camioneta Premium",
+      "Marca": "RAV 4",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/RAPTOR.jpg"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1FW5lhT9-cuGKz1XhAtir9aXcW3B8AaKK"
     },
     {
-      "Marca": "VITTO 119 MERCEDE",
-      "Modelo": "Camioneta Premium",
+      "Marca": "s10",
+      "Modelo": "SUV Grande",
       "Tamaño": "Grande",
-      "Precio": 40000,
-      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/VITTO 119 MERCEDE.jfif"
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1p0kB7c2Q2Ddy0UvpgJvaLA_FQ7LI3MmT"
+    },
+    {
+      "Marca": "RANGER",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1cFErUqvFsF33A6poXBwHe9ZwGEaKtEFZ"
+    },
+    {
+      "Marca": "SPIN LTZ",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1qbatSd8qSBV07bALJijvlAQ06UbdsVyC"
+    },
+    {
+      "Marca": "RAV4",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1eizGYXNuCRG91VJYNiCQjywwQLHZcEsi"
+    },
+    {
+      "Marca": "SORENTO",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1jw_bj358HvYyXfc3zASFQmgK0jdLq0t-"
+    },
+    {
+      "Marca": "ranger-limited",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/15GMGId3JqMeysia6IST2NqUMZXYjKqFW"
+    },
+    {
+      "Marca": "RAM RAMPAGE",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/15msyx4vtvyQxCJEXnHQkLlh7uP-ER6Tl"
+    },
+    {
+      "Marca": "L200",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/16_Jsw_W7U5P1xlqK5ZW3yys8jPkvXAx-"
+    },
+    {
+      "Marca": "OROCH",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1c0PsFbZN7mWW5jjKIgza3vPi5pcOjRD9"
+    },
+    {
+      "Marca": "Mavercik",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/17Y49NJPCfnQx0NJRBLF7VQA58qfyuZ8Z"
+    },
+    {
+      "Marca": "JOURNEY",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1zghkoM9bMs3YJad9hmdU2kN0J3JTIHqj"
+    },
+    {
+      "Marca": "JEEP MERCEDES",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1beJTS2kZucvtPaFZMyT0o977S6RLDFH1"
+    },
+    {
+      "Marca": "JEEP MERCEDES",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1xFFTD1VKF1pi6kNj-L3aRnfOSJDA23RU"
+    },
+    {
+      "Marca": "LIMITED JEEP",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Gj-UNW0TSFHgESPQ_GHXMwn5SSbNr9nB"
+    },
+    {
+      "Marca": "HILUX",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1kZaBxG2VNITeQaL84yH1LF5Cxq5CnB6a"
+    },
+    {
+      "Marca": "GRAND CHEROKEE",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1_U8z_H2VFdLj77oZXQW7CmzUJnlQAz58"
+    },
+    {
+      "Marca": "HILUX",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/12uapJ72XDBPU1VuJFabAeWbpHWsEJd4T"
+    },
+    {
+      "Marca": "GLC43",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1esv-u_IcqO04C5lmyOjhaBMNb_F5jSLl"
+    },
+    {
+      "Marca": "Innova",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1SyVwfhBTsFyNgiEFlwZsSkfdO39xA-O_"
+    },
+    {
+      "Marca": "GLC 43 ,,",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1gSzCK0LeDtjiqQ9WPsVY_lvMGHooQkAz"
+    },
+    {
+      "Marca": "GLC300",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ApKFutkwdnlp05JtvLC0TsSTuCdTZ_q_"
+    },
+    {
+      "Marca": "FRONTIER",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1USvfifjx2dhi9x-t9iUjm0FMkeq0kFj-"
+    },
+    {
+      "Marca": "GLA250 4matic",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1e38Es9G0-KyrjzLxSukWv34UHOVotr6F"
+    },
+    {
+      "Marca": "CRV",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1CCrHId2sGVhWoi9wTQs_U03365-ESPl3"
+    },
+    {
+      "Marca": "FORESTER",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1x3l2LAuv0Q4p-RD5Vz6wGcM3Mwe3OcnQ"
+    },
+    {
+      "Marca": "CRv Honda",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1dN__Ht9HeBUm-Ui5atf-5vSSPKQyekFq"
+    },
+    {
+      "Marca": "EQUINOX",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/15AgoNPiXpyWs0MJv-3Gm1y6L8vAtMxEz"
+    },
+    {
+      "Marca": "CAPTIVA",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Qj36XURmg8b4ZaaafjawUnyVC6-20-Q2"
+    },
+    {
+      "Marca": "AMAROK",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1XzYEV22_hfarfPVKDnvQ80gNFLiWHlMI"
+    },
+    {
+      "Marca": "Changan-CS55",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1eicZM5bfXvQp8xNbs8Fdu2b0fvmw0cAJ"
+    },
+    {
+      "Marca": "baic x55",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1AbJ3zf_VjrkseFOTAAYmnvhGW2SFtsLs"
+    },
+    {
+      "Marca": "BRONCO",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1zxtJHZeQXK0b1YYmdmoCRZ4ow1_RjFTO"
+    },
+    {
+      "Marca": "COMPASS",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1sJMTK7nSo8zOcr9xZ7o9IvHqHLjcq6GW"
+    },
+    {
+      "Marca": "5003",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1bMnMGj6nhcLu7rBB7QnZwB9XrBoskoUF"
+    },
+    {
+      "Marca": "$35.000",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1cC1oDYe5cM7FOLwh5jSRU_jiLQpNnOwx"
+    },
+    {
+      "Marca": "X3",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ZOOkVMu1zpJH9Tf9vhCC7PeW2hp1yJ3O"
+    },
+    {
+      "Marca": "X TRIAL",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1sNg9JG_vtDfzLNBx9Ix-F7ygocfXstp-"
+    },
+    {
+      "Marca": "X1",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1mmeCxEI1kTA4B6_oeKoGkPv0zVVqLAPx"
+    },
+    {
+      "Marca": "VOLVO",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1EZho6heuxtDqYW2Xvp-sEGMOARENZESI"
+    },
+    {
+      "Marca": "WEEKEND",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1UPb8PCxs_16vOACIJFdH-Jq8RdR3ctiq"
+    },
+    {
+      "Marca": "x50",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1cTZRLJL1NsLynwdZv0ywVkB4Ibf3u9ik"
+    },
+    {
+      "Marca": "Q3",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1FoD7zm532o-XygamRKWUpEwnGCbhdztF"
+    },
+    {
+      "Marca": "T-cross-2024 VW",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ICqDRGIyEPbtcN7JSY2fBJzyqWmY7TxH"
+    },
+    {
+      "Marca": "TRACKER",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ilAlqKpJEMNQ--g3OP5Uv3xIZsI8DxBt"
+    },
+    {
+      "Marca": "RENEGADE",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/19a0lJfu_g5sVox8p_a7gNGIxqypiJbVJ"
+    },
+    {
+      "Marca": "TERA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1X3EPx1-UqnqeE5lldZcGKLep2OR50FeO"
+    },
+    {
+      "Marca": "SPIN",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/14X4I5tO9scIOu61TZq83V7Itf-g_cKMz"
+    },
+    {
+      "Marca": "RAV4",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/12-x2CU4qNsip6RcZWPzBFYKUO0GyIxA0"
+    },
+    {
+      "Marca": "pulse",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1YzvTlYifimhfhsrnYSyOr7uka6IpHi0c"
+    },
+    {
+      "Marca": "KOLEOS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1TVnrRGsb59tacNnccK3J8E05jrdU9UM8"
+    },
+    {
+      "Marca": "KAIYI X3",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ek55fOqp0AWBHY7bNXNR77WS0wOopxBz"
+    },
+    {
+      "Marca": "KARDIAN",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1MaEO7Vrqxpl6vm4bfzrstGcajGJMwrkZ"
+    },
+    {
+      "Marca": "KUGA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1TJoMCQoEVPcrnybY-qYafbOw7q_GnVP2"
+    },
+    {
+      "Marca": "NIVUS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Ox472aotSDzVj4qTPj9LqP7nA9iYEWHi"
+    },
+    {
+      "Marca": "KICKS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1bJfTEpOnRmr1IjoTp9Xx1uEcsTJX5iQc"
+    },
+    {
+      "Marca": "jolion",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Bwie16wepZdTOxmikcB52a1ey-ofy2QC"
+    },
+    {
+      "Marca": "FIAT 500X",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1_PGnzPPk8qd6zh03EbFxhhQ25FJnHSTG"
+    },
+    {
+      "Marca": "crv scout",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1IGAbsusLGbcFKNa7EYgJDGiYWlk3kOw6"
+    },
+    {
+      "Marca": "ECO SPORT",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1GqXWPha1uZBmENuOR0GHb4klJ3lRDr1g"
+    },
+    {
+      "Marca": "DS7",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Ap-m_fdyoIbmQ3yfE4Mt33vFyn363tVd"
+    },
+    {
+      "Marca": "HR-V",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Rj_1QdQmUMTebGSeF8E1qfWNGsxjBwYw"
+    },
+    {
+      "Marca": "ECOSPORT",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1qZPu3NWFGEz-OP7-wnPy6-o3-lFejolS"
+    },
+    {
+      "Marca": "jac",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1suVy49BkzgRbrxJILshR2HgXWnGeXj74"
+    },
+    {
+      "Marca": "DUSTER",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1l79nWDUBqd4mcIKkOyOOQa61AZgp3z7Q"
+    },
+    {
+      "Marca": "HRV HONDA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1t3ovfCEeO1Mk6DRhO-tiiKZJHSEHHkvP"
+    },
+    {
+      "Marca": "B180 MERCEDES",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1uUuYmp-onOqHLIZ-IHPT7ESaepmGN2Eh"
+    },
+    {
+      "Marca": "B200",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1jnb53cptcTIi7FIXxUDRg67zHix-STvH"
+    },
+    {
+      "Marca": "CRETA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1luB2RsjOp8vgiCJlJHP9xikHJcG48ruw"
+    },
+    {
+      "Marca": "C3 AIRCROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1qChuVjwwX3psu_SgrGNFJ44SmXQtDLet"
+    },
+    {
+      "Marca": "ARKANA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1kSfQ2iKaA6l6KueE73BNFYokCfSgUs3Y"
+    },
+    {
+      "Marca": "corolla-cross",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1B09cxL8W2C-ywNqRePu72zXuSlWENc2t"
+    },
+    {
+      "Marca": "BYD ATTO",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1W0RyBYVxzNLcagck3CszEYaU4EtVx04s"
+    },
+    {
+      "Marca": "C4 CACTUS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1xMv2KDhsjixsj9BTsq5djFONKxmI885C"
+    },
+    {
+      "Marca": "CROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1CHb1mqyYxsCVizApqYFkoS_bf5_0GKYU"
+    },
+    {
+      "Marca": "Abarth",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1cktqtuyPrAj48U437P3jgeSHqPWJbALP"
+    },
+    {
+      "Marca": "500x",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/108l00xe3eGOTQ3_ykXyJOhLjZT2iWdE6"
+    },
+    {
+      "Marca": "$30.000",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1bW46ergpzL6eQiZJLC5ft3XqKBCtWFs2"
+    },
+    {
+      "Marca": "Aircross",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1tK6h2TlXkYRTr60Pmw_rKMIrgjrpF4pn"
+    },
+    {
+      "Marca": "20008",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1oXtapbNGi0BqlxJ0ESO-iElx65DduG0j"
+    },
+    {
+      "Marca": "AIRCROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1j252mfnJIOGQZCGKUz7EK857f2Nw6Get"
+    },
+    {
+      "Marca": "honda-fit-",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1BfQ1nF3Y0Fp4eWPoVwcZ1uxYW2_Owxch"
+    },
+    {
+      "Marca": "MOBI",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1x4FZyJJEoacIGN4Fn5OFaI2AYvNxnesr"
+    },
+    {
+      "Marca": "RIO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1zE8uwnDxwzlmK94fGvBbnmeTQ8nMbuYD"
+    },
+    {
+      "Marca": "GOLF",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Qqy9_fVp0ErpGVLjGnyKfGSRdVXOgaap"
+    },
+    {
+      "Marca": "TRACK",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1lbiSC5w0eQZTJQ_8_Xsq86vpB2xXykBN"
+    },
+    {
+      "Marca": "PALIO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1R03UMF4qAe4evtv4jnYp3UiwbkRBMWmj"
+    },
+    {
+      "Marca": "UP",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1WuT-P1ugAYehnwFM5lesHXp2veUe4COw"
+    },
+    {
+      "Marca": "GOL",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/19ee7ypMemAnieVbq3eirY6jVfdcuW_mw"
+    },
+    {
+      "Marca": "CELTA",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1LMHSSvMZANu_-dOw7qkyTYj-EvFD_O5I"
+    },
+    {
+      "Marca": "FOX",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1xEXvf24VwAR5fD69-9qLsYhNGXWkiEbH"
+    },
+    {
+      "Marca": "ESCORT 18",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1MvcYI4G83Rv0GE7kC9e-nO-yvJE9Od1v"
+    },
+    {
+      "Marca": "GLC43",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ODuaz3agTaEQrxX3Kccq67pcoJQLxVvK"
+    },
+    {
+      "Marca": "FIAT UNO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1rQsePSNbjVvUZry1v-otgRtH_EUUXCqL"
+    },
+    {
+      "Marca": "fiesta-kinetic-1",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Oj4pzo1mDM73Fg5ZluvW411DEa8FYG_C"
+    },
+    {
+      "Marca": "ARGO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Q-YaVRxubCHYKQKbQWQgAzLGaKBM-v68"
+    },
+    {
+      "Marca": "CLIO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1vj7ItS57Oi7SiARElmxym75502VdblZo"
+    },
+    {
+      "Marca": "318 IS",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1pPVHoL06AULDQXE0ZCDAi4KH1LOnXs21"
+    },
+    {
+      "Marca": "FORD KA",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/16yPp1zdZeo2KGuG733co1H3XE7pyMK9f"
+    },
+    {
+      "Marca": "208",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1p05kqZ4nmWmXMD7F0Z8f13zqBhVlS_Rf"
+    },
+    {
+      "Marca": "207",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1SCQ41aIByjaEnc1v1gquZTn3aaDuyR2Y"
+    },
+    {
+      "Marca": "106",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/11E-zQ1hPWaLjm4z9fRXTylrUMxKkS6zT"
+    },
+    {
+      "Marca": "$25.000",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1lWE6fu0xZW4u_ALAmU7MwefdF4nylagZ"
+    },
+    {
+      "Marca": "206",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1lJEsflrvcgoHlT2PAooHJmhoMMpRs41b"
+    },
+    {
+      "Marca": "206",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1-XUn8cg07UnkJBS9uc38USZ0wtt8WnXN"
+    },
+    {
+      "Marca": "ZAFIRA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1CXTfckdiLbfQw7ajsJmiut62k3jENDpw"
+    },
+    {
+      "Marca": "VIRTUS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ligMY5pnGJ-resfSnAj5446kDLCsfdLK"
+    },
+    {
+      "Marca": "VOYAGE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1wNBcmyPiKXeZSJyujoy3jX425l5NbulI"
+    },
+    {
+      "Marca": "Volkswagen-Voyage-",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1zvRz11qzGbH7b5poDN8oUqvXIhhn-_jJ"
+    },
+    {
+      "Marca": "YARIS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1fd7_Op0jBuNdEHxJjRp-LjQoGhzibluR"
+    },
+    {
+      "Marca": "X3 KAIYI",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1U5xnFVeNdJcYWNXLYrV84KFJWcw03wat"
+    },
+    {
+      "Marca": "VERSA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1SecdvvSJS4LMARKXWGfYJfTQ6IlPn28v"
+    },
+    {
+      "Marca": "VOLVO 850",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1YucYZZlTx5IXBhOCFDn0arRlTJo2Z48d"
+    },
+    {
+      "Marca": "Tera",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1d5Ech6bi0b_vgEOGo5UHVrZdfhIweOl4"
+    },
+    {
+      "Marca": "TIIDA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1zIcuyJyh2eVHrinIqCXj3viqdWKXdoUd"
+    },
+    {
+      "Marca": "SURAN",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1rudn-MHYZPJrzy79Ib59kkhm_NsHpoVX"
+    },
+    {
+      "Marca": "TT Audi",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1CkcQP_sHEmiCj2W2KvOaCUm2VVAcu71g"
+    },
+    {
+      "Marca": "TIPO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1iCoq1i55SFHmYDXiypu3B5L2GLaJ0lO2"
+    },
+    {
+      "Marca": "VENTO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1d5yv_e1vfV5xl7t85NiKWwhudHEHaFsL"
+    },
+    {
+      "Marca": "TIPO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1n_enD_yse2AIH2XoSMPp_aPbWWzn6KNo"
+    },
+    {
+      "Marca": "SIENA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/18DzKKkLwXGqP_cd4jJSenEOqdD_ycN_2"
+    },
+    {
+      "Marca": "SANDERO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/17_2hWyiPCbL2F-xPoWFrF4kF499lJTZ9"
+    },
+    {
+      "Marca": "SANDERO STEPWAY 1",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1VESAG9wuzbZhdhKB9MaiB-ZXY7zidnyn"
+    },
+    {
+      "Marca": "SEDAN",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1RS3mJTi9Tm1Q2RaB44zoDxts2uwSsyLo"
+    },
+    {
+      "Marca": "PASSAT",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1clhurx-QHnBRikllTAiUa7HadTc8S6cb"
+    },
+    {
+      "Marca": "RENAUL QUBO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1MtlHK6KfPbjtWiTNLsUOoAYgXNz3GiQT"
+    },
+    {
+      "Marca": "SAIVERO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1pXEFaIpou2ckpFXBWFcKgqi4z8v6_0eS"
+    },
+    {
+      "Marca": "renault-megane",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1pRkl5TxMcLArGkUz_1-wn1KcIhZqlumH"
+    },
+    {
+      "Marca": "POLO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ylrCJqe7jsvQAbD4Ery4C_1neI6Nn-lj"
+    },
+    {
+      "Marca": "PICASSO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1RXHRGwB2cN_6QJFjOOUbqwh33prdxIDL"
+    },
+    {
+      "Marca": "PRISMA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Lg4LR0k7ZlYpx8BsPPys21sItlWTuSTA"
+    },
+    {
+      "Marca": "PARTNER",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1y90oEx0pVfaqab8J4bPvvpIunWtdhvUW"
+    },
+    {
+      "Marca": "HONDA FIT",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1INI-RcOo3Yz7YOrY5zAQ7INyP2Nt5ui1"
+    },
+    {
+      "Marca": "MERIVA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1lxc1lTrvTtpgUVbOOMopqHOceNJHP4C0"
+    },
+    {
+      "Marca": "KANGOO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1t83XWJDI7xkMBN24r63xtbj-w1I7VjRv"
+    },
+    {
+      "Marca": "HB20",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1bCzG7PoPwudtD7rzrEFzjwKsp3Nrasrq"
+    },
+    {
+      "Marca": "LOGAN",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1TbWUEgOOFBhlmMlf5L_7w4YhFf_lcjv4"
+    },
+    {
+      "Marca": "ONIX",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1rv331YoG9A3c_esbdm4CSmRySkIWm9Zg"
+    },
+    {
+      "Marca": "GTS (POLO)",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/12xweZDZHmuTsnOLyQelchV7acq6pZf1c"
+    },
+    {
+      "Marca": "Gulietta alfa romeo",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1dRGXn6MHpe0uSX031jXHZtVAPjIMzl3F"
+    },
+    {
+      "Marca": "GLI (SEDAN)",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1462BVA-Dh8gm0MaSLoMG_3B4Fuf3ihRJ"
+    },
+    {
+      "Marca": "FOREST",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1NMpvZ_LRy-_uJ4ROWkMm0Arvhj4SGiJy"
+    },
+    {
+      "Marca": "FLUENCE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1edfoNRuUvJaQxgK9ddwL_YvF-fGO9brd"
+    },
+    {
+      "Marca": "FOCUS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/14l1t2XlmYN3FtYDernERYXOV1c5kGxxo"
+    },
+    {
+      "Marca": "GR FOUR",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1MmxuK-yzDTX7pM8wQVEM_aUrRHyqS7WK"
+    },
+    {
+      "Marca": "FIORINO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1I5k9XfL02yTGPZnplqFz8I3ZETHRABzI"
+    },
+    {
+      "Marca": "FASTBACK",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1obeRT9JuUaF4wlZ8neEfRHwqpMQiVEAp"
+    },
+    {
+      "Marca": "FIESTA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Nh5SC64Es31-RsctF8R9nEOYJ_7spvKQ"
+    },
+    {
+      "Marca": "Fiat Palio",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1eLSJcjiDNxXqTwhR4-XstdcnLDGbM8DW"
+    },
+    {
+      "Marca": "COROLLA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1ORu1iUj9GJ_ioohw0PRrPfR3ty372Msg"
+    },
+    {
+      "Marca": "COURIER",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1o6dP2ICo0ccegGvNjXtF11gK4kfpDTM3"
+    },
+    {
+      "Marca": "DS3",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Xyl6z0TwVvxTm_s44XBShpJ2Z8lClOWH"
+    },
+    {
+      "Marca": "CRONOS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1f5QFBitxlWX7XnX9uwsb9dmbYlSzVniV"
+    },
+    {
+      "Marca": "ETIOS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1cLlPlwsN3dwFk3zYa9x2StfkygTgHyfH"
+    },
+    {
+      "Marca": "CRUZE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1RcobIw61kWhDuMJGxrFu9_BY3FHRKPp4"
+    },
+    {
+      "Marca": "E200 mercedes",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1W-bxCQwifRVwutm3WlgVdvuMg-0h_KK6"
+    },
+    {
+      "Marca": "CORSA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1eG-UEa-D_30p3m8TFSVZW1AZzC6qgqEs"
+    },
+    {
+      "Marca": "COOPER S",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/19IpKqUGRBgWbMlIgOICs417Lw1fMFBiE"
+    },
+    {
+      "Marca": "CITY",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1vxG1m3OiCHmuv0_TQgWxs6ILZn5_fJSF"
+    },
+    {
+      "Marca": "CIVIC",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1gNQFLqm8pOiThRMyYVeesHC1JGlVtpY7"
+    },
+    {
+      "Marca": "BORA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1Czh8nhYB079ORTEfqC0_qE1iRnCpgRcn"
+    },
+    {
+      "Marca": "BMW_330i",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1hX6NywvH1AN-0WP4NZj3Vsn5sWqvwo9_"
+    },
+    {
+      "Marca": "C4 MODELO 2010",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1hUSQ3qjRRsxIPxarsBuBeN4lzeT0MrlM"
+    },
+    {
+      "Marca": "C3",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1k1Pfi5p8gUrAmnBBIg87Nf4s5nYX7WGv"
+    },
+    {
+      "Marca": "CAMRY",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1B2hWIOk0G5BBchvCyMgcB6u5OjT_K6v-"
+    },
+    {
+      "Marca": "C20",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1cHVEcK9uqEnLS154k1NNmi65b1U31HNe"
+    },
+    {
+      "Marca": "BERLINGO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1wCLL-LjVcrbOssORcQ9DXNO2eh7pDSsk"
+    },
+    {
+      "Marca": "A4",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1yQLY6k-aFv7prbu7D8BmUSVl0ZVMe3nt"
+    },
+    {
+      "Marca": "408",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1MALuNIL6fIYNi6k3rKACKL-UJ_nCr9Iq"
+    },
+    {
+      "Marca": "ARGO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1JbW_g_u5VyR9KMZaOKKWWJzvLY7hJ9T-"
+    },
+    {
+      "Marca": "ASTRA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/10354CKRilHV32AiAoD4j2f1LMInRktpf"
+    },
+    {
+      "Marca": "bmw 125i",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1PJiX2-6ZxNRhTL2rxdA2eu1cxSfeTsZH"
+    },
+    {
+      "Marca": "A3",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/11EhvPKj81XT-NUhve-jTcGvKwBPQE7nS"
+    },
+    {
+      "Marca": "308",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1zHx41hTaMassqLFI2KEGNeMIAvGfrJ8m"
+    },
+    {
+      "Marca": "BMW 235",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/18tv7TsKSM8VuGp8Qk0oTcGiOSFd63rYf"
+    },
+    {
+      "Marca": "BMW_318i",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1gIQ9lTjSwWXJLHIhldo-7_oGxhnKzgTx"
+    },
+    {
+      "Marca": "$28.000",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1_lqQ4xlt5dAn7jL0zKQba1IZiAIscTr-"
+    },
+    {
+      "Marca": "280C",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1q417vi_xPPjH74P9sCMSEApMLu5Xoar7"
+    },
+    {
+      "Marca": "307",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "https://lh3.googleusercontent.com/d/1-Zj6bmgWdvxlpm6XtwACCVhfX-zise4X"
     }
   ]
 }

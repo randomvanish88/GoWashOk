@@ -152,8 +152,31 @@ async function main() {
   });
 
   console.log(`✅ Google Sheets actualizado con ${vehiculos.length} vehículos`);
-  console.log('\n🎉 Listo. Las imágenes de Drive ahora están en Google Sheets.');
-  console.log('   Las URLs funcionan en web, desktop y móvil.');
+
+  // 4. Exportar también el JSON para Vercel (web)
+  const fs = require('fs');
+  const path = require('path');
+  const jsonData = {
+    total: vehiculos.length,
+    timestamp: new Date().toISOString(),
+    headers: ['Marca', 'Modelo', 'Tamaño', 'Precio', 'URL_Imagen'],
+    rows: vehiculos.map(v => ({
+      Marca: v.Marca,
+      Modelo: v.Modelo,
+      Tamaño: v.Tamaño,
+      Precio: v.Precio,
+      URL_Imagen: v.URL_Imagen,
+    }))
+  };
+
+  const jsonPath = path.join(__dirname, '../public/vehiculos-data.json');
+  fs.writeFileSync(jsonPath, JSON.stringify(jsonData, null, 2), 'utf-8');
+  console.log(`✅ public/vehiculos-data.json actualizado con ${vehiculos.length} vehículos`);
+
+  console.log('\n🎉 Listo.');
+  console.log('   ✓ Google Sheets actualizado (Desktop)');
+  console.log('   ✓ vehiculos-data.json actualizado (Web/Vercel)');
+  console.log('   ✓ URLs lh3.googleusercontent.com funcionan en todos los entornos');
 }
 
 main().catch(err => {
