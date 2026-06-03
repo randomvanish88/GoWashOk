@@ -143,18 +143,27 @@ function App() {
       const savedBrands = localStorage.getItem('carwash-brands');
 
       // Intentar sincronizar vehículos PRIMERO
+      console.log('[GoWash] 🔄 Iniciando sincronización de vehículos...');
       try {
         const vehiculosSincronizados = await sincronizarDesdeGoogleSheets();
+        console.log('[GoWash] 📊 Vehículos obtenidos:', vehiculosSincronizados.length);
+        
         if (vehiculosSincronizados && vehiculosSincronizados.length > 0) {
-          console.log(`[GoWash] ✅ Cargados ${vehiculosSincronizados.length} vehículos desde Google Sheets`);
+          console.log(`[GoWash] ✅ Cargados ${vehiculosSincronizados.length} vehículos`);
+          console.log('[GoWash] 📸 Primeros 3 con imágenes:');
+          vehiculosSincronizados.slice(0, 3).forEach(v => {
+            console.log(`  - ${v.brand} ${v.model}: ${v.imageUrl || 'SIN IMAGEN'}`);
+          });
           setPrices(vehiculosSincronizados);
           localStorage.setItem('carwash-prices', JSON.stringify(vehiculosSincronizados));
         } else if (savedPrices) {
+          console.log('[GoWash] ⚠️  Sin vehículos nuevos, usando cache');
           setPrices(JSON.parse(savedPrices));
         } else {
           throw new Error('No hay vehículos ni cache');
         }
       } catch (error) {
+        console.error('[GoWash] ❌ Error en sincronización:', error);
         console.log('[GoWash] ℹ️  Usando cache de precios...');
         if (savedPrices) {
           setPrices(JSON.parse(savedPrices));

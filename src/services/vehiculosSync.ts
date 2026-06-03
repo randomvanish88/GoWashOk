@@ -11,6 +11,8 @@ import { Price } from '../app/App';
 export function transformarDatosDeSheets(datosSheet: any[]): Price[] {
   const vehiculos: Price[] = [];
   
+  console.log('[VehiculosSync] 🔍 Analizando estructura de datos...', datosSheet[0]);
+  
   for (let i = 0; i < datosSheet.length; i++) {
     const row = datosSheet[i];
     
@@ -19,27 +21,62 @@ export function transformarDatosDeSheets(datosSheet: any[]): Price[] {
       continue;
     }
 
-    const marca = row.Marca?.trim() || row['Marca']?.trim();
-    const modelo = row.Modelo?.trim() || row['Modelo']?.trim();
+    // Buscar los campos en diferentes formatos posibles
+    const marca = 
+      row.Marca?.trim() || 
+      row['Marca']?.trim() || 
+      row.marca?.trim() || 
+      row.brand?.trim() || 
+      '';
+      
+    const modelo = 
+      row.Modelo?.trim() || 
+      row['Modelo']?.trim() || 
+      row.modelo?.trim() || 
+      row.model?.trim() || 
+      '';
+    
+    const tamaño = 
+      row.Tamaño?.trim() || 
+      row['Tamaño']?.trim() || 
+      row.tamaño?.trim() || 
+      row.size?.trim() || 
+      'Mediano';
+      
+    const precio = 
+      parseInt(row.Precio || row['Precio'] || row.precio || '0') || 0;
+      
+    const urlImagen = 
+      row.URL_Imagen?.trim() || 
+      row['URL_Imagen']?.trim() || 
+      row.url_imagen?.trim() || 
+      row.imageUrl?.trim() || 
+      '';
     
     if (!marca || !modelo) {
+      console.log(`[VehiculosSync] ⏭️  Saltando fila ${i}: marca="${marca}" modelo="${modelo}"`);
       continue;
     }
 
-    const urlImagen = row.URL_Imagen?.trim() || row['URL_Imagen']?.trim();
-    
     vehiculos.push({
       id: `gw-${marca.toLowerCase().replace(/\s+/g, '-')}-${modelo.toLowerCase().replace(/\s+/g, '-')}-${i}`,
       brand: marca,
       model: modelo,
-      size: (row.Tamaño?.trim() || row['Tamaño']?.trim() || 'Mediano'),
+      size: tamaño,
       service: 'Lavado Artesanal',
-      price: parseInt(row.Precio || row['Precio'] || '0') || 0,
+      price: precio,
       imageUrl: urlImagen || undefined
     });
   }
   
-  console.log(`[VehiculosSync] ✅ Transformados ${vehiculos.length} vehículos de Google Sheets`);
+  console.log(`[VehiculosSync] ✅ Transformados ${vehiculos.length} vehículos`);
+  if (vehiculos.length > 0) {
+    console.log('[VehiculosSync] 📸 Ejemplo:', {
+      brand: vehiculos[0].brand,
+      model: vehiculos[0].model,
+      imageUrl: vehiculos[0].imageUrl
+    });
+  }
   return vehiculos;
 }
 
