@@ -123,7 +123,7 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis",
+      "target": ["portable"],
       "icon": "public/logo.png"
     },
     "nsis": {

@@ -260,7 +260,8 @@ ipcMain.handle('google-sheets-add-row', async (event, { sheetTitle, data }) => {
 
 ipcMain.handle('google-sheets-get-rows', async (event, sheetTitle) => {
   try {
-    return await googleSheets.getRows(sheetTitle);
+    const data = await googleSheets.getRows(sheetTitle);
+    return { success: true, data };
   } catch (error) {
     console.error('[GoogleSheets] Error al obtener filas:', error.message);
     return { success: false, error: error.message };
