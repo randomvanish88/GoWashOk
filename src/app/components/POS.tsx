@@ -1298,7 +1298,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     // Si es una orden que estaba abierta, la marcamos como cobrada (no la quitamos todavía)
     const idABuscar = ordenDirecta ? ordenDirecta.id : (activeOrderId || editingVentaId);
-    if (ordenDirecta || activeOrderId) {
+    if (idABuscar && idABuscar.startsWith('movil-')) {
+      // Órdenes del patio móvil: eliminar directamente, no dejar pendiente de retiro
+      setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
+      setOrdenesCobradas(prev => prev.filter(id => id !== idABuscar));
+    } else if (ordenDirecta || activeOrderId) {
       setOrdenesCobradas(prev => prev.includes(idABuscar) ? prev : [...prev, idABuscar]);
     } else {
       setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
