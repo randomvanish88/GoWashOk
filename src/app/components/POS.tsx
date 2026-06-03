@@ -1307,13 +1307,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     // Si viene del patio móvil, marcar como entregado en Google Sheets
     if (idABuscar && idABuscar.startsWith('movil-')) {
       const patioId = idABuscar.replace('movil-', '');
+      // Sacar inmediatamente del panel Móvil (no esperar el polling)
+      setVehiculosMovil(prev => prev.filter(v => v.id !== patioId));
+      // Actualizar en Sheets
       actualizarVehiculoEnPatio(patioId, {
         horaSalida: nuevaVenta.horaSalida || getCurrentTimeString(),
         estado: 'Entregado',
       }).then(() => {
         console.log('[POS] ✅ Vehículo móvil marcado como entregado en Sheets');
-        // Actualizar la lista del móvil inmediatamente
-        cargarVehiculosMovil();
       }).catch(err => console.error('[POS] Error actualizando patio móvil:', err));
     }
 
@@ -3619,7 +3620,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               }`}
                               onClick={() => cargarVehiculoMovilEnPOS(v)}
                             >
-                              {yaCargado ? '✓ Cargado en POS' : '💰 Cerrar venta'}
+                              {yaCargado ? '✓ En POS - cobrar para cerrar' : '💰 Cerrar venta'}
                             </Button>
                           </Card>
                         );
