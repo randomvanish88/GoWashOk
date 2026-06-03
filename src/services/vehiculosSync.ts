@@ -16,45 +16,26 @@ export function transformarDatosDeSheets(datosSheet: any[]): Price[] {
   for (let i = 0; i < datosSheet.length; i++) {
     const row = datosSheet[i];
     
-    // Validar que la fila tiene datos
     if (!row || (typeof row === 'object' && Object.keys(row).length === 0)) {
       continue;
     }
 
-    // Buscar los campos en diferentes formatos posibles
     const marca = 
-      row.Marca?.trim() || 
-      row['Marca']?.trim() || 
-      row.marca?.trim() || 
-      row.brand?.trim() || 
-      '';
+      row.Marca?.trim() || row['Marca']?.trim() || row.marca?.trim() || '';
       
     const modelo = 
-      row.Modelo?.trim() || 
-      row['Modelo']?.trim() || 
-      row.modelo?.trim() || 
-      row.model?.trim() || 
-      '';
+      row.Modelo?.trim() || row['Modelo']?.trim() || row.modelo?.trim() || '';
     
     const tamaño = 
-      row.Tamaño?.trim() || 
-      row['Tamaño']?.trim() || 
-      row.tamaño?.trim() || 
-      row.size?.trim() || 
-      'Mediano';
+      row.Tamaño?.trim() || row['Tamaño']?.trim() || row.tamaño?.trim() || 'Mediano';
       
     const precio = 
       parseInt(row.Precio || row['Precio'] || row.precio || '0') || 0;
       
-    const urlImagen = 
-      row.URL_Imagen?.trim() || 
-      row['URL_Imagen']?.trim() || 
-      row.url_imagen?.trim() || 
-      row.imageUrl?.trim() || 
-      '';
+    let urlImagen = 
+      row.URL_Imagen?.trim() || row['URL_Imagen']?.trim() || row.url_imagen?.trim() || '';
     
     if (!marca || !modelo) {
-      console.log(`[VehiculosSync] ⏭️  Saltando fila ${i}: marca="${marca}" modelo="${modelo}"`);
       continue;
     }
 
@@ -71,11 +52,7 @@ export function transformarDatosDeSheets(datosSheet: any[]): Price[] {
   
   console.log(`[VehiculosSync] ✅ Transformados ${vehiculos.length} vehículos`);
   if (vehiculos.length > 0) {
-    console.log('[VehiculosSync] 📸 Ejemplo:', {
-      brand: vehiculos[0].brand,
-      model: vehiculos[0].model,
-      imageUrl: vehiculos[0].imageUrl
-    });
+    console.log('[VehiculosSync] 📸 Ejemplo URL imagen:', vehiculos[0].imageUrl);
   }
   return vehiculos;
 }
@@ -124,49 +101,60 @@ export function needsUpdate(): boolean {
 }
 
 /**
- * Sincroniza vehículos desde Google Sheets o JSON local (compatible con Electron y Web)
+ * Sincroniza vehículos desde Google Sheets (Electron) o JSON local (Web)
  */
 export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
+  const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+  
+  const isElectron = typeof window !== 'undefined' 
+    && 'electronAPI' in window 
+    && 'googleSheets' in (window as any).electronAPI;
+  
   try {
-    // Solo en Electron podemos acceder a Google Sheets API
-    if (typeof window !== 'undefined' && 'electronAPI' in window && 'googleSheets' in (window as any).electronAPI) {
-      console.log('[VehiculosSync] 📱 Electron detectado, intentando sincronizar desde Google Sheets...');
+    if (isElectron) {
+      console.log('[VehiculosSync] 🔌 Electron: inicializando Google Sheets...');
       
+      // Paso 1: inicializar conexión con el spreadsheet ID
+      const initResult = await (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID);
+      if (!initResult?.success) {
+        console.error('[VehiculosSync] ❌ No se pudo inicializar Google Sheets:', initResult?.error);
+        return obtenerVehiculos();
+      }
+      console.log('[VehiculosSync] ✅ Google Sheets inicializado');
+
+      // Paso 2: leer filas de PWA_Vehiculos
       const result = await (window as any).electronAPI.googleSheets.getRows('PWA_Vehiculos');
-      
-      if (result.success && result.data && Array.isArray(result.data)) {
+      console.log('[VehiculosSync] 📊 getRows respuesta - success:', result?.success, '| filas:', result?.data?.length);
+
+      if (result?.success && Array.isArray(result.data) && result.data.length > 0) {
         const vehiculos = transformarDatosDeSheets(result.data);
         guardarVehiculos(vehiculos);
         console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos sincronizados desde Google Sheets`);
         return vehiculos;
       } else {
-        throw new Error('No data from Google Sheets');
-      }
-    } else {
-      // En web, intentar cargar desde el archivo JSON
-      console.log('[VehiculosSync] 🌐 Web detectado, intentando cargar desde JSON...');
-      
-      try {
-        const response = await fetch('/vehiculos-data.json');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.rows && Array.isArray(data.rows)) {
-            const vehiculos = transformarDatosDeSheets(data.rows);
-            guardarVehiculos(vehiculos);
-            console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos cargados desde JSON`);
-            return vehiculos;
-          }
-        }
-      } catch (jsonError) {
-        console.log('[VehiculosSync] ℹ️  No se pudo cargar JSON:', jsonError);
+        console.warn('[VehiculosSync] ⚠️ Google Sheets no devolvió datos:', result);
+        return obtenerVehiculos();
       }
 
-      // Fallback: usar cache
-      console.log('[VehiculosSync] ℹ️  Usando cache local');
+    } else {
+      // Web/PWA: fetch normal funciona bien
+      console.log('[VehiculosSync] 🌐 Web: cargando vehiculos-data.json...');
+      const response = await fetch('/vehiculos-data.json');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.rows && Array.isArray(data.rows) && data.rows.length > 0) {
+          const vehiculos = transformarDatosDeSheets(data.rows);
+          guardarVehiculos(vehiculos);
+          console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos cargados desde JSON`);
+          return vehiculos;
+        }
+      }
+      console.warn('[VehiculosSync] ⚠️ No se pudo cargar el JSON, usando cache');
       return obtenerVehiculos();
     }
+
   } catch (error) {
-    console.error('[VehiculosSync] ❌ Error:', error);
+    console.error('[VehiculosSync] ❌ Error general:', error);
     return obtenerVehiculos();
   }
 }

@@ -55,14 +55,22 @@ function createWindow() {
   });
 
   if (isDev) {
-    // Intentamos cargar el puerto por defecto de Vite (5173)
     win.loadURL('http://localhost:5173');
-    
-    // win.webContents.openDevTools(); 
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
-    // DevTools desactivado en producción
   }
+
+  // Permitir carga de imágenes desde Google Drive / lh3.googleusercontent.com
+  win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://lh3.googleusercontent.com https://drive.google.com https://*.googleapis.com"
+        ]
+      }
+    });
+  });
 
   // Bloquear F12 y otras herramientas de desarrollo en producción
   win.webContents.on('before-input-event', (event, input) => {
@@ -92,16 +100,12 @@ app.whenReady().then(() => {
   // Manejador para el protocolo app-image://
   protocol.handle('app-image', (request) => {
     try {
-      // Extraer la ruta
       let filePath = request.url.replace(/^app-image:\/\//, '');
       filePath = decodeURIComponent(filePath);
-      
-      // Limpiar ruta para Windows
-      filePath = filePath.replace(/\\/g, '/'); // Convertir \ a /
+      filePath = filePath.replace(/\\/g, '/');
       if (process.platform === 'win32' && filePath.startsWith('/')) {
         filePath = filePath.substring(1);
       }
-
       console.log(`[App-Image] Cargando: ${filePath}`);
       return net.fetch(pathToFileURL(filePath).toString());
     } catch (error) {
@@ -264,6 +268,40 @@ ipcMain.handle('google-sheets-get-rows', async (event, sheetTitle) => {
     return { success: true, data };
   } catch (error) {
     console.error('[GoogleSheets] Error al obtener filas:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler para leer vehiculos-data.json directamente con fs (funciona en Electron producción)
+ipcMain.handle('get-vehiculos-data', async () => {
+  try {
+    // En producción, buscar en la carpeta dist/ (empaquetada con asar)
+    const jsonPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'app.asar', 'dist', 'vehiculos-data.json')
+      : path.join(__dirname, '../public/vehiculos-data.json');
+    
+    // Intentar también la ruta alternativa sin asar
+    const jsonPathAlt = app.isPackaged
+      ? path.join(process.resourcesPath, 'dist', 'vehiculos-data.json')
+      : path.join(__dirname, '../public/vehiculos-data.json');
+
+    let rawData = null;
+    
+    if (fs.existsSync(jsonPath)) {
+      rawData = fs.readFileSync(jsonPath, 'utf-8');
+      console.log('[Vehiculos] Cargado desde:', jsonPath);
+    } else if (fs.existsSync(jsonPathAlt)) {
+      rawData = fs.readFileSync(jsonPathAlt, 'utf-8');
+      console.log('[Vehiculos] Cargado desde (alt):', jsonPathAlt);
+    } else {
+      console.error('[Vehiculos] No se encontró vehiculos-data.json en:', jsonPath);
+      return { success: false, error: 'Archivo no encontrado' };
+    }
+
+    const data = JSON.parse(rawData);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[Vehiculos] Error leyendo JSON:', error.message);
     return { success: false, error: error.message };
   }
 });

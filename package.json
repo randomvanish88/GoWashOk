@@ -88,6 +88,7 @@
     "concurrently": "^9.2.1",
     "electron": "^31.7.7",
     "electron-builder": "^26.8.1",
+    "googleapis": "^173.0.0",
     "javascript-obfuscator": "^5.4.2",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5",
@@ -122,15 +123,27 @@
       "electron/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "vehiculos lavadero",
+        "to": "vehiculos lavadero",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
-      "target": ["portable"],
+      "target": "nsis",
       "icon": "public/logo.png"
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GoWash POS"
     },
     "publish": [
       {
