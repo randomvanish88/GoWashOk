@@ -20,6 +20,7 @@ import { VirtualAssistant } from './components/VirtualAssistant';
 import { restoreFromBackupIfNeeded, startAutoBackup } from './lib/dataBackup';
 import { Toaster } from 'sonner';
 import { MobileApp } from '../pwa/MobileApp';
+import { sincronizarDesdeGoogleSheets, obtenerVehiculos } from '../services/vehiculosSync';
 const logoImage = "./logo.png";
 
 export interface Price {
@@ -141,19 +142,34 @@ function App() {
       const savedSizes = localStorage.getItem('carwash-sizes');
       const savedBrands = localStorage.getItem('carwash-brands');
 
-      if (savedPrices) {
-        setPrices(JSON.parse(savedPrices));
-      } else {
-        // Datos de ejemplo iniciales
-        const defaultPrices: Price[] = [
-          { id: '1', brand: 'Toyota', model: '-', size: 'Pequeño', service: 'Lavado Básico', price: 15 },
-          { id: '2', brand: 'Toyota', model: '-', size: 'Mediano', service: 'Lavado Básico', price: 20 },
-          { id: '3', brand: 'Toyota', model: '-', size: 'Grande', service: 'Lavado Básico', price: 25 },
-          { id: '4', brand: 'Honda', model: '-', size: 'Pequeño', service: 'Lavado Premium', price: 25 },
-          { id: '5', brand: 'Ford', model: '-', size: 'SUV', service: 'Lavado Premium + Encerado', price: 50 },
-        ];
-        setPrices(defaultPrices);
-        localStorage.setItem('carwash-prices', JSON.stringify(defaultPrices));
+      // Intentar sincronizar vehículos PRIMERO
+      try {
+        const vehiculosSincronizados = await sincronizarDesdeGoogleSheets();
+        if (vehiculosSincronizados && vehiculosSincronizados.length > 0) {
+          console.log(`[GoWash] ✅ Cargados ${vehiculosSincronizados.length} vehículos desde Google Sheets`);
+          setPrices(vehiculosSincronizados);
+          localStorage.setItem('carwash-prices', JSON.stringify(vehiculosSincronizados));
+        } else if (savedPrices) {
+          setPrices(JSON.parse(savedPrices));
+        } else {
+          throw new Error('No hay vehículos ni cache');
+        }
+      } catch (error) {
+        console.log('[GoWash] ℹ️  Usando cache de precios...');
+        if (savedPrices) {
+          setPrices(JSON.parse(savedPrices));
+        } else {
+          // Datos de ejemplo iniciales como último recurso
+          const defaultPrices: Price[] = [
+            { id: '1', brand: 'Toyota', model: '-', size: 'Pequeño', service: 'Lavado Básico', price: 15 },
+            { id: '2', brand: 'Toyota', model: '-', size: 'Mediano', service: 'Lavado Básico', price: 20 },
+            { id: '3', brand: 'Toyota', model: '-', size: 'Grande', service: 'Lavado Básico', price: 25 },
+            { id: '4', brand: 'Honda', model: '-', size: 'Pequeño', service: 'Lavado Premium', price: 25 },
+            { id: '5', brand: 'Ford', model: '-', size: 'SUV', service: 'Lavado Premium + Encerado', price: 50 },
+          ];
+          setPrices(defaultPrices);
+          localStorage.setItem('carwash-prices', JSON.stringify(defaultPrices));
+        }
       }
 
       if (savedSizes) {

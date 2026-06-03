@@ -1,0 +1,1378 @@
+{
+  "total": 195,
+  "timestamp": "2026-06-03T00:55:55.726Z",
+  "headers": [
+    "Marca",
+    "Modelo",
+    "Tamaño",
+    "Precio",
+    "URL_Imagen"
+  ],
+  "datos": [
+    {
+      "Marca": "106",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/106.webp"
+    },
+    {
+      "Marca": "206",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/206.avif"
+    },
+    {
+      "Marca": "206",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/206.jpg"
+    },
+    {
+      "Marca": "207",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/207.jfif"
+    },
+    {
+      "Marca": "208",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/208.jfif"
+    },
+    {
+      "Marca": "318 IS",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/318 IS.jpg"
+    },
+    {
+      "Marca": "ARGO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/ARGO.jfif"
+    },
+    {
+      "Marca": "CELTA",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/CELTA.jpg"
+    },
+    {
+      "Marca": "CLIO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/CLIO.jfif"
+    },
+    {
+      "Marca": "ESCORT 18",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/ESCORT 18.jfif"
+    },
+    {
+      "Marca": "FIAT UNO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/FIAT UNO.png"
+    },
+    {
+      "Marca": "FORD KA",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/FORD KA.jfif"
+    },
+    {
+      "Marca": "FOX",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/FOX.jpg"
+    },
+    {
+      "Marca": "GLC43",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/GLC43.jpg"
+    },
+    {
+      "Marca": "GOL",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/GOL.jfif"
+    },
+    {
+      "Marca": "GOLF",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/GOLF.jfif"
+    },
+    {
+      "Marca": "MOBI",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/MOBI.jpg"
+    },
+    {
+      "Marca": "PALIO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/PALIO.webp"
+    },
+    {
+      "Marca": "RIO",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/RIO.jfif"
+    },
+    {
+      "Marca": "TRACK",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/TRACK.jpg"
+    },
+    {
+      "Marca": "UP",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/UP.jpg"
+    },
+    {
+      "Marca": "FIESTA-KINETIC-1",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/fiesta-kinetic-1.jpg"
+    },
+    {
+      "Marca": "HONDA-FIT-",
+      "Modelo": "3-5 Puertas",
+      "Tamaño": "Pequeño",
+      "Precio": 25000,
+      "URL_Imagen": "/vehiculos lavadero/$25000 3Y5 PUERTAS/honda-fit-.jpg"
+    },
+    {
+      "Marca": "280C",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/280C.jfif"
+    },
+    {
+      "Marca": "307",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/307.jfif"
+    },
+    {
+      "Marca": "308",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/308.jpg"
+    },
+    {
+      "Marca": "408",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/408.jfif"
+    },
+    {
+      "Marca": "A3",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/A3.jfif"
+    },
+    {
+      "Marca": "A4",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/A4.jfif"
+    },
+    {
+      "Marca": "ARGO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ARGO.jfif"
+    },
+    {
+      "Marca": "ASTRA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ASTRA.jfif"
+    },
+    {
+      "Marca": "BERLINGO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BERLINGO.jfif"
+    },
+    {
+      "Marca": "BMW 235",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BMW 235.jfif"
+    },
+    {
+      "Marca": "BMW_318I",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BMW_318i.jpg"
+    },
+    {
+      "Marca": "BMW_330I",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BMW_330i.jpg"
+    },
+    {
+      "Marca": "BORA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/BORA.jfif"
+    },
+    {
+      "Marca": "C20",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/C20.webp"
+    },
+    {
+      "Marca": "C3",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/C3.png"
+    },
+    {
+      "Marca": "C4 MODELO 2010",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/C4 MODELO 2010.jpg"
+    },
+    {
+      "Marca": "CAMRY",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CAMRY.jpg"
+    },
+    {
+      "Marca": "CITY",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CITY.jfif"
+    },
+    {
+      "Marca": "CIVIC",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CIVIC.jfif"
+    },
+    {
+      "Marca": "COOPER S",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/COOPER S.webp"
+    },
+    {
+      "Marca": "COROLLA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/COROLLA.jpg"
+    },
+    {
+      "Marca": "CORSA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CORSA.webp"
+    },
+    {
+      "Marca": "COURIER",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/COURIER.jfif"
+    },
+    {
+      "Marca": "CRONOS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CRONOS.webp"
+    },
+    {
+      "Marca": "CRUZE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/CRUZE.jfif"
+    },
+    {
+      "Marca": "DS3",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/DS3.webp"
+    },
+    {
+      "Marca": "E200 MERCEDES",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/E200 mercedes.webp"
+    },
+    {
+      "Marca": "ETIOS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ETIOS.jpg"
+    },
+    {
+      "Marca": "FASTBACK",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FASTBACK.avif"
+    },
+    {
+      "Marca": "FIESTA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FIESTA.jfif"
+    },
+    {
+      "Marca": "FIORINO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FIORINO.jfif"
+    },
+    {
+      "Marca": "FLUENCE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FLUENCE.jfif"
+    },
+    {
+      "Marca": "FOCUS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FOCUS.jfif"
+    },
+    {
+      "Marca": "FOREST",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/FOREST.avif"
+    },
+    {
+      "Marca": "FIAT PALIO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Fiat Palio.jfif"
+    },
+    {
+      "Marca": "GLI (SEDAN)",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/GLI (SEDAN).webp"
+    },
+    {
+      "Marca": "GR FOUR",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/GR FOUR.png"
+    },
+    {
+      "Marca": "GTS (POLO)",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/GTS (POLO).jpg"
+    },
+    {
+      "Marca": "GULIETTA ALFA ROMEO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Gulietta alfa romeo.jfif"
+    },
+    {
+      "Marca": "HB20",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/HB20.jpg"
+    },
+    {
+      "Marca": "HONDA FIT",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/HONDA FIT.jpg"
+    },
+    {
+      "Marca": "KANGOO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/KANGOO.webp"
+    },
+    {
+      "Marca": "LOGAN",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/LOGAN.webp"
+    },
+    {
+      "Marca": "MERIVA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/MERIVA.jfif"
+    },
+    {
+      "Marca": "ONIX",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ONIX.jfif"
+    },
+    {
+      "Marca": "PARTNER",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PARTNER.jfif"
+    },
+    {
+      "Marca": "PASSAT",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PASSAT.jfif"
+    },
+    {
+      "Marca": "PICASSO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PICASSO.jfif"
+    },
+    {
+      "Marca": "POLO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/POLO.jpg"
+    },
+    {
+      "Marca": "PRISMA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/PRISMA.jfif"
+    },
+    {
+      "Marca": "RENAUL QUBO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/RENAUL QUBO.jfif"
+    },
+    {
+      "Marca": "SAIVERO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SAIVERO.jfif"
+    },
+    {
+      "Marca": "SANDERO STEPWAY 1",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SANDERO STEPWAY 1.jpg"
+    },
+    {
+      "Marca": "SANDERO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SANDERO.jfif"
+    },
+    {
+      "Marca": "SEDAN",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SEDAN.png"
+    },
+    {
+      "Marca": "SIENA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SIENA.jfif"
+    },
+    {
+      "Marca": "SURAN",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/SURAN.avif"
+    },
+    {
+      "Marca": "TIIDA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TIIDA.jpg"
+    },
+    {
+      "Marca": "TIPO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TIPO.jfif"
+    },
+    {
+      "Marca": "TIPO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TIPO.webp"
+    },
+    {
+      "Marca": "TT AUDI",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/TT Audi.jfif"
+    },
+    {
+      "Marca": "TERA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Tera.jfif"
+    },
+    {
+      "Marca": "VENTO",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VENTO.jfif"
+    },
+    {
+      "Marca": "VERSA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VERSA.jpg"
+    },
+    {
+      "Marca": "VIRTUS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VIRTUS.jpg"
+    },
+    {
+      "Marca": "VOLVO 850",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VOLVO 850.jfif"
+    },
+    {
+      "Marca": "VOYAGE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/VOYAGE.jfif"
+    },
+    {
+      "Marca": "VOLKSWAGEN-VOYAGE-",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/Volkswagen-Voyage-.webp"
+    },
+    {
+      "Marca": "X3 KAIYI",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/X3 KAIYI.jfif"
+    },
+    {
+      "Marca": "YARIS",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/YARIS.jfif"
+    },
+    {
+      "Marca": "ZAFIRA",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/ZAFIRA.jpg"
+    },
+    {
+      "Marca": "BMW 125I",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/bmw 125i.jpg"
+    },
+    {
+      "Marca": "RENAULT-MEGANE",
+      "Modelo": "5 Puertas",
+      "Tamaño": "Mediano",
+      "Precio": 28000,
+      "URL_Imagen": "/vehiculos lavadero/$28.000   5 PUERTAS UTILITARIOS Y DEPORTIVOS/renault-megane.jpg"
+    },
+    {
+      "Marca": "20008",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/20008.webp"
+    },
+    {
+      "Marca": "500X",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/500x.jfif"
+    },
+    {
+      "Marca": "AIRCROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/AIRCROSS.webp"
+    },
+    {
+      "Marca": "ARKANA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/ARKANA.webp"
+    },
+    {
+      "Marca": "ABARTH",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/Abarth.jpg"
+    },
+    {
+      "Marca": "AIRCROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/Aircross.png"
+    },
+    {
+      "Marca": "B180 MERCEDES",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/B180 MERCEDES.jpg"
+    },
+    {
+      "Marca": "B200",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/B200.webp"
+    },
+    {
+      "Marca": "BYD ATTO",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/BYD ATTO.webp"
+    },
+    {
+      "Marca": "C3 AIRCROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/C3 AIRCROSS.jfif"
+    },
+    {
+      "Marca": "C4 CACTUS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/C4 CACTUS.jfif"
+    },
+    {
+      "Marca": "CRETA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/CRETA.jfif"
+    },
+    {
+      "Marca": "CROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/CROSS.webp"
+    },
+    {
+      "Marca": "DS7",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/DS7.jfif"
+    },
+    {
+      "Marca": "DUSTER",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/DUSTER.webp"
+    },
+    {
+      "Marca": "ECO SPORT",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/ECO SPORT.jfif"
+    },
+    {
+      "Marca": "ECOSPORT",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/ECOSPORT.jpg"
+    },
+    {
+      "Marca": "FIAT 500X",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/FIAT 500X.webp"
+    },
+    {
+      "Marca": "HR-V",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/HR-V.jpg"
+    },
+    {
+      "Marca": "HRV HONDA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/HRV HONDA.jfif"
+    },
+    {
+      "Marca": "KAIYI X3",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KAIYI X3.webp"
+    },
+    {
+      "Marca": "KARDIAN",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KARDIAN.jfif"
+    },
+    {
+      "Marca": "KICKS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KICKS.webp"
+    },
+    {
+      "Marca": "KOLEOS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KOLEOS.webp"
+    },
+    {
+      "Marca": "KUGA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/KUGA.jpg"
+    },
+    {
+      "Marca": "NIVUS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/NIVUS.jpg"
+    },
+    {
+      "Marca": "Q3",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/Q3.jpg"
+    },
+    {
+      "Marca": "RAV4",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/RAV4.png"
+    },
+    {
+      "Marca": "RENEGADE",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/RENEGADE.jfif"
+    },
+    {
+      "Marca": "SPIN",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/SPIN.avif"
+    },
+    {
+      "Marca": "T-CROSS-2024 VW",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/T-cross-2024 VW.png"
+    },
+    {
+      "Marca": "TERA",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/TERA.webp"
+    },
+    {
+      "Marca": "TRACKER",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/TRACKER.jfif"
+    },
+    {
+      "Marca": "VOLVO",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/VOLVO.jfif"
+    },
+    {
+      "Marca": "WEEKEND",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/WEEKEND.jpg"
+    },
+    {
+      "Marca": "X TRIAL",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/X TRIAL.jpg"
+    },
+    {
+      "Marca": "X1",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/X1.webp"
+    },
+    {
+      "Marca": "X3",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/X3.webp"
+    },
+    {
+      "Marca": "COROLLA-CROSS",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/corolla-cross.jpg"
+    },
+    {
+      "Marca": "CRV SCOUT",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/crv scout.jpg"
+    },
+    {
+      "Marca": "JAC",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/jac.webp"
+    },
+    {
+      "Marca": "JOLION",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/jolion.jfif"
+    },
+    {
+      "Marca": "PULSE",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/pulse.webp"
+    },
+    {
+      "Marca": "X50",
+      "Modelo": "SUV Pequeño-Medio",
+      "Tamaño": "Mediano",
+      "Precio": 30000,
+      "URL_Imagen": "/vehiculos lavadero/$30.000 SUV CHI Y MED/x50.jfif"
+    },
+    {
+      "Marca": "5003",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/5003.jfif"
+    },
+    {
+      "Marca": "AMAROK",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/AMAROK.webp"
+    },
+    {
+      "Marca": "BRONCO",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/BRONCO.webp"
+    },
+    {
+      "Marca": "CAPTIVA",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/CAPTIVA.jfif"
+    },
+    {
+      "Marca": "COMPASS",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/COMPASS.jfif"
+    },
+    {
+      "Marca": "CRV",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/CRV.webp"
+    },
+    {
+      "Marca": "CRV HONDA",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/CRv Honda.webp"
+    },
+    {
+      "Marca": "CHANGAN-CS55",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/Changan-CS55.jpg"
+    },
+    {
+      "Marca": "EQUINOX",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/EQUINOX.jpg"
+    },
+    {
+      "Marca": "FORESTER",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/FORESTER.jfif"
+    },
+    {
+      "Marca": "FRONTIER",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/FRONTIER.jfif"
+    },
+    {
+      "Marca": "GLA250 4MATIC",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLA250 4matic.jpg"
+    },
+    {
+      "Marca": "GLC 43 ,,",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLC 43 ,,.jpg"
+    },
+    {
+      "Marca": "GLC300",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLC300.jpg"
+    },
+    {
+      "Marca": "GLC43",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GLC43.avif"
+    },
+    {
+      "Marca": "GRAND CHEROKEE",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/GRAND CHEROKEE.jfif"
+    },
+    {
+      "Marca": "HILUX",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/HILUX.jfif"
+    },
+    {
+      "Marca": "HILUX",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/HILUX.png"
+    },
+    {
+      "Marca": "INNOVA",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/Innova.jpg"
+    },
+    {
+      "Marca": "JEEP MERCEDES",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/JEEP MERCEDES.avif"
+    },
+    {
+      "Marca": "JEEP MERCEDES",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/JEEP MERCEDES.webp"
+    },
+    {
+      "Marca": "JOURNEY",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/JOURNEY.jfif"
+    },
+    {
+      "Marca": "L200",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/L200.jpg"
+    },
+    {
+      "Marca": "LIMITED JEEP",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/LIMITED JEEP.jpg"
+    },
+    {
+      "Marca": "MAVERCIK",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/Mavercik.jfif"
+    },
+    {
+      "Marca": "OROCH",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/OROCH.jfif"
+    },
+    {
+      "Marca": "RAM RAMPAGE",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RAM RAMPAGE.jpg"
+    },
+    {
+      "Marca": "RANGER",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RANGER.webp"
+    },
+    {
+      "Marca": "RAV 4",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RAV 4.jpg"
+    },
+    {
+      "Marca": "RAV4",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/RAV4.png"
+    },
+    {
+      "Marca": "SORENTO",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/SORENTO.jfif"
+    },
+    {
+      "Marca": "SPIN LTZ",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/SPIN LTZ.jfif"
+    },
+    {
+      "Marca": "STRADA",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/STRADA.jfif"
+    },
+    {
+      "Marca": "SW4",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/SW4.jpg"
+    },
+    {
+      "Marca": "TAOS",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TAOS.jfif"
+    },
+    {
+      "Marca": "TERRITORY",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TERRITORY.jfif"
+    },
+    {
+      "Marca": "TIGUON",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TIGUON.jfif"
+    },
+    {
+      "Marca": "TORO",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TORO.png"
+    },
+    {
+      "Marca": "TUCSON HYUNDAI",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/TUCSON HYUNDAI.jpg"
+    },
+    {
+      "Marca": "X3",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/X3.webp"
+    },
+    {
+      "Marca": "X6",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/X6.webp"
+    },
+    {
+      "Marca": "XGEAR",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/XGEAR.jfif"
+    },
+    {
+      "Marca": "XTERRA",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/XTERRA.jfif"
+    },
+    {
+      "Marca": "BAIC X55",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/baic x55.jfif"
+    },
+    {
+      "Marca": "RANGER-LIMITED",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/ranger-limited.webp"
+    },
+    {
+      "Marca": "S10",
+      "Modelo": "SUV Grande",
+      "Tamaño": "Grande",
+      "Precio": 35000,
+      "URL_Imagen": "/vehiculos lavadero/$35.000 SUV GRANDES Y CAMIONETAS/s10.jpg"
+    },
+    {
+      "Marca": "CARNIVAL",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/CARNIVAL.jfif"
+    },
+    {
+      "Marca": "F150",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/F150.jfif"
+    },
+    {
+      "Marca": "HIACE TOYOTA",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/Hiace toyota.png"
+    },
+    {
+      "Marca": "JUMPY",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/JUMPY.jfif"
+    },
+    {
+      "Marca": "LAND CRUSIER VX",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/Land crusier vx.jpg"
+    },
+    {
+      "Marca": "PATRIOT JEEP",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/PATRIOT JEEP.jfif"
+    },
+    {
+      "Marca": "RAM",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/RAM.jpg"
+    },
+    {
+      "Marca": "RAPTOR",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/RAPTOR.jpg"
+    },
+    {
+      "Marca": "VITTO 119 MERCEDE",
+      "Modelo": "Camioneta Premium",
+      "Tamaño": "Grande",
+      "Precio": 40000,
+      "URL_Imagen": "/vehiculos lavadero/$40.000 CAMIONETAS RAM Y MINIBAN/VITTO 119 MERCEDE.jfif"
+    }
+  ]
+}
