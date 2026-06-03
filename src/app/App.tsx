@@ -239,11 +239,50 @@ function App() {
       id: Date.now().toString(),
     };
     setPrices([...prices, newPrice]);
+
+    // Sincronizar con Google Sheets si está en Electron y tiene imagen de Drive
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+      const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+      (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
+        return (window as any).electronAPI.googleSheets.addRow('PWA_Vehiculos', {
+          Marca: newPrice.brand,
+          Modelo: newPrice.model,
+          'Tamaño': newPrice.size,
+          Precio: newPrice.price,
+          URL_Imagen: newPrice.imageUrl || '',
+        });
+      }).then(() => {
+        console.log('[App] ✅ Vehículo nuevo sincronizado con Sheets');
+      }).catch((err: any) => {
+        console.error('[App] Error sincronizando nuevo vehículo:', err);
+      });
+    }
   };
 
   const handleUpdatePrice = (updatedPrice: Price) => {
     setPrices(prices.map(p => p.id === updatedPrice.id ? updatedPrice : p));
     setEditingPrice(null);
+
+    // Sincronizar actualización con Google Sheets si está en Electron
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+      const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+      (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
+        return (window as any).electronAPI.googleSheets.updateRow(
+          'PWA_Vehiculos', 'Marca', updatedPrice.brand,
+          {
+            Marca: updatedPrice.brand,
+            Modelo: updatedPrice.model,
+            'Tamaño': updatedPrice.size,
+            Precio: updatedPrice.price,
+            URL_Imagen: updatedPrice.imageUrl || '',
+          }
+        );
+      }).then(() => {
+        console.log('[App] ✅ Vehículo actualizado en Sheets');
+      }).catch((err: any) => {
+        console.error('[App] Error actualizando vehículo en Sheets:', err);
+      });
+    }
   };
 
   const handleDeletePrice = (id: string) => {

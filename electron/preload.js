@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMachineId: () => ipcRenderer.invoke('get-machine-id'),
   validateLicense: (key) => ipcRenderer.invoke('validate-license', key),
   selectImage: () => ipcRenderer.invoke('select-image'),
+  uploadImageToDrive: (filePath, fileName, folderId) => ipcRenderer.invoke('upload-image-to-drive', { filePath, fileName, folderId }),
   getVehiculosData: () => ipcRenderer.invoke('get-vehiculos-data'),
   backup: {
     save: (data) => ipcRenderer.invoke('backup-save', data),

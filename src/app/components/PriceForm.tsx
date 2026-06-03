@@ -3,7 +3,18 @@ import { Price } from '../App';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Plus, Save, X, Car, Ruler, Sparkles, DollarSign, Image as ImageIcon, FolderOpen } from 'lucide-react';
+import { Plus, Save, X, Car, Ruler, Sparkles, DollarSign, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+// IDs de carpetas de Drive por categoría de precio
+const DRIVE_FOLDERS: Record<string, string> = {
+  '25000': '1pMZDV3fMRP0GlUF1w4jNyaBXx5i-Bcn2', // $25000 3Y5 PUERTAS (subcarpeta real)
+  '28000': '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk', // $28.000 5 PUERTAS (usar carpeta raíz por ahora)
+  '30000': '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk', // $30.000 SUV CHI Y MED
+  '35000': '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk', // $35.000 SUV GRANDES
+  '40000': '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk', // $40.000 CAMIONETAS
+  'default': '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk', // carpeta raíz vehiculos lavadero
+};
 
 declare global {
   interface Window {
@@ -11,6 +22,7 @@ declare global {
       getMachineId: () => Promise<string>;
       validateLicense: (key: string) => Promise<boolean>;
       selectImage: () => Promise<string | null>;
+      uploadImageToDrive: (filePath: string, fileName: string, folderId: string) => Promise<{ success: boolean; fileId?: string; imageUrl?: string; error?: string }>;
     };
   }
 }
@@ -47,6 +59,7 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
   const [customService, setCustomService] = useState('');
   const [price, setPrice] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (editingPrice) {
@@ -76,41 +89,115 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
     setImageUrl('');
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // En web: usar base64 como fallback (sin Drive)
+    if (typeof window === 'undefined' || !(window as any).electronAPI?.uploadImageToDrive) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 200; // Resize width to 200px to avoid large base64 strings
+          const MAX_WIDTH = 200;
           const scaleSize = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scaleSize;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          setImageUrl(dataUrl);
+          setImageUrl(canvas.toDataURL('image/jpeg', 0.7));
         };
         img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
+      return;
+    }
+    
+    // En Electron: crear archivo temporal y subir a Drive
+    setUploadingImage(true);
+    toast.info('Subiendo imagen a Google Drive...');
+    
+    try {
+      // Leer el archivo como ArrayBuffer y escribirlo temporalmente
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Usar una ruta temporal
+      const tempPath = `${require?.main || ''}`.includes('electron')
+        ? file.name
+        : file.name;
+
+      // El handler de Electron necesita la ruta del archivo en el filesystem
+      // Primero seleccionamos con el diálogo nativo para obtener la ruta real
+      const filePath = await (window as any).electronAPI.selectImage();
+      if (!filePath) {
+        setUploadingImage(false);
+        return;
+      }
+
+      // Extraer la ruta real del app-image:// prefix
+      const realPath = filePath.replace('app-image://', '');
+      const fileName = realPath.split('/').pop() || file.name;
+      
+      // Determinar carpeta de Drive según el precio
+      const priceNum = price ? Math.round(parseFloat(price) / 1000) * 1000 : 0;
+      const folderKey = Object.keys(DRIVE_FOLDERS).find(k => k === priceNum.toString()) || 'default';
+      const folderId = DRIVE_FOLDERS[folderKey];
+
+      const result = await (window as any).electronAPI.uploadImageToDrive(realPath, fileName, folderId);
+      
+      if (result.success && result.imageUrl) {
+        setImageUrl(result.imageUrl);
+        toast.success('Imagen subida a Google Drive correctamente');
+      } else {
+        toast.error('Error subiendo imagen: ' + (result.error || 'desconocido'));
+      }
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
   const handleSelectLocalImage = async () => {
-    if (window.electronAPI?.selectImage) {
-      const path = await window.electronAPI.selectImage();
-      if (path) {
-        setImageUrl(path);
+    if (!(window as any).electronAPI?.uploadImageToDrive) {
+      toast.error('Esta función requiere la versión desktop.');
+      return;
+    }
+
+    setUploadingImage(true);
+    toast.info('Seleccioná la imagen a subir...');
+
+    try {
+      const filePath = await (window as any).electronAPI.selectImage();
+      if (!filePath) { setUploadingImage(false); return; }
+
+      const realPath = filePath.replace('app-image://', '');
+      const fileName = realPath.split('/').pop() || 'vehiculo.jpg';
+      
+      toast.info('Subiendo a Google Drive...');
+
+      const priceNum = price ? Math.round(parseFloat(price) / 1000) * 1000 : 0;
+      const folderKey = Object.keys(DRIVE_FOLDERS).find(k => k === priceNum.toString()) || 'default';
+      const folderId = DRIVE_FOLDERS[folderKey];
+
+      const result = await (window as any).electronAPI.uploadImageToDrive(realPath, fileName, folderId);
+
+      if (result.success && result.imageUrl) {
+        setImageUrl(result.imageUrl);
+        toast.success('✅ Imagen subida a Google Drive. Disponible en web y desktop.');
+      } else {
+        toast.error('Error: ' + (result.error || 'desconocido'));
       }
-    } else {
-      alert('Esta función solo está disponible en la versión de escritorio.');
+    } catch (err: any) {
+      toast.error('Error: ' + err.message);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!brand || !model) {
@@ -128,12 +215,37 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
       imageUrl: imageUrl || undefined,
     };
 
+    // Guardar localmente
     if (editingPrice) {
       onSubmit({ ...priceData, id: editingPrice.id });
     } else {
       onSubmit(priceData);
-      resetForm();
     }
+
+    // Si está en Electron, también guardar en Google Sheets automáticamente
+    const isElectron = (window as any).electronAPI?.googleSheets;
+    if (isElectron && imageUrl) {
+      try {
+        const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+        // Inicializar Google Sheets si no está inicializado
+        await (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID);
+        
+        // Agregar o actualizar fila en PWA_Vehiculos
+        await (window as any).electronAPI.googleSheets.addRow('PWA_Vehiculos', {
+          Marca: brand,
+          Modelo: model,
+          'Tamaño': size || 'Mediano',
+          Precio: price || '0',
+          URL_Imagen: imageUrl,
+        });
+        toast.success('✅ Vehículo guardado en Google Sheets. Disponible en todos los dispositivos.');
+      } catch (err: any) {
+        console.error('[PriceForm] Error guardando en Sheets:', err);
+        toast.error('No se pudo guardar en Sheets: ' + err.message);
+      }
+    }
+
+    if (!editingPrice) resetForm();
   };
 
   return (
@@ -265,44 +377,42 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
 
         {/* Imagen de Referencia */}
         <div className="space-y-2 bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
-          <Label htmlFor="imageUpload" className="flex items-center gap-2 text-orange-700">
+          <Label className="flex items-center gap-2 text-orange-700">
             <ImageIcon className="w-4 h-4" />
-            Imagen de Referencia
+            Imagen del Vehículo
           </Label>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <Input
-                id="imageUpload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="bg-white border-orange-300 file:bg-orange-100 file:text-orange-700 file:border-0 file:rounded file:px-2 file:py-1 hover:file:bg-orange-200"
-              />
-              {imageUrl && (
-                <img src={imageUrl} alt="Preview" className="w-12 h-12 object-cover rounded-md shadow-sm border border-orange-300" />
-              )}
-            </div>
+          <div className="flex flex-col gap-3">
             
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-orange-200" />
+            {/* Preview */}
+            {imageUrl && (
+              <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-orange-200">
+                <img src={imageUrl} alt="Preview" className="w-16 h-16 object-cover rounded-md shadow-sm border border-orange-300" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-green-700">✅ Imagen cargada</span>
+                  <span className="text-[10px] text-gray-500 break-all">{imageUrl.startsWith('https://lh3') ? 'Guardada en Google Drive' : 'Vista previa local'}</span>
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setImageUrl('')} className="ml-auto text-red-500 hover:bg-red-50">
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-orange-50 px-2 text-orange-500 font-bold">O</span>
-              </div>
-            </div>
+            )}
 
-            <Button 
-              type="button" 
-              variant="outline" 
+            {/* Botón principal: seleccionar y subir a Drive */}
+            <Button
+              type="button"
+              variant="outline"
               onClick={handleSelectLocalImage}
-              className="w-full bg-white border-orange-300 text-orange-700 hover:bg-orange-100 border-2"
+              disabled={uploadingImage}
+              className="w-full bg-white border-orange-400 text-orange-700 hover:bg-orange-100 border-2 font-bold"
             >
-              <FolderOpen className="w-4 h-4 mr-2" />
-              Seleccionar Carpeta/Imagen de la PC
+              {uploadingImage ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Subiendo a Google Drive...</>
+              ) : (
+                <><Upload className="w-4 h-4 mr-2" />Seleccionar y subir imagen a Drive</>
+              )}
             </Button>
             <p className="text-[10px] text-orange-600 font-medium italic">
-              * Ideal para usar imágenes ya guardadas en tus carpetas locales.
+              La imagen se sube automáticamente a Google Drive y queda disponible en web y desktop.
             </p>
           </div>
         </div>

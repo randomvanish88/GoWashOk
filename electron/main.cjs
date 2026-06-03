@@ -220,24 +220,73 @@ ipcMain.handle('validate-license', (event, licenseKey) => {
 
 // --- LÓGICA DE IMÁGENES ---
 
-// Abrir diálogo para seleccionar una imagen
+// Abrir diálogo para seleccionar una imagen y subirla a Google Drive
 ipcMain.handle('select-image', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
-      { name: 'Imágenes', extensions: ['jpg', 'png', 'jpeg', 'webp'] }
+      { name: 'Imágenes', extensions: ['jpg', 'png', 'jpeg', 'webp', 'jfif', 'avif'] }
     ]
   });
 
-  if (result.canceled || result.filePaths.length === 0) {
-    return null;
-  }
+  if (result.canceled || result.filePaths.length === 0) return null;
 
-  // Normalizamos la ruta para usar barras diagonales (/) que son más seguras en URLs
   const normalizedPath = result.filePaths[0].replace(/\\/g, '/');
-  
-  // Retornamos la ruta con el prefijo de nuestro protocolo
   return `app-image://${normalizedPath}`;
+});
+
+// Subir imagen a Google Drive y retornar URL pública
+ipcMain.handle('upload-image-to-drive', async (event, { filePath, fileName, folderId }) => {
+  try {
+    const { google } = await import('googleapis');
+
+    const CREDENTIALS = {
+      client_email: "gowash-sync@gowash-db-496413.iam.gserviceaccount.com",
+      private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDYIZzszgpI0VdS\nxWfVoybofOEZ1IwB1GCZozfqp5V6l6Cx2S3//GsjbTtKRGx1jXMaBtodoD3tHu/n\n0nffKS0BgzxoWNa4jMl12I78B8a4cDS0L5dW3W9EgR8d1V0owvyLbsxRpH/6y+vq\nhS4Kk7A1lsMhZn2IcBRtJYZeZhHhJEQfhjAPfdfHRQd1t+rjBfVjbyVkZ7QYebad\ntY0pE95A3uG87SL0k48obdja+cL/TCvSUPSgKl5fZRWTfMDtMPZo+Y1wzOR93Uvo\njDcszV/bCiZDolYHd5XvJ+XR7gtdqEH+ApE0/G9sq6pKS3KVGxkqhLSrCGhagCvE\nAj5YIf/ZAgMBAAECggEASBbiFDxfQs2Mjl+o1CHgsvAgVvDFqECR3f0KhBrUqXjU\n0S1rAfTMOZtQCOQMtyLwjvBVJUeTEDne9FiHwigmSlhfOEDVkeXntoZ+nsLrPg6z\nDZzIImGmoNderSFDOvraqJlSzjKLu3f0Hxu/8Sg0wJMiT8wzN+SGc6duC6OI+Cp3\nEW4vgOJkMqPSbHUSC5Di8c0xRiAXVi2Ny9RcjcmAsrtvlxN5SXnfuEBr6TUt8lKR\nZV/jLoxzm6wkLX/WhrZJsAkmrbYR7L137kUshJOTfaBuS3xakce8dqX9ux6SqN35\nCGVwHurpvrY3Is7IMRI2oCbvH/eqDH1EbRXVLpXNPwKBgQDyCUog/MDxjtPIdcnj\nTppzr6e0GO0kGyqPTEgEJk/viW70GCa1Xgu3m08O/P28vCWeOyIq+y01iaPoz5Lq\nzsLQof/UzX2NCNwP1eByrKeVjF7n/oJt4RXVwo4zDaZIe8ZXrxqfl3Fd89sKAfG9\nrB1ukXG+/vAFSOQnWpd6HzkUiwKBgQDkmbl3853hn5yPHkqBuDvEGLFHP4F0dZKE\nNlsObauD0HreXEbFsQ30sueXivOJtVKOIUQDc5V2FI8AC2prMgfzi1ga02wbxfuc\nfnKPoixcA97lbh+nhrVXkNAylLq+dMwgucPKkPWOTjdRMOlYENhVtJI3NwJ1KSUp\nZbgalNG1qwKBgQDZb7cEw4yidemU4Ryp9GeVHmzOwsXn9e/aJHFeKP0O+KyQ5VGB\nBigInqH7mRRqhaxV5lHfwx7uReTWtgQKpg0mWSL4DlOIbDkmkMG+w5UaKKzqRh7u\nj5OKIeqVuuFzpJ6fD1Qfo3HZMcXJy81c1E7skgVZzLXcSYuOPzhuIbap2QKBgQCM\nQc1LzYsm7ZlPLlSkdnck/8l1X398Bs8Yk4kWty8utvFMEO3TSai4ZDQ4BKcb7MZ0\nMfDa9UXUpxR+AIMQtieuw+YQv3trJvQTtnlvqx7wbeeKeSCu1rXYvh8fiaVySZMc\n2R1J4drnrxG9nPbuc5doLlwvyG6Xl+EXHzPwCzMH9QKBgBsSLvMCldu3x4EuiX4H\nbIK2e6gijQC/juXhiUeNMHdkx89HN2RrRSGaV15Eys2iMMUSvKynuMeI1bur2YbY\n+ETkKUx/Z/vaYZlyogx3X7J0hejjedQsWM9XgtY/G0NXxxRgjECmhyeL3bBAmd4P\nJ1Rmx+e/HDerkKUnWFTDj6IR\n-----END PRIVATE KEY-----\n",
+    };
+
+    const auth = new google.auth.JWT({
+      email: CREDENTIALS.client_email,
+      key: CREDENTIALS.private_key,
+      scopes: ['https://www.googleapis.com/auth/drive.file'],
+    });
+
+    const drive = google.drive({ version: 'v3', auth });
+
+    // Leer el archivo
+    const fileContent = fs.readFileSync(filePath);
+    const mimeType = filePath.match(/\.(png)$/i) ? 'image/png' :
+                     filePath.match(/\.(webp)$/i) ? 'image/webp' : 'image/jpeg';
+
+    // Subir a Drive en la carpeta especificada
+    const uploadRes = await drive.files.create({
+      requestBody: {
+        name: fileName,
+        parents: [folderId],
+      },
+      media: {
+        mimeType,
+        body: require('stream').Readable.from(fileContent),
+      },
+      fields: 'id, name',
+    });
+
+    const fileId = uploadRes.data.id;
+
+    // Hacer el archivo público
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: 'reader', type: 'anyone' },
+    });
+
+    const imageUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
+    console.log(`[Drive Upload] Subido: ${fileName} → ${imageUrl}`);
+    return { success: true, fileId, imageUrl };
+
+  } catch (error) {
+    console.error('[Drive Upload] Error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 // --- LÓGICA DE GOOGLE SHEETS ---

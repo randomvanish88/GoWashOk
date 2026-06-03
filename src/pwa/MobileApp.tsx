@@ -12,6 +12,9 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from 'sonner';
 import { GoogleSheetsConfig } from '../components/GoogleSheetsConfig';
 import { googleSheetsSync } from '../services/googleSheetsSync';
+import { sincronizarDesdeGoogleSheets } from '../services/vehiculosSync';
+import { agregarVehiculoAlPatio, actualizarVehiculoEnPatio, obtenerVehiculosDelPatio } from '../services/patioSync';
+import type { Price } from '../app/App';
 
 interface MobileAppProps {
   user: string | null;
@@ -69,10 +72,15 @@ const METODOS_PAGO = ['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta', 'Mixto']
 export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   // Navegación
   const [pantalla, setPantalla] = useState<'inicio' | 'ingreso' | 'vehiculos' | 'retiro' | 'reportes'>('inicio');
-  
+
   // Estados de datos
   const [vehiculosEnPatio, setVehiculosEnPatio] = useState<Vehiculo[]>([]);
   const [vehiculosEntregados, setVehiculosEntregados] = useState<Vehiculo[]>([]);
+
+  // Catálogo de vehículos (desde Google Sheets / JSON)
+  const [catalogoVehiculos, setCatalogoVehiculos] = useState<Price[]>([]);
+  const [sugerencias, setSugerencias] = useState<Price[]>([]);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   
   // Estado de conexión Google Sheets
   const [googleSheetsConectado, setGoogleSheetsConectado] = useState(false);
@@ -146,7 +154,23 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
     const savedEntregados = localStorage.getItem('gowash-mobile-entregados');
     if (savedEntregados) setVehiculosEntregados(JSON.parse(savedEntregados));
-    
+
+    // Cargar catálogo de vehículos para autocompletado
+    sincronizarDesdeGoogleSheets().then(lista => {
+      if (lista.length > 0) {
+        setCatalogoVehiculos(lista);
+        console.log(`[MobileApp] Catálogo cargado: ${lista.length} vehículos`);
+      }
+    }).catch(err => console.error('[MobileApp] Error cargando catálogo:', err));
+
+    // Cargar patio desde Google Sheets (sincronización en tiempo real)
+    obtenerVehiculosDelPatio().then(vehiculosSheet => {
+      if (vehiculosSheet.length > 0) {
+        setVehiculosEnPatio(vehiculosSheet.filter(v => !v.horaSalida));
+        console.log(`[MobileApp] Patio cargado desde Sheets: ${vehiculosSheet.length} vehículos`);
+      }
+    }).catch(err => console.error('[MobileApp] Error cargando patio desde Sheets:', err));
+
     // Verificar si hay conexión con Google Sheets
     const spreadsheetId = localStorage.getItem('gowash-spreadsheet-id');
     if (spreadsheetId && googleSheetsSync.isAvailable()) {
@@ -251,6 +275,39 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     }
   };
 
+  // Buscar sugerencias del catálogo al escribir marca/modelo
+  const handleMarcaModeloChange = (valor: string) => {
+    setMarcaModelo(valor);
+    if (valor.length >= 2) {
+      const term = valor.toLowerCase();
+      const encontrados = catalogoVehiculos
+        .filter(v =>
+          v.brand.toLowerCase().includes(term) ||
+          v.model.toLowerCase().includes(term) ||
+          `${v.brand} ${v.model}`.toLowerCase().includes(term)
+        )
+        .slice(0, 6);
+      setSugerencias(encontrados);
+      setMostrarSugerencias(encontrados.length > 0);
+    } else {
+      setSugerencias([]);
+      setMostrarSugerencias(false);
+    }
+  };
+
+  const seleccionarSugerencia = (v: Price) => {
+    setMarcaModelo(`${v.brand} ${v.model}`);
+    setSugerencias([]);
+    setMostrarSugerencias(false);
+    // Autocompletar precio si el servicio no tiene uno definido
+    if (v.price > 0) {
+      const servicioMatchIndex = SERVICIOS.findIndex(s => s.precio === v.price);
+      if (servicioMatchIndex >= 0) {
+        setServicioSeleccionado(SERVICIOS[servicioMatchIndex]);
+      }
+    }
+  };
+
   // Registrar nuevo vehículo
   const handleRegistrarVehiculo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -293,13 +350,26 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
     setVehiculosEnPatio([...vehiculosEnPatio, nuevoVehiculo]);
     
-    // Sincronizar con Google Sheets si está disponible
-    if (googleSheetsSync.isAvailable()) {
-      const syncResult = await googleSheetsSync.saveVehiculoPatio(nuevoVehiculo);
-      if (syncResult.success) {
-        console.log('✅ Vehículo sincronizado con Google Sheets');
-      }
-    }
+    // Sincronizar con Google Sheets via patioSync (funciona en web y mobile)
+    agregarVehiculoAlPatio({
+      id: nuevoVehiculo.id,
+      patente: nuevoVehiculo.patente,
+      marcaModelo: nuevoVehiculo.marcaModelo,
+      color: nuevoVehiculo.color,
+      cliente: nuevoVehiculo.cliente,
+      telefono: nuevoVehiculo.telefono,
+      servicio: nuevoVehiculo.servicio,
+      precio: nuevoVehiculo.precio,
+      metodoPago: nuevoVehiculo.metodoPago,
+      empleado: nuevoVehiculo.empleado,
+      fecha: nuevoVehiculo.fecha,
+      horaIngreso: nuevoVehiculo.horaIngreso,
+      estado: nuevoVehiculo.estado,
+      observaciones: nuevoVehiculo.observaciones,
+    }).then(r => {
+      if (r.success) toast.success('✅ Ingreso sincronizado con Google Sheets');
+      else console.warn('[MobileApp] No se pudo sincronizar con Sheets:', r.error);
+    }).catch(err => console.error('[MobileApp] Error sync patio:', err));
     
     setVehiculoQR(nuevoVehiculo);
     setMostrarQR(true);
@@ -327,6 +397,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setVehiculosEnPatio(vehiculosEnPatio.map(v => 
       v.id === id ? { ...v, estado: nuevoEstado } : v
     ));
+    // Sincronizar estado en Sheets
+    actualizarVehiculoEnPatio(id, { estado: nuevoEstado })
+      .catch(err => console.error('[MobileApp] Error actualizando estado en Sheets:', err));
     toast.success(`Estado actualizado a: ${nuevoEstado}`);
   };
 
@@ -452,13 +525,14 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setVehiculosEntregados([vehiculoEntregado, ...vehiculosEntregados]);
     setVehiculosEnPatio(vehiculosEnPatio.filter(v => v.id !== vehiculo.id));
     
-    // Sincronizar con Google Sheets si está disponible
-    if (googleSheetsSync.isAvailable()) {
-      const syncResult = await googleSheetsSync.moveVehiculoToEntregados(vehiculoEntregado);
-      if (syncResult.success) {
-        console.log('✅ Vehículo movido a Entregados en Google Sheets');
-      }
-    }
+    // Sincronizar hora de salida y estado en Sheets via patioSync
+    actualizarVehiculoEnPatio(vehiculo.id, {
+      horaSalida: hora,
+      estado: 'Entregado',
+    }).then(r => {
+      if (r.success) console.log('[MobileApp] ✅ Entrega registrada en Sheets');
+      else console.warn('[MobileApp] No se pudo actualizar Sheets:', r.error);
+    }).catch(err => console.error('[MobileApp] Error actualizando Sheets:', err));
     
     setVehiculoSeleccionado(null);
     setPantalla('inicio');
@@ -830,13 +904,42 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Marca / Modelo</label>
-                  <input
-                    type="text"
-                    value={marcaModelo}
-                    onChange={(e) => setMarcaModelo(e.target.value)}
-                    placeholder="Toyota Corolla"
-                    className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={marcaModelo}
+                      onChange={(e) => handleMarcaModeloChange(e.target.value)}
+                      onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
+                      onFocus={() => marcaModelo.length >= 2 && sugerencias.length > 0 && setMostrarSugerencias(true)}
+                      placeholder="Ej: COROLLA, GOL, HILUX..."
+                      className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    {/* Sugerencias del catálogo */}
+                    {mostrarSugerencias && sugerencias.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-xl shadow-xl overflow-hidden">
+                        {sugerencias.map((v, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onMouseDown={() => seleccionarSugerencia(v)}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-left border-b border-slate-700 last:border-0"
+                          >
+                            {v.imageUrl ? (
+                              <img src={v.imageUrl} alt={v.brand} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Car className="w-5 h-5 text-slate-400" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-bold text-sm truncate">{v.brand} {v.model}</p>
+                              <p className="text-slate-400 text-xs">{v.size} · ${v.price.toLocaleString('es-AR')}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
