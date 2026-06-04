@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { GoogleSheetsConfig } from '../components/GoogleSheetsConfig';
 import { googleSheetsSync } from '../services/googleSheetsSync';
 import { sincronizarDesdeGoogleSheets } from '../services/vehiculosSync';
-import { agregarVehiculoAlPatio, actualizarVehiculoEnPatio, obtenerVehiculosDelPatio } from '../services/patioSync';
+import { agregarVehiculoAlPatio, actualizarVehiculoEnPatio, obtenerVehiculosDelPatio, obtenerProductosDelSheets } from '../services/patioSync';
 import type { Price } from '../app/App';
 
 interface MobileAppProps {
@@ -52,19 +52,8 @@ const SERVICIOS = [
   { nombre: 'Detailing', precio: 12000, descripcion: 'Servicio completo profesional', tiempoEstimado: 90 },
 ];
 
-const PRODUCTOS_BAR = [
-  { nombre: 'Café', precio: 500 },
-  { nombre: 'Agua', precio: 300 },
-  { nombre: 'Gaseosa', precio: 600 },
-  { nombre: 'Snack', precio: 400 },
-];
-
-const PRODUCTOS_COSMETICOS = [
-  { nombre: 'Aromatizante', precio: 1500 },
-  { nombre: 'Limpia Vidrios', precio: 2000 },
-  { nombre: 'Cera Protectora', precio: 3000 },
-  { nombre: 'Shampoo Auto', precio: 2500 },
-];
+// Los productos Bar y Cosméticos se cargan dinámicamente desde Google Sheets
+// (ver useEffect de carga de productos más abajo)
 
 const COLORES = ['Blanco', 'Negro', 'Gris', 'Plata', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Naranja', 'Otro'];
 const METODOS_PAGO = ['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta', 'Mixto'];
@@ -74,13 +63,24 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [pantalla, setPantalla] = useState<'inicio' | 'ingreso' | 'vehiculos' | 'retiro' | 'reportes'>('inicio');
 
   // Estados de datos
-  const [vehiculosEnPatio, setVehiculosEnPatio] = useState<Vehiculo[]>([]);
-  const [vehiculosEntregados, setVehiculosEntregados] = useState<Vehiculo[]>([]);
+  const [vehiculosEnPatio, setVehiculosEnPatio] = useState<Vehiculo[]>(() => {
+    const savedEnPatio = localStorage.getItem('gowash-mobile-patio');
+    return savedEnPatio ? JSON.parse(savedEnPatio) : [];
+  });
+  const [vehiculosEntregados, setVehiculosEntregados] = useState<Vehiculo[]>(() => {
+    const savedEntregados = localStorage.getItem('gowash-mobile-entregados');
+    return savedEntregados ? JSON.parse(savedEntregados) : [];
+  });
 
   // Catálogo de vehículos (desde Google Sheets / JSON)
   const [catalogoVehiculos, setCatalogoVehiculos] = useState<Price[]>([]);
   const [sugerencias, setSugerencias] = useState<Price[]>([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
+  // Productos Bar y Cosméticos dinámicos desde Google Sheets
+  const [productosBar, setProductosBar] = useState<{ group: string; nombre: string; precio: number }[]>([]);
+  const [productosCosmeticos, setProductosCosmeticos] = useState<{ nombre: string; contenido: string; precio: number }[]>([]);
+  const [cargandoProductos, setCargandoProductos] = useState(false);
   
   // Estado de conexión Google Sheets
   const [googleSheetsConectado, setGoogleSheetsConectado] = useState(false);
@@ -149,12 +149,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       ]);
     }
 
-    const savedEnPatio = localStorage.getItem('gowash-mobile-patio');
-    if (savedEnPatio) setVehiculosEnPatio(JSON.parse(savedEnPatio));
-
-    const savedEntregados = localStorage.getItem('gowash-mobile-entregados');
-    if (savedEntregados) setVehiculosEntregados(JSON.parse(savedEntregados));
-
     // Cargar catálogo de vehículos para autocompletado
     sincronizarDesdeGoogleSheets().then(lista => {
       if (lista.length > 0) {
@@ -162,14 +156,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         console.log(`[MobileApp] Catálogo cargado: ${lista.length} vehículos`);
       }
     }).catch(err => console.error('[MobileApp] Error cargando catálogo:', err));
-
-    // Cargar patio desde Google Sheets (sincronización en tiempo real)
-    obtenerVehiculosDelPatio().then(vehiculosSheet => {
-      if (vehiculosSheet.length > 0) {
-        setVehiculosEnPatio(vehiculosSheet.filter(v => !v.horaSalida));
-        console.log(`[MobileApp] Patio cargado desde Sheets: ${vehiculosSheet.length} vehículos`);
-      }
-    }).catch(err => console.error('[MobileApp] Error cargando patio desde Sheets:', err));
 
     // Verificar si hay conexión con Google Sheets
     const spreadsheetId = localStorage.getItem('gowash-spreadsheet-id');
@@ -182,6 +168,47 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         }
       });
     }
+  }, []);
+
+  // Cargar productos Bar y Cosméticos desde Google Sheets al iniciar
+  useEffect(() => {
+    setCargandoProductos(true);
+    obtenerProductosDelSheets()
+      .then(({ bar, cosmetica }) => {
+        if (bar.length > 0) {
+          setProductosBar(bar.map(p => ({ group: p.group, nombre: p.name, precio: p.value })));
+          console.log(`[MobileApp] Productos Bar cargados: ${bar.length}`);
+        }
+        if (cosmetica.length > 0) {
+          setProductosCosmeticos(cosmetica.map(p => ({ nombre: p.nombre, contenido: p.contenido, precio: p.pvp })));
+          console.log(`[MobileApp] Productos Cosméticos cargados: ${cosmetica.length}`);
+        }
+      })
+      .catch(err => console.error('[MobileApp] Error cargando productos:', err))
+      .finally(() => setCargandoProductos(false));
+  }, []);
+
+  // Polling de vehículos en patio desde Google Sheets (cada 10 segundos)
+  useEffect(() => {
+    const refrescarPatio = () => {
+      obtenerVehiculosDelPatio()
+        .then(vehiculosSheet => {
+          if (Array.isArray(vehiculosSheet)) {
+            const activos = vehiculosSheet.filter(v => !v.horaSalida);
+            setVehiculosEnPatio(activos);
+            localStorage.setItem('gowash-mobile-patio', JSON.stringify(activos));
+            console.log(`[MobileApp] Polling: Patio actualizado con ${activos.length} vehículos`);
+          }
+        })
+        .catch(err => console.error('[MobileApp] Error en polling de patio:', err));
+    };
+
+    // Refrescar de inmediato al montar
+    refrescarPatio();
+
+    // Polling cada 10 segundos (reducido de 20s para respuesta más rápida)
+    const intervalId = setInterval(refrescarPatio, 10000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Actualizar fecha y hora cuando se abre el formulario de ingreso
@@ -200,15 +227,11 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
   // Guardar automáticamente
   useEffect(() => {
-    if (vehiculosEnPatio.length > 0) {
-      localStorage.setItem('gowash-mobile-patio', JSON.stringify(vehiculosEnPatio));
-    }
+    localStorage.setItem('gowash-mobile-patio', JSON.stringify(vehiculosEnPatio));
   }, [vehiculosEnPatio]);
 
   useEffect(() => {
-    if (vehiculosEntregados.length > 0) {
-      localStorage.setItem('gowash-mobile-entregados', JSON.stringify(vehiculosEntregados));
-    }
+    localStorage.setItem('gowash-mobile-entregados', JSON.stringify(vehiculosEntregados));
   }, [vehiculosEntregados]);
 
   // Formatear moneda
@@ -1222,23 +1245,40 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-300 uppercase">Seleccionar Producto</label>
+                  {cargandoProductos ? (
+                    <p className="text-xs text-green-400 animate-pulse">Cargando productos desde Sheets...</p>
+                  ) : (
                   <select
                     onChange={(e) => {
-                      const producto = PRODUCTOS_BAR.find(p => p.nombre === e.target.value);
-                      if (producto) {
-                        agregarProductoBar(producto);
+                      const val = e.target.value;
+                      if (!val) return;
+                      const [nombre, precioStr] = val.split('|');
+                      const precio = parseFloat(precioStr) || 0;
+                      if (nombre) {
+                        agregarProductoBar({ nombre, precio });
                         e.target.value = '';
                       }
                     }}
                     className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 transition-colors"
                   >
                     <option value="">-- Agregar producto --</option>
-                    {PRODUCTOS_BAR.map(producto => (
-                      <option key={producto.nombre} value={producto.nombre}>
-                        {producto.nombre} - {formatMoney(producto.precio)}
-                      </option>
-                    ))}
+                    {productosBar.length > 0
+                      ? (() => {
+                          const grupos = [...new Set(productosBar.map(p => p.group))];
+                          return grupos.map(grupo => (
+                            <optgroup key={grupo} label={grupo}>
+                              {productosBar.filter(p => p.group === grupo).map(producto => (
+                                <option key={producto.nombre} value={`${producto.nombre}|${producto.precio}`}>
+                                  {producto.nombre} - {formatMoney(producto.precio)}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ));
+                        })()
+                      : <option disabled>No hay productos cargados desde Sheets</option>
+                    }
                   </select>
+                  )}
                 </div>
 
                 {productosBarSeleccionados.length > 0 && (
@@ -1278,23 +1318,33 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-300 uppercase">Seleccionar Producto</label>
+                  {cargandoProductos ? (
+                    <p className="text-xs text-pink-400 animate-pulse">Cargando productos desde Sheets...</p>
+                  ) : (
                   <select
                     onChange={(e) => {
-                      const producto = PRODUCTOS_COSMETICOS.find(p => p.nombre === e.target.value);
-                      if (producto) {
-                        agregarProductoCosmetico(producto);
+                      const val = e.target.value;
+                      if (!val) return;
+                      const [nombre, precioStr] = val.split('|');
+                      const precio = parseFloat(precioStr) || 0;
+                      if (nombre) {
+                        agregarProductoCosmetico({ nombre, precio });
                         e.target.value = '';
                       }
                     }}
                     className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-pink-500 transition-colors"
                   >
                     <option value="">-- Agregar producto --</option>
-                    {PRODUCTOS_COSMETICOS.map(producto => (
-                      <option key={producto.nombre} value={producto.nombre}>
-                        {producto.nombre} - {formatMoney(producto.precio)}
-                      </option>
-                    ))}
+                    {productosCosmeticos.length > 0
+                      ? productosCosmeticos.map(producto => (
+                          <option key={`${producto.nombre}-${producto.contenido}`} value={`${producto.nombre}${producto.contenido ? ' (' + producto.contenido + ')' : ''}|${producto.precio}`}>
+                            {producto.nombre}{producto.contenido ? ` (${producto.contenido})` : ''} - {formatMoney(producto.precio)}
+                          </option>
+                        ))
+                      : <option disabled>No hay productos cargados desde Sheets</option>
+                    }
                   </select>
+                  )}
                 </div>
 
                 {productosCosmeticosSeleccionados.length > 0 && (

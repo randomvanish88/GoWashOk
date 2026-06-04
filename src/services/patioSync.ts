@@ -132,6 +132,69 @@ export async function agregarVehiculoAlPatio(vehiculo: {
   }
 }
 
+// ─── PRODUCTOS BAR / COSMÉTICOS ──────────────────────────────────────────────
+
+export interface ProductoBar {
+  group: string;
+  name: string;
+  value: number;
+  stock?: number;
+}
+
+export interface ProductoCosmetica {
+  nombre: string;
+  contenido: string;
+  pvp: number;
+  stock?: number;
+}
+
+export async function obtenerProductosDelSheets(): Promise<{ bar: ProductoBar[]; cosmetica: ProductoCosmetica[] }> {
+  try {
+    if (isElectron()) {
+      await initElectron();
+      // Leer hoja Bar
+      const resBar = await (window as any).electronAPI.googleSheets.getRows('Bar');
+      const bar: ProductoBar[] = (resBar?.success && Array.isArray(resBar.data))
+        ? resBar.data
+            .filter((r: any) => r.nombre || r.name)
+            .map((r: any) => ({
+              group: r.grupo || r.group || 'General',
+              name: r.nombre || r.name || '',
+              value: parseFloat(r.precio || r.value) || 0,
+              stock: parseInt(r.stock) || 10,
+            }))
+        : [];
+
+      // Leer hoja Cosmetica
+      const resCos = await (window as any).electronAPI.googleSheets.getRows('Cosmetica');
+      const cosmetica: ProductoCosmetica[] = (resCos?.success && Array.isArray(resCos.data))
+        ? resCos.data
+            .filter((r: any) => r.nombre)
+            .map((r: any) => ({
+              nombre: r.nombre || '',
+              contenido: r.contenido || '',
+              pvp: parseFloat(r.pvp) || 0,
+              stock: parseInt(r.stock) || 10,
+            }))
+        : [];
+
+      return { bar, cosmetica };
+    } else {
+      // Web/Vercel: usar API serverless
+      const resp = await fetch('/api/productos', { signal: AbortSignal.timeout(8000) });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      return {
+        bar: data.bar || [],
+        cosmetica: data.cosmetica || [],
+      };
+    }
+  } catch (error: any) {
+    console.warn('[PatioSync] Error obteniendo productos:', error.message);
+    return { bar: [], cosmetica: [] };
+  }
+}
+
 // ─── ACTUALIZAR VEHÍCULO ──────────────────────────────────────────────────────
 
 export async function actualizarVehiculoEnPatio(
