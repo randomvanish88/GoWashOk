@@ -21,7 +21,7 @@ import {
   metodosParaPagoMixto,
 } from './pagoMixto';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
-import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio } from '../../services/patioSync';
+import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio, obtenerProductosDelSheets } from '../../services/patioSync';
 import { toast } from 'sonner';
 
 
@@ -871,6 +871,26 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     } else {
       setBarProductsData(DEFAULT_BAR_PRODUCTS.map(p => ({ ...p, stock: 10 })));
     }
+
+    // Cargar productos de Bar y Cosméticos desde Google Sheets
+    obtenerProductosDelSheets()
+      .then(({ bar, cosmetica }) => {
+        if (bar && bar.length > 0) {
+          const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
+          setBarProductsData(barConStock);
+          localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
+          console.log(`[POS] ✅ Productos Bar sincronizados desde Sheets: ${bar.length}`);
+        }
+        if (cosmetica && cosmetica.length > 0) {
+          const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
+          setCosmeticosData(cosmeticaConStock);
+          localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
+          console.log(`[POS] ✅ Productos Cosméticos sincronizados desde Sheets: ${cosmetica.length}`);
+        }
+      })
+      .catch(err => {
+        console.warn('[POS] No se pudieron cargar productos desde Sheets:', err);
+      });
     
     if (savedLavado) setServiciosLavado(JSON.parse(savedLavado));
     else setServiciosLavado(DEFAULT_SERVICIOS_LAVADO);

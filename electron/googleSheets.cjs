@@ -130,8 +130,10 @@ class GoogleSheetsHandler {
     const rowToUpdate = rows.find(row => row.get(searchColumn) == searchValue);
 
     if (rowToUpdate) {
-      // Actualizamos los valores
-      Object.assign(rowToUpdate, newData);
+      // Actualizamos los valores usando rowToUpdate.set() para compatibilidad con google-spreadsheet v5
+      for (const [key, value] of Object.entries(newData)) {
+        rowToUpdate.set(key, value);
+      }
       await rowToUpdate.save();
       return { success: true };
     }
