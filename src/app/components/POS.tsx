@@ -2360,7 +2360,29 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     [conteoBilletes, denominacionesBilletes]
   );
 
-  const diferenciaArqueo = totalContadoBilletes - (totalEfectivo + montoCajaInicio);
+  const [totalGastosDia, setTotalGastosDia] = useState(0);
+
+  useEffect(() => {
+    const calcularGastos = () => {
+      const gastosDelDia = JSON.parse(localStorage.getItem('gowash-gastos') || '[]');
+      const total = gastosDelDia
+        .filter((g: any) => g.fecha === fechaCierre)
+        .reduce((sum: number, g: any) => sum + (g.monto || 0), 0);
+      setTotalGastosDia(total);
+    };
+
+    calcularGastos();
+
+    window.addEventListener('gastos-updated', calcularGastos);
+    window.addEventListener('storage', calcularGastos);
+    
+    return () => {
+      window.removeEventListener('gastos-updated', calcularGastos);
+      window.removeEventListener('storage', calcularGastos);
+    };
+  }, [fechaCierre]);
+
+  const diferenciaArqueo = totalContadoBilletes - (totalEfectivo + montoCajaInicio - totalGastosDia);
 
   const cierreYaEnviado =
     typeof window !== 'undefined' &&
