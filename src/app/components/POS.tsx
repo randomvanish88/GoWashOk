@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Price } from '../App';
 import { agregarAlCatalogo } from '../../services/vehiculosSync';
 import { Card } from './ui/card';
@@ -1619,7 +1620,68 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       toast.success('Vehículo cargado', { description: 'Revisa los datos en el formulario y cobra la venta.' });
     } catch (error: any) {
       alert("Error crítico al cargar el vehículo: " + error.message);
-      console.error("Error en cargarVehiculoMovilEnPOS:", error);
+    }
+  };
+
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const cameraQrReaderRef = useRef<Html5Qrcode | null>(null);
+
+  const iniciarEscaneoCameraQR = () => {
+    setShowCameraScanner(true);
+    setTimeout(() => {
+      const html5Qrcode = new Html5Qrcode("pos-camera-qr-reader");
+      cameraQrReaderRef.current = html5Qrcode;
+      html5Qrcode.start(
+        { facingMode: "user" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          let vehicleId = decodedText;
+          if (decodedText.includes('?')) {
+            try {
+              const urlParams = new URLSearchParams(decodedText.split('?')[1]);
+              vehicleId = urlParams.get('id') || decodedText;
+            } catch (e) {
+              console.error('Error parseando decodedText QR:', e);
+            }
+          }
+
+          const searchId = vehicleId.replace('movil-', '');
+          const vehiculoMovilEncontrado = vehiculosMovil.find(v => v.id === searchId || v.id === vehicleId);
+
+          if (vehiculoMovilEncontrado) {
+            cargarVehiculoMovilEnPOS(vehiculoMovilEncontrado);
+            detenerEscaneoCameraQR();
+            toast.success('Vehículo del patio cargado con éxito');
+            return;
+          }
+
+          const ordenEncontrada = ordenesAbiertas.find(o => o.id === vehicleId || o.id === `movil-${vehicleId}`);
+          if (ordenEncontrada) {
+            cargarOrden(ordenEncontrada);
+            detenerEscaneoCameraQR();
+            toast.success('Orden local cargada con éxito');
+            return;
+          }
+
+          toast.error('Vehículo no encontrado', { description: 'El código QR no corresponde a un vehículo en el patio ni a una orden abierta.' });
+        },
+        () => {}
+      ).catch(err => {
+        console.error("Error al iniciar cámara POS:", err);
+        toast.error('Error de Cámara', { description: 'No se pudo acceder a la cámara de la PC. Verifica los permisos.' });
+        setShowCameraScanner(false);
+      });
+    }, 300);
+  };
+
+  const detenerEscaneoCameraQR = () => {
+    if (cameraQrReaderRef.current) {
+      cameraQrReaderRef.current.stop().then(() => {
+        setShowCameraScanner(false);
+        cameraQrReaderRef.current = null;
+      }).catch(() => setShowCameraScanner(false));
+    } else {
+      setShowCameraScanner(false);
     }
   };
 
@@ -3578,9 +3640,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   Vehículos en Lavadero
                 </div>
                 <button
-                  onClick={() => setShowQRMobileApp(true)}
+                  onClick={iniciarEscaneoCameraQR}
                   className="p-1.5 bg-slate-800 text-slate-300 hover:text-emerald-400 hover:bg-slate-700 rounded-md transition-colors"
-                  title="Abrir QR para teléfono"
+                  title="Escanear ticket de cliente"
                 >
                   <QrCode className="w-4 h-4" />
                 </button>
@@ -4675,6 +4737,29 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               Cerrar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Lector QR de Cámara en PC */}
+      <Dialog open={showCameraScanner} onOpenChange={(open) => {
+        if (!open) detenerEscaneoCameraQR();
+      }}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white sm:max-w-md">
+          <DialogHeader className="items-center">
+            <DialogTitle>Escanear Ticket de Cliente</DialogTitle>
+            <DialogDescription className="text-slate-400 text-center text-xs mt-2">
+              Presentá el código QR del cliente frente a la cámara de la PC para cargar su orden.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div id="pos-camera-qr-reader" className="rounded-2xl overflow-hidden border border-slate-700 shadow-inner bg-slate-950/80 mx-auto aspect-video max-w-full"></div>
+            <Button
+              onClick={detenerEscaneoCameraQR}
+              className="w-full bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-bold py-3 rounded-xl transition-colors"
+            >
+              Cancelar Escaneo
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Tabs>
