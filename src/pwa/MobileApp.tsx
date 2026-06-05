@@ -110,7 +110,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [color, setColor] = useState('Blanco');
   const [clienteNombre, setClienteNombre] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [servicioSeleccionado, setServicioSeleccionado] = useState(SERVICIOS_DEFAULT[0]);
+  const [servicioSeleccionado, setServicioSeleccionado] = useState<any | null>(null);
   const [observaciones, setObservaciones] = useState('');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [metodoPagoCustom, setMetodoPagoCustom] = useState('');
@@ -319,7 +319,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const calcularTotal = () => {
     const totalBar = productosBarSeleccionados.reduce((sum, p) => sum + p.precio, 0);
     const totalCosmeticos = productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0);
-    const subtotal = servicioSeleccionado.precio + totalBar + totalCosmeticos;
+    const subtotal = (servicioSeleccionado ? servicioSeleccionado.precio : 0) + totalBar + totalCosmeticos;
     const montoDescuento = descuentoTipo === '%'
       ? (subtotal * descuento) / 100
       : descuento;
@@ -330,7 +330,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const calcularMontoDescuento = () => {
     const totalBar = productosBarSeleccionados.reduce((sum, p) => sum + p.precio, 0);
     const totalCosmeticos = productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0);
-    const subtotal = servicioSeleccionado.precio + totalBar + totalCosmeticos;
+    const subtotal = (servicioSeleccionado ? servicioSeleccionado.precio : 0) + totalBar + totalCosmeticos;
     return descuentoTipo === '%' ? (subtotal * descuento) / 100 : descuento;
   };
 
@@ -432,7 +432,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       color: color,
       cliente: clienteNombre || 'Particular',
       telefono: telefono || '',
-      servicio: servicioSeleccionado.nombre,
+      servicio: servicioSeleccionado ? servicioSeleccionado.nombre : 'Ninguno',
       precio: totalFinal,
       metodoPago: metodoPagoFinal,
       empleado: empleadoRecibe || user || 'Sistema',
@@ -444,7 +444,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       productosCosmeticos: productosCosmeticosSeleccionados,
       descuento: calcularMontoDescuento(),
       fotos: fotos,
-      tiempoEstimado: servicioSeleccionado.tiempoEstimado
+      tiempoEstimado: servicioSeleccionado ? servicioSeleccionado.tiempoEstimado : 0
     };
 
     setVehiculosEnPatio([...vehiculosEnPatio, nuevoVehiculo]);
@@ -490,6 +490,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setDescuento(0);
     setDescuentoTipo('$');
     setFotos([]);
+    setServicioSeleccionado(null);
     // No limpiar empleadoRecibe para que se mantenga
     
     toast.success('¡Vehículo ingresado correctamente!');
@@ -533,8 +534,8 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setProductosCosmeticosSeleccionados(vehiculo.productosCosmeticos || []);
     setDescuento(vehiculo.descuento || 0);
     setFotos(vehiculo.fotos || []);
-    const servicio = serviciosList.find(s => s.nombre === vehiculo.servicio) || serviciosList[1] || SERVICIOS_DEFAULT[1];
-    setServicioSeleccionado(servicio);
+    const servicio = serviciosList.find(s => s.nombre === vehiculo.servicio);
+    setServicioSeleccionado(servicio || null);
     setPantalla('ingreso');
   };
 
@@ -551,7 +552,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       color: color,
       cliente: clienteNombre || 'Particular',
       telefono: telefono || '',
-      servicio: servicioSeleccionado.nombre,
+      servicio: servicioSeleccionado ? servicioSeleccionado.nombre : 'Ninguno',
       precio: totalFinal,
       metodoPago: metodoPagoFinal,
       empleado: empleadoRecibe,
@@ -563,7 +564,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       productosCosmeticos: productosCosmeticosSeleccionados,
       descuento: calcularMontoDescuento(),
       fotos: fotos,
-      tiempoEstimado: servicioSeleccionado.tiempoEstimado
+      tiempoEstimado: servicioSeleccionado ? servicioSeleccionado.tiempoEstimado : 0
     };
 
     setVehiculosEnPatio(vehiculosEnPatio.map(v => 
@@ -1173,13 +1174,18 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Tipo de Servicio</label>
                   <select
-                    value={servicioSeleccionado.nombre}
+                    value={servicioSeleccionado ? servicioSeleccionado.nombre : ""}
                     onChange={(e) => {
-                      const servicio = serviciosList.find(s => s.nombre === e.target.value) || serviciosList[0];
-                      setServicioSeleccionado(servicio);
+                      if (e.target.value === "") {
+                        setServicioSeleccionado(null);
+                      } else {
+                        const servicio = serviciosList.find(s => s.nombre === e.target.value);
+                        if (servicio) setServicioSeleccionado(servicio);
+                      }
                     }}
                     className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
                   >
+                    <option value="">-- Sin lavado (Solo consumos) --</option>
                     {serviciosList.map(servicio => (
                       <option key={servicio.nombre} value={servicio.nombre}>
                         {servicio.nombre} - {formatMoney(servicio.precio)} ({servicio.tiempoEstimado} min)
@@ -1189,21 +1195,28 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 </div>
 
                 {/* Info del servicio seleccionado */}
-                <div className="bg-purple-950/30 border border-purple-500/20 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-purple-300">{servicioSeleccionado.nombre}</p>
-                      <p className="text-xs text-slate-400 mt-1">{servicioSeleccionado.descripcion}</p>
-                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Tiempo estimado: {servicioSeleccionado.tiempoEstimado} minutos
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-purple-400">{formatMoney(servicioSeleccionado.precio)}</p>
+                {servicioSeleccionado ? (
+                  <div className="bg-purple-950/30 border border-purple-500/20 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-purple-300">{servicioSeleccionado.nombre}</p>
+                        <p className="text-xs text-slate-400 mt-1">{servicioSeleccionado.descripcion}</p>
+                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Tiempo estimado: {servicioSeleccionado.tiempoEstimado} minutos
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black text-purple-400">{formatMoney(servicioSeleccionado.precio)}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-slate-950/20 border border-slate-800 rounded-xl p-4">
+                    <p className="text-sm font-bold text-slate-400">Sin lavado contratado</p>
+                    <p className="text-xs text-slate-500 mt-1">El vehículo ingresará al patio únicamente para registrar consumos de bar o cosmética.</p>
+                  </div>
+                )}
               </div>
 
               {/* Captura de Fotos (MOVIDO AQUÍ - después de Servicio) */}
@@ -1514,7 +1527,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   <div className="mt-3 pt-3 border-t border-blue-500/20 text-xs space-y-1 text-slate-400">
                     <div className="flex justify-between">
                       <span>Servicio base:</span>
-                      <span className="text-white font-bold">{formatMoney(servicioSeleccionado.precio)}</span>
+                      <span className="text-white font-bold">{formatMoney(servicioSeleccionado ? servicioSeleccionado.precio : 0)}</span>
                     </div>
                     {productosBarSeleccionados.length > 0 && (
                       <div className="flex justify-between">

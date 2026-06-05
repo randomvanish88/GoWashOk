@@ -3734,6 +3734,22 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 {orden.cliente && <p className="truncate italic">👤 {orden.cliente}</p>}
                                 <p className="font-bold text-blue-800 mt-0.5">{formatMoney(orden.total)}</p>
                               </div>
+                              {/* Mostrar consumos de bar y cosmética si los tiene */}
+                              {((orden.productosBar && orden.productosBar.length > 0) || 
+                                (orden.productosCosmeticos && orden.productosCosmeticos.length > 0)) && (
+                                <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap gap-1 text-[10px]">
+                                  {orden.productosBar && orden.productosBar.map((p: any, idx: number) => (
+                                    <span key={`bar-${idx}`} className="bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      ☕ {p.nombre}
+                                    </span>
+                                  ))}
+                                  {orden.productosCosmeticos && orden.productosCosmeticos.map((p: any, idx: number) => (
+                                    <span key={`cos-${idx}`} className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      ✨ {p.nombre}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -3835,9 +3851,25 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               <span>👤 {v.cliente || 'Particular'}</span>
                               <span>🕐 {v.horaIngreso}</span>
                             </div>
-                            {v.servicio && (
+                             {v.servicio && (
                               <div className="mb-2 text-[10px] text-purple-300 font-medium">
                                 🚿 {v.servicio} · ${(v.precio || 0).toLocaleString('es-AR')}
+                              </div>
+                            )}
+                            {/* Mostrar consumos de bar y cosmética si los tiene */}
+                            {((v.productosBar && v.productosBar.length > 0) || 
+                              (v.productosCosmeticos && v.productosCosmeticos.length > 0)) && (
+                              <div className="mb-2 pt-1 border-t border-slate-700/50 flex flex-wrap gap-1 text-[9px]">
+                                {v.productosBar && v.productosBar.map((p: any, idx: number) => (
+                                  <span key={`bar-m-${idx}`} className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                    ☕ {p.nombre}
+                                  </span>
+                                ))}
+                                {v.productosCosmeticos && v.productosCosmeticos.map((p: any, idx: number) => (
+                                  <span key={`cos-m-${idx}`} className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                    ✨ {p.nombre}
+                                  </span>
+                                ))}
                               </div>
                             )}
                             <Button
