@@ -614,7 +614,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   // Vehículos del patio móvil (desde Google Sheets, en tiempo real)
   const [vehiculosMovil, setVehiculosMovil] = useState<any[]>([]);
   const [cargandoMovil, setCargandoMovil] = useState(false);
-  const [tabLavadero, setTabLavadero] = useState<'desktop' | 'movil'>('desktop');
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [productosBar, setProductosBar] = useState<ProductoVenta[]>([]);
   const [productosCosmeticos, setProductosCosmeticos] = useState<ProductoVenta[]>([]);
@@ -1612,7 +1611,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         return [...prev, ordenMovil];
       });
 
-      setTabLavadero('desktop');
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }, 100);
@@ -3659,79 +3657,74 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               <h3 className="font-bold text-sm text-white mb-3 flex items-center justify-between uppercase tracking-tighter">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                  Vehículos en Lavadero
+                  <span>Vehículos en Lavadero</span>
                 </div>
-                <button
-                  onClick={iniciarEscaneoCameraQR}
-                  className="p-1.5 bg-slate-800 text-slate-300 hover:text-emerald-400 hover:bg-slate-700 rounded-md transition-colors"
-                  title="Escanear ticket de cliente"
-                >
-                  <QrCode className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={cargarVehiculosMovil}
+                    disabled={cargandoMovil}
+                    className="p-1.5 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors"
+                    title="Actualizar desde la app"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${cargandoMovil ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button
+                    onClick={iniciarEscaneoCameraQR}
+                    className="p-1.5 bg-slate-800 text-slate-300 hover:text-emerald-400 hover:bg-slate-700 rounded-md transition-colors"
+                    title="Escanear ticket de cliente"
+                  >
+                    <QrCode className="w-4 h-4" />
+                  </button>
+                </div>
               </h3>
 
-              {/* Pestañas Desktop / Móvil */}
-              <div className="flex gap-1 mb-3 bg-slate-800/60 rounded-lg p-1">
-                <button
-                  onClick={() => setTabLavadero('desktop')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-bold transition-all ${
-                    tabLavadero === 'desktop'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Monitor className="w-3 h-3" />
-                  Desktop
-                  {ordenesAbiertas.length > 0 && (
-                    <span className="bg-blue-400 text-white text-[9px] rounded-full px-1.5 py-0.5 leading-none">
-                      {ordenesAbiertas.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => { setTabLavadero('movil'); cargarVehiculosMovil(); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] font-bold transition-all ${
-                    tabLavadero === 'movil'
-                      ? 'bg-purple-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Smartphone className="w-3 h-3" />
-                  Móvil
-                  {vehiculosMovil.length > 0 && (
-                    <span className="bg-purple-400 text-white text-[9px] rounded-full px-1.5 py-0.5 leading-none">
-                      {vehiculosMovil.length}
-                    </span>
-                  )}
-                </button>
-              </div>
+              {/* Contenedor Unificado Desktop/Aplicación */}
+              <div className="space-y-3 max-h-[calc(100vh-210px)] overflow-y-auto pr-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Desktop/Aplicación</span>
+                  <span className="text-[10px] text-slate-400">
+                    {cargandoMovil ? 'Sincronizando...' : `Total: ${ordenesAbiertas.length + vehiculosMovil.filter(v => !ordenesAbiertas.some(o => o.id === `movil-${v.id}`)).length}`}
+                  </span>
+                </div>
 
-              {/* PESTAÑA DESKTOP */}
-              {tabLavadero === 'desktop' && (
-                <>
-                  {ordenesAbiertas.length === 0 ? (
-                    <Card className="p-4 text-center text-gray-500 border-dashed border-2 bg-gray-50/50">
-                      <p className="text-[10px]">No hay vehículos en lavadero</p>
-                    </Card>
-                  ) : (
-                    <div className="space-y-3 max-h-[calc(100vh-260px)] overflow-y-auto pr-2">
-                      {ordenesAbiertas.map((orden) => (
-                        <Card key={orden.id} className={`p-4 hover:shadow-md transition-all border-l-4 ${activeOrderId === orden.id ? 'border-l-green-500 bg-green-50/30 ring-1 ring-green-200' : 'border-l-blue-500 bg-white'}`}>
+                {ordenesAbiertas.length === 0 && vehiculosMovil.filter(v => !ordenesAbiertas.some(o => o.id === `movil-${v.id}`)).length === 0 ? (
+                  <Card className="p-4 text-center text-gray-500 border-dashed border-2 bg-gray-50/50">
+                    <p className="text-[10px]">No hay vehículos en lavadero</p>
+                  </Card>
+                ) : (
+                  <>
+                    {/* Órdenes locales y móviles ya cargadas en POS */}
+                    {ordenesAbiertas.map((orden) => {
+                      const esMovilCargada = orden.id.startsWith('movil-');
+                      return (
+                        <Card key={orden.id} className={`p-4 hover:shadow-md transition-all border-l-4 ${
+                          activeOrderId === orden.id 
+                            ? 'border-l-green-500 bg-green-50/30 ring-1 ring-green-200' 
+                            : esMovilCargada 
+                              ? 'border-l-purple-500 bg-white shadow-sm' 
+                              : 'border-l-blue-500 bg-white'
+                        }`}>
                           <div className="flex gap-3 mb-3">
                             {orden.imageUrl ? (
                               <img src={orden.imageUrl} alt="Vehículo" className="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200" />
                             ) : (
-                              <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200">
+                              <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200 shrink-0">
                                 <Car className="w-8 h-8" />
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-start mb-1">
-                                <div className="font-bold text-lg text-slate-800 truncate">{orden.patente || 'S/P'}</div>
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className="font-bold text-lg text-slate-800 truncate">{orden.patente || 'S/P'}</span>
+                                  {esMovilCargada && (
+                                    <span className="bg-purple-100 text-purple-700 text-[8px] px-1 py-0.5 rounded font-black shrink-0 uppercase">App</span>
+                                  )}
+                                </div>
                                 <div className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium shrink-0">{orden.horaEntrada}</div>
                               </div>
                               <div className="text-xs text-gray-600">
                                 {orden.cliente && <p className="truncate italic">👤 {orden.cliente}</p>}
+                                {orden.servicio && <p className="text-[10px] text-slate-500 font-semibold truncate">🚿 {orden.servicio}</p>}
                                 <p className="font-bold text-blue-800 mt-0.5">{formatMoney(orden.total)}</p>
                               </div>
                               {/* Mostrar consumos de bar y cosmética si los tiene */}
@@ -3796,101 +3789,76 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                             </AlertDialog>
                           </div>
                         </Card>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+                      );
+                    })}
 
-              {/* PESTAÑA MÓVIL */}
-              {tabLavadero === 'movil' && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] text-slate-400">
-                      {cargandoMovil ? 'Actualizando...' : `Actualiza cada 20s`}
-                    </p>
-                    <button
-                      onClick={cargarVehiculosMovil}
-                      disabled={cargandoMovil}
-                      className="p-1 text-slate-400 hover:text-white transition-colors"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${cargandoMovil ? 'animate-spin' : ''}`} />
-                    </button>
-                  </div>
-
-                  {vehiculosMovil.length === 0 ? (
-                    <Card className="p-4 text-center border-dashed border-2 bg-slate-800/30 border-slate-600">
-                      <Smartphone className="w-6 h-6 text-slate-500 mx-auto mb-2" />
-                      <p className="text-[10px] text-slate-400">
-                        {cargandoMovil ? 'Cargando...' : 'Sin vehículos en patio desde móvil'}
-                      </p>
-                    </Card>
-                  ) : (
-                    <div className="space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
-                      {vehiculosMovil.map((v) => {
+                    {/* Vehículos del patio móvil que NO están cargados aún en POS */}
+                    {vehiculosMovil
+                      .filter(v => !ordenesAbiertas.some(o => o.id === `movil-${v.id}`))
+                      .map((v) => {
                         const estadoColor: Record<string, string> = {
                           'Ingresado': 'bg-blue-500',
-                          'En Lavado': 'bg-yellow-500',
-                          'Secado': 'bg-orange-500',
                           'Listo': 'bg-green-500',
                         };
-                        const color = estadoColor[v.estado] || 'bg-slate-500';
-                        const yaCargado = ordenesAbiertas.some(o => o.id === `movil-${v.id}`);
+                        const colorBadge = estadoColor[v.estado] || 'bg-slate-500';
                         return (
-                          <Card key={v.id} className="p-3 bg-slate-800/80 border border-slate-600 text-white">
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <div>
-                                <p className="font-black text-base leading-none">{v.patente}</p>
-                                <p className="text-[11px] text-slate-300 mt-0.5">{v.marcaModelo}</p>
+                          <Card key={v.id} className="p-4 hover:shadow-md transition-all border-l-4 border-l-purple-400 border-dashed bg-purple-50/5">
+                            <div className="flex gap-3 mb-3">
+                              <div className="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center text-purple-400 border border-purple-100 shrink-0">
+                                <Smartphone className="w-8 h-8" />
                               </div>
-                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full text-white ${color}`}>
-                                {v.estado}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2">
-                              <span>👤 {v.cliente || 'Particular'}</span>
-                              <span>🕐 {v.horaIngreso}</span>
-                            </div>
-                             {v.servicio && (
-                              <div className="mb-2 text-[10px] text-purple-300 font-medium">
-                                🚿 {v.servicio} · ${(v.precio || 0).toLocaleString('es-AR')}
-                              </div>
-                            )}
-                            {/* Mostrar consumos de bar y cosmética si los tiene */}
-                            {((v.productosBar && v.productosBar.length > 0) || 
-                              (v.productosCosmeticos && v.productosCosmeticos.length > 0)) && (
-                              <div className="mb-2 pt-1 border-t border-slate-700/50 flex flex-wrap gap-1 text-[9px]">
-                                {v.productosBar && v.productosBar.map((p: any, idx: number) => (
-                                  <span key={`bar-m-${idx}`} className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                    ☕ {p.nombre}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start mb-1 gap-1">
+                                  <div className="flex items-center gap-1 min-w-0">
+                                    <span className="font-bold text-lg text-slate-800 truncate">{v.patente || 'S/P'}</span>
+                                    <span className="bg-purple-100 text-purple-700 text-[8px] px-1 py-0.5 rounded font-black shrink-0 uppercase">App</span>
+                                  </div>
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full text-white shrink-0 ${colorBadge}`}>
+                                    {v.estado}
                                   </span>
-                                ))}
-                                {v.productosCosmeticos && v.productosCosmeticos.map((p: any, idx: number) => (
-                                  <span key={`cos-m-${idx}`} className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                    ✨ {p.nombre}
-                                  </span>
-                                ))}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  <p className="text-[11px] text-slate-500 truncate">{v.marcaModelo || 'No especificado'}</p>
+                                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-0.5">
+                                    <span>👤 {v.cliente || 'Particular'}</span>
+                                    <span>🕐 {v.horaIngreso}</span>
+                                  </div>
+                                  {v.servicio && (
+                                    <p className="text-[10px] text-purple-700 font-semibold truncate mt-0.5">🚿 {v.servicio} · {formatMoney(v.precio || 0)}</p>
+                                  )}
+                                </div>
+                                {/* Mostrar consumos de bar y cosmética si los tiene */}
+                                {((v.productosBar && v.productosBar.length > 0) || 
+                                  (v.productosCosmeticos && v.productosCosmeticos.length > 0)) && (
+                                  <div className="mt-2 pt-2 border-t border-purple-100/50 flex flex-wrap gap-1 text-[10px]">
+                                    {v.productosBar && v.productosBar.map((p: any, idx: number) => (
+                                      <span key={`bar-m-${idx}`} className="bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                        ☕ {p.nombre}
+                                      </span>
+                                    ))}
+                                    {v.productosCosmeticos && v.productosCosmeticos.map((p: any, idx: number) => (
+                                      <span key={`cos-m-${idx}`} className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                        ✨ {p.nombre}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
                             <Button
                               size="sm"
-                              className={`w-full h-7 text-[10px] font-bold ${
-                                yaCargado
-                                  ? 'bg-green-700 hover:bg-green-800 text-white'
-                                  : 'bg-purple-600 hover:bg-purple-700 text-white'
-                              }`}
+                              className="w-full h-8 text-[10px] font-black bg-purple-600 hover:bg-purple-700 text-white"
                               onClick={() => cargarVehiculoMovilEnPOS(v)}
                             >
-                              {yaCargado ? '✓ En POS - cobrar para cerrar' : '💰 Cerrar venta'}
+                              💰 Cerrar venta
                             </Button>
                           </Card>
                         );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
+                      })
+                    }
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

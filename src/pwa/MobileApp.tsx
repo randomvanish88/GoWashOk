@@ -37,7 +37,7 @@ interface Vehiculo {
   fecha: string;
   horaIngreso: string;
   horaSalida?: string;
-  estado: 'Ingresado' | 'En Lavado' | 'Secado' | 'Listo';
+  estado: 'Ingresado' | 'Listo';
   productosBar?: { nombre: string; precio: number }[];
   productosCosmeticos?: { nombre: string; precio: number }[];
   descuento?: number;
@@ -509,8 +509,29 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
   // Eliminar vehículo del patio
   const eliminarVehiculo = (id: string) => {
-    if (confirm('¿Estás seguro de eliminar este vehículo del patio?')) {
+    const vehiculo = vehiculosEnPatio.find(v => v.id === id);
+    if (!vehiculo) return;
+
+    if (confirm(`¿Estás seguro de eliminar el vehículo ${vehiculo.patente} del patio?`)) {
       setVehiculosEnPatio(vehiculosEnPatio.filter(v => v.id !== id));
+      
+      // Guardar en el registro de ediciones
+      const nuevaEdicion = {
+        id: Date.now().toString(),
+        vehiculoId: id,
+        patente: vehiculo.patente,
+        usuario: user,
+        tipo: 'eliminar',
+        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setEdicionesDelDia([nuevaEdicion, ...edicionesDelDia]);
+
+      // Sincronizar eliminación con Google Sheets (marcarlo como retirado/eliminado)
+      actualizarVehiculoEnPatio(id, {
+        horaSalida: 'ELIMINADO',
+        estado: 'Eliminado'
+      }).catch(err => console.error('[MobileApp] Error eliminando vehículo en Sheets:', err));
+
       toast.success('Vehículo eliminado del patio');
     }
   };
@@ -1606,7 +1627,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
               
               {/* Filtros por estado */}
               <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                {(['Todos', 'Ingresado', 'En Lavado', 'Listo'] as const).map(estado => (
+                {(['Todos', 'Ingresado', 'Listo'] as const).map(estado => (
                   <button
                     key={estado}
                     onClick={() => setFiltroEstado(estado)}
@@ -1643,7 +1664,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                           </span>
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             vehiculo.estado === 'Ingresado' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                            vehiculo.estado === 'En Lavado' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
                             'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                           }`}>
                             {vehiculo.estado}
@@ -1680,7 +1700,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
                     {/* Estados */}
                     <div className="flex flex-wrap gap-2">
-                      {(['Ingresado', 'En Lavado', 'Listo'] as const).map(estado => (
+                      {(['Ingresado', 'Listo'] as const).map(estado => (
                         <button
                           key={estado}
                           onClick={() => actualizarEstado(vehiculo.id, estado)}
@@ -1726,13 +1746,15 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                       >
                         <QrCode className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={() => eliminarVehiculo(vehiculo.id)}
-                        className="p-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      {user !== 'empleado' && (
+                        <button
+                          onClick={() => eliminarVehiculo(vehiculo.id)}
+                          className="p-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1952,8 +1974,13 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   {edicionesDelDia.map(edicion => (
                     <div key={edicion.id} className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-white text-sm">{edicion.patente}</p>
-                        <p className="text-xs text-slate-400">Editado por: <span className="font-semibold text-slate-300">{edicion.usuario}</span></p>
+                        <p className="font-bold text-white text-sm">
+                          {edicion.patente} {edicion.tipo === 'eliminar' && <span className="text-red-400 font-normal text-xs ml-1">(Eliminado)</span>}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {edicion.tipo === 'eliminar' ? 'Eliminado por: ' : 'Editado por: '}
+                          <span className="font-semibold text-slate-300">{edicion.usuario}</span>
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-slate-500">{edicion.hora} hs</p>
