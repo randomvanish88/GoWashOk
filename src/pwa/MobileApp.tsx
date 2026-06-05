@@ -310,64 +310,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     localStorage.setItem('gowash-mobile-ediciones', JSON.stringify(edicionesDelDia));
   }, [edicionesDelDia]);
 
-  // Redirección automática desde QR al sector de cobro / retiro
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const params = new URLSearchParams(window.location.search);
-    const seccionParam = params.get('seccion');
-    const idParam = params.get('id');
-
-    const pendingRedirect = localStorage.getItem('gowash-pending-redirect');
-    const pendingVehicleId = localStorage.getItem('gowash-pending-vehicle-id');
-
-    if (user) {
-      const seccionDestino = seccionParam || pendingRedirect;
-      const vehiculoIdDestino = idParam || pendingVehicleId;
-
-      if (seccionDestino === 'retiro' || seccionDestino === 'cobro') {
-        setPantalla('retiro');
-        
-        if (vehiculoIdDestino) {
-          const vehiculo = vehiculosEnPatio.find(v => v.id === vehiculoIdDestino);
-          if (vehiculo) {
-            setVehiculoSeleccionado(vehiculo);
-            toast.success(`Vehículo ${vehiculo.patente} cargado para cobro`);
-          } else {
-            // Intentar buscar por coincidencia parcial si el id cambió ligeramente
-            const vehiculoAlternativo = vehiculosEnPatio.find(v => v.id.slice(-6) === vehiculoIdDestino.slice(-6));
-            if (vehiculoAlternativo) {
-              setVehiculoSeleccionado(vehiculoAlternativo);
-              toast.success(`Vehículo ${vehiculoAlternativo.patente} cargado para cobro`);
-            } else {
-              toast.error('Vehículo no encontrado en el patio');
-            }
-          }
-        }
-
-        // Limpiar almacenamiento pendiente
-        localStorage.removeItem('gowash-pending-redirect');
-        localStorage.removeItem('gowash-pending-vehicle-id');
-
-        // Limpiar parámetros de la URL de forma limpia
-        try {
-          const cleanUrl = window.location.origin + window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        } catch (e) {
-          console.error('[MobileApp] Error al limpiar parámetros de la URL:', e);
-        }
-      }
-    } else {
-      // Si no hay sesión, guardar en localStorage para redireccionar después del login
-      if (seccionParam === 'retiro' || seccionParam === 'cobro') {
-        localStorage.setItem('gowash-pending-redirect', 'retiro');
-        if (idParam) {
-          localStorage.setItem('gowash-pending-vehicle-id', idParam);
-        }
-      }
-    }
-  }, [user, vehiculosEnPatio]);
-
   // Formatear moneda
   const formatMoney = (amount: number) => {
     return `$${amount.toLocaleString('es-AR')}`;
@@ -748,17 +690,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText) => {
-          let vehicleId = decodedText;
-          if (decodedText.includes('?')) {
-            try {
-              const urlParams = new URLSearchParams(decodedText.split('?')[1]);
-              vehicleId = urlParams.get('id') || decodedText;
-            } catch (e) {
-              console.error('Error parseando decodedText QR:', e);
-            }
-          }
-
-          const vehiculo = vehiculosEnPatio.find(v => v.id === vehicleId);
+          const vehiculo = vehiculosEnPatio.find(v => v.id === decodedText);
           if (vehiculo) {
             setVehiculoSeleccionado(vehiculo);
             detenerEscaneoQR();
@@ -834,46 +766,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   });
 
   // Enviar por WhatsApp
-  const enviarWhatsApp = async (vehiculo: Vehiculo) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://go-wash-ok.vercel.app';
-    const qrUrlData = `${origin}?seccion=retiro&id=${vehiculo.id}`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrlData)}`;
-    
-    const mensajeTexto = 
-      `✨ *GOWASH - Lavadero Artesanal* ✨\n\n` +
-      `¡Hola ${vehiculo.cliente}!\n\n` +
-      `Tu vehículo ha ingresado exitosamente:\n\n` +
-      `🚗 *Patente:* ${vehiculo.patente}\n` +
-      `🚘 *Vehículo:* ${vehiculo.marcaModelo}\n` +
-      `📝 *Servicio:* ${vehiculo.servicio}\n` +
-      `💰 *Precio:* ${formatMoney(vehiculo.precio)}\n` +
-      `💳 *Pago:* ${vehiculo.metodoPago}\n` +
-      `⏰ *Hora Ingreso:* ${vehiculo.horaIngreso} hs\n` +
-      `👤 *Recibió:* ${vehiculo.empleado}\n\n` +
-      `_Presenta el QR adjunto al retirar tu vehículo._\n` +
-      `¡Gracias por confiar en GoWash! 🏆`;
-
-    // Intentamos compartir la imagen del QR real
-    try {
-      const response = await fetch(qrUrl);
-      const blob = await response.blob();
-      const file = new File([blob], `gowash-qr-${vehiculo.patente}.png`, { type: 'image/png' });
-
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Ticket GoWash - ${vehiculo.patente}`,
-          text: mensajeTexto
-        });
-        toast.success('Ticket compartido con éxito');
-        return;
-      }
-    } catch (error) {
-      console.warn('[MobileApp] No se pudo compartir archivo QR, cayendo a enlace de texto:', error);
-    }
-
-    // Fallback: Enlace tradicional por WhatsApp
-    const mensajeFallback = encodeURIComponent(
+  const enviarWhatsApp = (vehiculo: Vehiculo) => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vehiculo.id)}`;
+    const mensaje = encodeURIComponent(
       `✨ *GOWASH - Lavadero Artesanal* ✨\n\n` +
       `¡Hola ${vehiculo.cliente}!\n\n` +
       `Tu vehículo ha ingresado exitosamente:\n\n` +
@@ -890,14 +785,14 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       `¡Gracias por confiar en GoWash! 🏆`
     );
 
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const whatsappUrl = isMobileDevice 
-      ? `https://api.whatsapp.com/send?text=${mensajeFallback}`
-      : `https://web.whatsapp.com/send?text=${mensajeFallback}`;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const whatsappUrl = isMobile 
+      ? `https://api.whatsapp.com/send?text=${mensaje}`
+      : `https://web.whatsapp.com/send?text=${mensaje}`;
     
     if (vehiculo.telefono) {
       const telefono = vehiculo.telefono.replace(/\D/g, '');
-      window.open(`https://api.whatsapp.com/send?phone=549${telefono}&text=${mensajeFallback}`, '_blank');
+      window.open(`https://api.whatsapp.com/send?phone=549${telefono}&text=${mensaje}`, '_blank');
     } else {
       window.open(whatsappUrl, '_blank');
     }
@@ -1799,13 +1694,15 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                           <span className="text-xs font-bold">Editar</span>
                         </button>
                       )}
-                      <button
-                        onClick={() => enviarWhatsApp(vehiculo)}
-                        className="p-2 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 hover:bg-green-500/20 transition-colors"
-                        title="WhatsApp"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                      </button>
+                      {vehiculo.telefono && (
+                        <button
+                          onClick={() => enviarWhatsApp(vehiculo)}
+                          className="p-2 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 hover:bg-green-500/20 transition-colors"
+                          title="WhatsApp"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setVehiculoQR(vehiculo);
@@ -2083,7 +1980,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
             {/* Código QR */}
             <div className="bg-white p-6 rounded-2xl flex items-center justify-center">
-              <QRCode value={`${typeof window !== 'undefined' ? window.location.origin : 'https://go-wash-ok.vercel.app'}?seccion=retiro&id=${vehiculoQR.id}`} size={200} />
+              <QRCode value={vehiculoQR.id} size={200} />
             </div>
 
             {/* Detalles del vehículo */}
@@ -2118,13 +2015,15 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
             {/* Acciones */}
             <div className="space-y-3">
-              <button
-                onClick={() => enviarWhatsApp(vehiculoQR)}
-                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-              >
-                <Send className="w-5 h-5" />
-                ENVIAR POR WHATSAPP
-              </button>
+              {vehiculoQR.telefono && (
+                <button
+                  onClick={() => enviarWhatsApp(vehiculoQR)}
+                  className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                >
+                  <Send className="w-5 h-5" />
+                  ENVIAR POR WHATSAPP
+                </button>
+              )}
 
               <button
                 onClick={() => {
