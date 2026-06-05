@@ -4668,7 +4668,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center p-4 bg-white rounded-xl mx-auto my-2 border-4 border-slate-800">
-            <QRCode value="https://go-wash-ok.vercel.app" size={200} />
+            <QRCode value="https://go-wash-ok.vercel.app?seccion=retiro" size={200} />
           </div>
           <DialogFooter className="sm:justify-center">
             <Button onClick={() => setShowQRMobileApp(false)} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
