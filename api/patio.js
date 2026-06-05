@@ -25,7 +25,7 @@ const CREDENTIALS = {
   token_uri: 'https://oauth2.googleapis.com/token',
 };
 
-async function getAuth() {
+export async function getAuth() {
   const { JWT } = await import('google-auth-library');
   const auth = new JWT({
     email: CREDENTIALS.client_email,
@@ -36,7 +36,7 @@ async function getAuth() {
   return token.token;
 }
 
-async function sheetsRequest(token, method, range, body) {
+export async function sheetsRequest(token, method, range, body) {
   const base = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
   let url, options;
 
@@ -51,11 +51,17 @@ async function sheetsRequest(token, method, range, body) {
       body: JSON.stringify({ values: body }),
     };
   } else if (method === 'APPEND') {
-    url = `${base}/values/${encodeURIComponent(SHEET_PATIO)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+    url = `${base}/values/${encodeURIComponent(range || SHEET_PATIO)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
     options = {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: body }),
+    };
+  } else if (method === 'CLEAR') {
+    url = `${base}/values/${encodeURIComponent(range)}:clear`;
+    options = {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
     };
   }
 
@@ -81,6 +87,9 @@ async function getRows(token) {
     metodoPago: row[8]||'', empleado: row[9]||'', observaciones: row[10]||'',
     fecha: row[11]||'', horaIngreso: row[12]||'', horaSalida: row[13]||'',
     estado: row[14]||'Ingresado',
+    productosBar: row[15] ? JSON.parse(row[15]) : [],
+    productosCosmeticos: row[16] ? JSON.parse(row[16]) : [],
+    descuento: parseFloat(row[17])||0,
   }));
 }
 
@@ -91,7 +100,11 @@ async function appendRow(token, v) {
     v.cliente||'', v.telefono||'', v.servicio||'', v.precio||0,
     v.metodoPago||'', v.empleado||'', v.observaciones||'',
     v.fecha||'', v.horaIngreso||'', '', v.estado||'Ingresado',
-    '[]','[]','0','[]','0'
+    JSON.stringify(v.productosBar || []),
+    JSON.stringify(v.productosCosmeticos || []),
+    (v.descuento || 0).toString(),
+    '[]',
+    (v.tiempoEstimado || 0).toString()
   ];
   await sheetsRequest(token, 'APPEND', null, [fila]);
 }
@@ -102,10 +115,32 @@ async function updateRow(token, id, updates) {
   const idx = rows.findIndex((r, i) => i > 0 && r[0] === id);
   if (idx < 0) return;
   const n = idx + 1;
-  if (updates.horaSalida !== undefined)
-    await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!N${n}`, [[updates.horaSalida]]);
-  if (updates.estado !== undefined)
-    await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!O${n}`, [[updates.estado]]);
+  
+  const rowData = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A${n}:T${n}`);
+  let row = rowData.values ? rowData.values[0] : [];
+  // Asegurar que tenga 20 columnas
+  while (row.length < 20) row.push('');
+
+  if (updates.patente !== undefined) row[1] = updates.patente;
+  if (updates.marcaModelo !== undefined) row[2] = updates.marcaModelo;
+  if (updates.color !== undefined) row[3] = updates.color;
+  if (updates.cliente !== undefined) row[4] = updates.cliente;
+  if (updates.telefono !== undefined) row[5] = updates.telefono;
+  if (updates.servicio !== undefined) row[6] = updates.servicio;
+  if (updates.precio !== undefined) row[7] = updates.precio.toString();
+  if (updates.metodoPago !== undefined) row[8] = updates.metodoPago;
+  if (updates.empleado !== undefined) row[9] = updates.empleado;
+  if (updates.observaciones !== undefined) row[10] = updates.observaciones;
+  if (updates.fecha !== undefined) row[11] = updates.fecha;
+  if (updates.horaIngreso !== undefined) row[12] = updates.horaIngreso;
+  if (updates.horaSalida !== undefined) row[13] = updates.horaSalida;
+  if (updates.estado !== undefined) row[14] = updates.estado;
+  if (updates.productosBar !== undefined) row[15] = JSON.stringify(updates.productosBar);
+  if (updates.productosCosmeticos !== undefined) row[16] = JSON.stringify(updates.productosCosmeticos);
+  if (updates.descuento !== undefined) row[17] = updates.descuento.toString();
+  if (updates.tiempoEstimado !== undefined) row[19] = updates.tiempoEstimado.toString();
+
+  await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!A${n}:T${n}`, [row]);
 }
 
 export default async function handler(req, res) {
@@ -133,6 +168,11 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ error: 'Falta id' });
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
       await updateRow(token, decodeURIComponent(id), body);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (req.method === 'DELETE') {
+      await sheetsRequest(token, 'CLEAR', `${SHEET_PATIO}!A2:T1000`);
       return res.status(200).json({ ok: true });
     }
 

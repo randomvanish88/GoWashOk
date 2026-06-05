@@ -35,21 +35,25 @@ function rowToVehiculo(row: any): any {
   // Si viene de Electron (objeto con keys), usarlo directamente
   if (typeof row === 'object' && !Array.isArray(row)) {
     return {
-      id:          row.id || '',
-      patente:     row.patente || '',
-      marcaModelo: row.marcaModelo || '',
-      color:       row.color || '',
-      cliente:     row.cliente || '',
-      telefono:    row.telefono || '',
-      servicio:    row.servicio || '',
-      precio:      parseFloat(row.precio) || 0,
-      metodoPago:  row.metodoPago || '',
-      empleado:    row.empleado || '',
-      observaciones: row.observaciones || '',
-      fecha:       row.fecha || '',
-      horaIngreso: row.horaIngreso || '',
-      horaSalida:  row.horaSalida || '',
-      estado:      row.estado || 'Ingresado',
+      id:          row.id || row.Id || row.ID || '',
+      patente:     row.patente || row.Patente || '',
+      marcaModelo: row.marcaModelo || row.MarcaModelo || row.marca_modelo || row['Marca/Modelo'] || row.Marca || '',
+      color:       row.color || row.Color || '',
+      cliente:     row.cliente || row.Cliente || '',
+      telefono:    row.telefono || row.Telefono || row.Teléfono || '',
+      servicio:    row.servicio || row.Servicio || '',
+      precio:      parseFloat(row.precio || row.Precio) || 0,
+      metodoPago:  row.metodoPago || row.MetodoPago || row['Método Pago'] || '',
+      empleado:    row.empleado || row.Empleado || '',
+      observaciones: row.observaciones || row.Observaciones || '',
+      fecha:       row.fecha || row.Fecha || '',
+      horaIngreso: row.horaIngreso || row.HoraIngreso || row['Hora Ingreso'] || '',
+      horaSalida:  row.horaSalida || row.HoraSalida || row['Hora Salida'] || '',
+      estado:      row.estado || row.Estado || 'Ingresado',
+      productosBar: (typeof (row.productosBar || row.ProductosBar) === 'string' && (row.productosBar || row.ProductosBar) !== '') ? JSON.parse(row.productosBar || row.ProductosBar) : ((row.productosBar || row.ProductosBar) || []),
+      productosCosmeticos: (typeof (row.productosCosmeticos || row.ProductosCosmeticos) === 'string' && (row.productosCosmeticos || row.ProductosCosmeticos) !== '') ? JSON.parse(row.productosCosmeticos || row.ProductosCosmeticos) : ((row.productosCosmeticos || row.ProductosCosmeticos) || []),
+      descuento: parseFloat(row.descuento || row.Descuento) || 0,
+      tiempoEstimado: parseInt(row.tiempoEstimado || row.TiempoEstimado) || 0,
     };
   }
   return null;
@@ -87,6 +91,7 @@ export async function agregarVehiculoAlPatio(vehiculo: {
   cliente: string; telefono: string; servicio: string; precio: number;
   metodoPago: string; empleado: string; fecha: string; horaIngreso: string;
   estado: string; observaciones: string;
+  productosBar?: any[]; productosCosmeticos?: any[]; descuento?: number; tiempoEstimado?: number;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     if (isElectron()) {
@@ -107,11 +112,11 @@ export async function agregarVehiculoAlPatio(vehiculo: {
         horaIngreso: vehiculo.horaIngreso,
         horaSalida: '',
         estado: vehiculo.estado,
-        productosBar: '[]',
-        productosCosmeticos: '[]',
-        descuento: '0',
+        productosBar: JSON.stringify(vehiculo.productosBar || []),
+        productosCosmeticos: JSON.stringify(vehiculo.productosCosmeticos || []),
+        descuento: (vehiculo.descuento || 0).toString(),
         fotos: '[]',
-        tiempoEstimado: '0',
+        tiempoEstimado: (vehiculo.tiempoEstimado || 0).toString(),
       };
       const result = await (window as any).electronAPI.googleSheets.addRow(SHEET, data);
       return { success: result?.success === true };
@@ -199,7 +204,7 @@ export async function obtenerProductosDelSheets(): Promise<{ bar: ProductoBar[];
 
 export async function actualizarVehiculoEnPatio(
   id: string,
-  updates: { estado?: string; horaSalida?: string }
+  updates: any
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (isElectron()) {
@@ -221,6 +226,28 @@ export async function actualizarVehiculoEnPatio(
     }
   } catch (error: any) {
     console.error('[PatioSync] Error actualizando:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+// ─── VACIAR PATIO ─────────────────────────────────────────────────────────────
+
+export async function vaciarPatio(): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (isElectron()) {
+      await initElectron();
+      const result = await (window as any).electronAPI.googleSheets.clearSheet(SHEET);
+      return { success: result?.success === true };
+    } else {
+      const resp = await fetch('/api/patio', {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return { success: true };
+    }
+  } catch (error: any) {
+    console.error('[PatioSync] Error vaciando patio:', error.message);
     return { success: false, error: error.message };
   }
 }

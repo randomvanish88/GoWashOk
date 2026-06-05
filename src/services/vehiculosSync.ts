@@ -138,14 +138,14 @@ export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
 
     } else {
       // Web/PWA: fetch normal funciona bien
-      console.log('[VehiculosSync] 🌐 Web: cargando vehiculos-data.json...');
-      const response = await fetch('/vehiculos-data.json');
+      console.log('[VehiculosSync] 🌐 Web: cargando catálogo desde API...');
+      const response = await fetch('/api/vehiculos');
       if (response.ok) {
         const data = await response.json();
-        if (data.rows && Array.isArray(data.rows) && data.rows.length > 0) {
-          const vehiculos = transformarDatosDeSheets(data.rows);
+        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+          const vehiculos = transformarDatosDeSheets(data.data);
           guardarVehiculos(vehiculos);
-          console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos cargados desde JSON`);
+          console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos cargados desde API`);
           return vehiculos;
         }
       }
@@ -195,4 +195,59 @@ export function obtenerModelos(marca: string, vehiculos: Price[]): string[] {
       .filter(v => v.brand.toLowerCase() === marca.toLowerCase())
       .map(v => v.model)
   )).sort();
+}
+
+/**
+ * Agrega un vehículo al catálogo dinámicamente
+ */
+export async function agregarAlCatalogo(vehiculo: { Marca: string, Modelo: string, Tamaño: string, Precio: number }): Promise<boolean> {
+  const isElectron = typeof window !== 'undefined' 
+    && 'electronAPI' in window 
+    && 'googleSheets' in (window as any).electronAPI;
+
+  try {
+    let success = false;
+    if (isElectron) {
+      const result = await (window as any).electronAPI.googleSheets.addRow('PWA_Vehiculos', {
+        Marca: vehiculo.Marca,
+        Modelo: vehiculo.Modelo,
+        Tamaño: vehiculo.Tamaño,
+        Precio: vehiculo.Precio,
+        URL_Imagen: ''
+      });
+      success = result?.success === true;
+    } else {
+      const response = await fetch('/api/vehiculos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vehiculo)
+      });
+      success = response.ok;
+    }
+    
+    if (success) {
+      // Actualizar el cache local automáticamente
+      const vehiculosLocales = obtenerVehiculos();
+      vehiculosLocales.push({
+        id: `gw-${vehiculo.Marca.toLowerCase().replace(/\s+/g, '-')}-${vehiculo.Modelo.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+        brand: vehiculo.Marca,
+        model: vehiculo.Modelo,
+        size: vehiculo.Tamaño,
+        service: 'Lavado Artesanal',
+        price: vehiculo.Precio,
+        imageUrl: undefined
+      });
+      guardarVehiculos(vehiculosLocales);
+      
+      // Emitir evento para que las interfaces se actualicen si están escuchando
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('gowash-catalog-updated'));
+      }
+    }
+    
+    return success;
+  } catch (err) {
+    console.error('Error agregando al catálogo:', err);
+    return false;
+  }
 }

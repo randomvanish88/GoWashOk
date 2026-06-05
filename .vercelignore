@@ -1,0 +1,25 @@
+node_modules
+dist_electron
+GoWashMobile
+GoWashPWA
+electron
+.git
+.kiro
+scratch
+tools
+guidelines
+build.log
+google-credentials.json
+CLAVE ACCESO*.txt
+*.lnk
+*.bat
+*.ps1
+sync-data.json
+vehiculos-data.csv
+vehiculos-data.json
+vehiculos-data.tsv
+populate-sheets.js
+populate-sheets.mjs
+populate-vehiculos.py
+capacitor.config.json
+package-lock.json

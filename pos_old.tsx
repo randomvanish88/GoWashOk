@@ -1,18 +1,15 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import { Price } from '../App';
-import { agregarAlCatalogo } from '../../services/vehiculosSync';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles, Smartphone, Monitor, RefreshCw, Printer, CalendarDays, Calculator, ShoppingBag, ShieldAlert, Zap, LayoutDashboard, QrCode } from 'lucide-react';
-import { Area, AreaChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
-import QRCode from 'react-qr-code';
+import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles, Smartphone, Monitor, RefreshCw } from 'lucide-react';
 import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
 import { InicioCajaPanel } from './InicioCajaPanel';
 import { EditableNumberInput } from './EditableNumberInput';
@@ -24,7 +21,7 @@ import {
   metodosParaPagoMixto,
 } from './pagoMixto';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
-import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio, obtenerProductosDelSheets, vaciarPatio } from '../../services/patioSync';
+import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio, obtenerProductosDelSheets } from '../../services/patioSync';
 import { toast } from 'sonner';
 
 
@@ -136,15 +133,15 @@ const DEFAULT_COSMETICOS: Cosmetico[] = [
   { nombre: "Estrellas", contenido: "7g", pvp: 1623 },
   { nombre: "Bolitas", contenido: "", pvp: 1623 },
   { nombre: "Atomizadores", contenido: "60 cm3", pvp: 7303 },
-  { nombre: "Atomizadores Linea Gold", contenido: "60 cm³", pvp: 7303 },
+  { nombre: "Atomizadores Linea Gold", contenido: "60 cm┬│", pvp: 7303 },
   { nombre: "Atomizadores", contenido: "120 cm3", pvp: 11360 },
   { nombre: "Fragancia Uso Profesional", contenido: "250 cm3", pvp: 13524 },
   { nombre: "Fragancia Uso Profesional", contenido: "500 cm3", pvp: 24344 },
   { nombre: "Fragancia Uso Profesional", contenido: "5L", pvp: 240463 },
   { nombre: "Perfumina para Ropa", contenido: "200 cm3", pvp: 5031 },
-  { nombre: "Mini Latita Walker (Frag. Sólida Gel)", contenido: "40 g", pvp: 8652 },
-  { nombre: "Latita Walker (Frag. Sólida Gel)", contenido: "80 g", pvp: 12977 },
-  { nombre: "Latita Walker Camión (Frag. Sólida Gel)", contenido: "200 g", pvp: 30280 },
+  { nombre: "Mini Latita Walker (Frag. S├│lida Gel)", contenido: "40 g", pvp: 8652 },
+  { nombre: "Latita Walker (Frag. S├│lida Gel)", contenido: "80 g", pvp: 12977 },
+  { nombre: "Latita Walker Cami├│n (Frag. S├│lida Gel)", contenido: "200 g", pvp: 30280 },
   { nombre: "Walker Electric", contenido: "3,2 cm3", pvp: 16229 },
   { nombre: "Walker Electric Repuesto", contenido: "3,2 cm3", pvp: 5151 },
   { nombre: "Fragancia Climatizador", contenido: "120 cm3", pvp: 5139 },
@@ -160,25 +157,25 @@ const DEFAULT_COSMETICOS: Cosmetico[] = [
   { nombre: "Leblon Look - Aceite Esencial", contenido: "30 cm3", pvp: 4113 },
   { nombre: "Bolsita Perfumada Walker", contenido: "", pvp: 3279 },
   { nombre: "Walker Jack", contenido: "", pvp: 8219 },
-  { nombre: "Walker Perfume Amb. Aerosol", contenido: "150 cm³", pvp: 8219 },
+  { nombre: "Walker Perfume Amb. Aerosol", contenido: "150 cm┬│", pvp: 8219 },
   { nombre: "Aromatizante Stick", contenido: "", pvp: 1437 },
-  { nombre: "Neutralizador de Olores", contenido: "360 cm³", pvp: 9314 },
+  { nombre: "Neutralizador de Olores", contenido: "360 cm┬│", pvp: 9314 },
   { nombre: "Aerosol Dispenser Para Difusor Automatico", contenido: "185 g", pvp: 8115 },
-  { nombre: "Citronela Aerosol", contenido: "360 cm³", pvp: 8898 },
-  { nombre: "Silicona Perfumada", contenido: "120 cm³", pvp: 6537 },
-  { nombre: "Silicona Perfumada", contenido: "250 cm³", pvp: 11992 },
-  { nombre: "Silicona Perfumada", contenido: "500 cm³", pvp: 20286 },
+  { nombre: "Citronela Aerosol", contenido: "360 cm┬│", pvp: 8898 },
+  { nombre: "Silicona Perfumada", contenido: "120 cm┬│", pvp: 6537 },
+  { nombre: "Silicona Perfumada", contenido: "250 cm┬│", pvp: 11992 },
+  { nombre: "Silicona Perfumada", contenido: "500 cm┬│", pvp: 20286 },
   { nombre: "Silicona Perfumada", contenido: "5 L", pvp: 167702 },
   { nombre: "Renovador Siliconado Perfumado", contenido: "5 L", pvp: 97024 },
   { nombre: "Silicona Perfumada Economica", contenido: "5 L", pvp: 138534 },
-  { nombre: "Silicona Pura 100%", contenido: "120 cm³", pvp: 16680 },
-  { nombre: "Silicona Pura 100%", contenido: "250 cm³", pvp: 33360 },
-  { nombre: "Silicona Perfumada Aerosol", contenido: "400 cm³", pvp: 9016 },
-  { nombre: "Renovador Multiproposito Aerosol", contenido: "400 cm³", pvp: 9467 },
-  { nombre: "Emulsion Silicona Power en Spray", contenido: "110 cm³", pvp: 8115 },
-  { nombre: "Emulsión Perfumada", contenido: "250 cm³", pvp: 9016 },
-  { nombre: "Emulsión Perfumada", contenido: "500 cm³", pvp: 14426 },
-  { nombre: "Emulsion Perfumada en Spray", contenido: "500 cm³", pvp: 17221 },
+  { nombre: "Silicona Pura 100%", contenido: "120 cm┬│", pvp: 16680 },
+  { nombre: "Silicona Pura 100%", contenido: "250 cm┬│", pvp: 33360 },
+  { nombre: "Silicona Perfumada Aerosol", contenido: "400 cm┬│", pvp: 9016 },
+  { nombre: "Renovador Multiproposito Aerosol", contenido: "400 cm┬│", pvp: 9467 },
+  { nombre: "Emulsion Silicona Power en Spray", contenido: "110 cm┬│", pvp: 8115 },
+  { nombre: "Emulsi├│n Perfumada", contenido: "250 cm┬│", pvp: 9016 },
+  { nombre: "Emulsi├│n Perfumada", contenido: "500 cm┬│", pvp: 14426 },
+  { nombre: "Emulsion Perfumada en Spray", contenido: "500 cm┬│", pvp: 17221 },
   { nombre: "Revividor de Negro", contenido: "250 cm3", pvp: 5840 },
   { nombre: "Revividor de Negro Brillante en Gel", contenido: "250 cm3", pvp: 6455 },
   { nombre: "Revividor de Negro", contenido: "500 cm3", pvp: 7254 },
@@ -189,7 +186,7 @@ const DEFAULT_COSMETICOS: Cosmetico[] = [
   { nombre: "Quitainsectos en Spray", contenido: "500 cm3", pvp: 8115 },
   { nombre: "Shampoo Siliconado", contenido: "250 cm3", pvp: 5193 },
   { nombre: "Shampoo Siliconado", contenido: "500 cm3", pvp: 6600 },
-  { nombre: "Antiempañante", contenido: "60 cm3", pvp: 10116 },
+  { nombre: "Antiempa├▒ante", contenido: "60 cm3", pvp: 10116 },
   { nombre: "Lavaparabrisas", contenido: "250 cm3", pvp: 6492 },
   { nombre: "Lavaparabrisas", contenido: "500 cm3", pvp: 8926 },
   { nombre: "Lavaparabrisas Concentrado", contenido: "50 cm3", pvp: 2975 },
@@ -199,18 +196,18 @@ const DEFAULT_COSMETICOS: Cosmetico[] = [
   { nombre: "Cera", contenido: "250 cm3", pvp: 5410 },
   { nombre: "Cera", contenido: "500 cm3", pvp: 6492 },
   { nombre: "Cera", contenido: "5L", pvp: 47219 },
-  { nombre: "Cera Polish Clásica Protectora (Etiqueta Roja)", contenido: "450 cm3", pvp: 7303 },
+  { nombre: "Cera Polish Cl├ísica Protectora (Etiqueta Roja)", contenido: "450 cm3", pvp: 7303 },
   { nombre: "Cera Polish Lustre Intenso (Etiqueta Azul)", contenido: "450 cm3", pvp: 7303 },
   { nombre: "Cera Polish con Abrasivo (Etiqueta Amarilla)", contenido: "450 cm3", pvp: 7303 },
   { nombre: "Lubricante Aerosol W-400", contenido: "400 cm3", pvp: 6762 },
   { nombre: "Lubricante Aerosol W-400", contenido: "240 cm3", pvp: 5680 },
-  { nombre: "Estopa de Algodón para Lustre", contenido: "300 g", pvp: 1385 },
-  { nombre: "Estopa de Algodón para Limpieza", contenido: "300 g", pvp: 1212 },
+  { nombre: "Estopa de Algod├│n para Lustre", contenido: "300 g", pvp: 1385 },
+  { nombre: "Estopa de Algod├│n para Limpieza", contenido: "300 g", pvp: 1212 },
   { nombre: "Rejillas Triples", contenido: "", pvp: 3635 },
   { nombre: "Rejilla Profesional", contenido: "", pvp: 4328 },
-  { nombre: "Gamuza Sintética", contenido: "", pvp: 3461 },
+  { nombre: "Gamuza Sint├®tica", contenido: "", pvp: 3461 },
   { nombre: "Franelas", contenido: "", pvp: 2121 },
-  { nombre: "Paño Lustre Siliconado", contenido: "", pvp: 3895 },
+  { nombre: "Pa├▒o Lustre Siliconado", contenido: "", pvp: 3895 },
   { nombre: "Cepillo Lavaauto", contenido: "", pvp: 3246 },
   { nombre: "Cepillo Camiones", contenido: "", pvp: 5410 },
   { nombre: "Cepillo para Llanta", contenido: "", pvp: 4090 },
@@ -221,14 +218,14 @@ const DEFAULT_COSMETICOS: Cosmetico[] = [
 ];
 
 const DEFAULT_BAR_PRODUCTS: ProductoBar[] = [
-  { group: "Cafetería", name: "Café Negro Posillo", value: 3000 },
-  { group: "Cafetería", name: "Café Negro Jarrito", value: 3000 },
-  { group: "Cafetería", name: "Café Negro Doble (Americano)", value: 3500 },
-  { group: "Cafetería", name: "Café Cortado Jarrito", value: 3500 },
-  { group: "Cafetería", name: "Café Lagrima Jarrito", value: 3500 },
-  { group: "Cafetería", name: "Café con Leche", value: 4000 },
-  { group: "Cafetería", name: "Té (en tetera)", value: 3000 },
-  { group: "Cafetería", name: "Té con Leche", value: 3500 },
+  { group: "Cafeter├¡a", name: "Caf├® Negro Posillo", value: 3000 },
+  { group: "Cafeter├¡a", name: "Caf├® Negro Jarrito", value: 3000 },
+  { group: "Cafeter├¡a", name: "Caf├® Negro Doble (Americano)", value: 3500 },
+  { group: "Cafeter├¡a", name: "Caf├® Cortado Jarrito", value: 3500 },
+  { group: "Cafeter├¡a", name: "Caf├® Lagrima Jarrito", value: 3500 },
+  { group: "Cafeter├¡a", name: "Caf├® con Leche", value: 4000 },
+  { group: "Cafeter├¡a", name: "T├® (en tetera)", value: 3000 },
+  { group: "Cafeter├¡a", name: "T├® con Leche", value: 3500 },
   { group: "Bebidas", name: "CocaCola 500 cc", value: 2300 },
   { group: "Bebidas", name: "CocaCola Light 500 cc", value: 2300 },
   { group: "Bebidas", name: "Sprite 500 cc", value: 2300 },
@@ -243,7 +240,7 @@ const DEFAULT_BAR_PRODUCTS: ProductoBar[] = [
   { group: "Comidas", name: "Super Pancho Simple", value: 2000 },
   { group: "Comidas", name: "Super Pancho Completo", value: 2000 },
   { group: "Comidas", name: "Tostado doble de JyQ", value: 6500 },
-  { group: "Comidas", name: "Tostado Árabe", value: 6500 },
+  { group: "Comidas", name: "Tostado ├ürabe", value: 6500 },
   { group: "Comidas", name: "Medialuna de Manteca", value: 1200 },
   { group: "Comidas", name: "Alfajor Maicena", value: 2000 },
   { group: "Comidas", name: "Alfajor Chocolate", value: 2000 },
@@ -251,11 +248,11 @@ const DEFAULT_BAR_PRODUCTS: ProductoBar[] = [
   { group: "Comidas", name: "Donas rellenas", value: 2500 },
   { group: "Comidas", name: "Muffins", value: 3500 },
   { group: "Comidas", name: "Waffle de JyQ", value: 5500 },
-  { group: "Promos", name: "Café con leche + 2 medialunas", value: 7600 },
-  { group: "Promos", name: "Café con leche + Tostado árabe", value: 9450 },
-  { group: "Promos", name: "Café con leche + Waffle JyQ", value: 8550 },
-  { group: "Promos", name: "Café con leche + Muffin", value: 6750 },
-  { group: "Promos", name: "Café con leche + Donas", value: 5850 },
+  { group: "Promos", name: "Caf├® con leche + 2 medialunas", value: 7600 },
+  { group: "Promos", name: "Caf├® con leche + Tostado ├írabe", value: 9450 },
+  { group: "Promos", name: "Caf├® con leche + Waffle JyQ", value: 8550 },
+  { group: "Promos", name: "Caf├® con leche + Muffin", value: 6750 },
+  { group: "Promos", name: "Caf├® con leche + Donas", value: 5850 },
   { group: "Cervezas", name: "BlueMoon 330 cc", value: 5500 },
   { group: "Cervezas", name: "Heineken 330 cc", value: 4000 },
   { group: "Cervezas", name: "STELLA 330 cc", value: 3000 },
@@ -270,7 +267,7 @@ const DEFAULT_BAR_PRODUCTS: ProductoBar[] = [
 ];
 
 const DEFAULT_SERVICIOS_LAVADO: ServicioLavado[] = [
-  { nombre: "Lavado Básico", precio: 15000 },
+  { nombre: "Lavado B├ísico", precio: 15000 },
   { nombre: "Lavado Premium", precio: 25000 },
   { nombre: "Lavado Premium + Encerado", precio: 35000 },
   { nombre: "Lavado Completo", precio: 45000 },
@@ -281,7 +278,7 @@ const DEFAULT_EXTRAS_LAVADO: ServicioLavado[] = [
   { nombre: "Embarrado", precio: 5000 },
 ];
 
-const DEFAULT_EMPLEADOS = ['Recepción', 'Lavador 1', 'Lavador 2'];
+const DEFAULT_EMPLEADOS = ['Recepci├│n', 'Lavador 1', 'Lavador 2'];
 
 const crearConteoBilletesVacio = (denoms: number[]) =>
   Object.fromEntries(denoms.map((d) => [String(d), 0])) as Record<string, number>;
@@ -514,9 +511,9 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
         </div>
       </Card>
 
-      {/* Editor Cosmética/Accesorios */}
+      {/* Editor Cosm├®tica/Accesorios */}
       <Card className="p-6 bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200">
-        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosmética/Accesorios del Automotor</h3>
+        <h3 className="font-bold text-xl text-teal-900 mb-4">Cosm├®tica/Accesorios del Automotor</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="p-3 bg-white rounded-lg border border-teal-200 shadow-sm">
@@ -599,7 +596,6 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
           ))}
         </div>
       </Card>
-      
     </div>
   );
 }
@@ -610,7 +606,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [ordenesCobradas, setOrdenesCobradas] = useState<string[]>([]);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
-  // Vehículos del patio móvil (desde Google Sheets, en tiempo real)
+  // Veh├¡culos del patio m├│vil (desde Google Sheets, en tiempo real)
   const [vehiculosMovil, setVehiculosMovil] = useState<any[]>([]);
   const [cargandoMovil, setCargandoMovil] = useState(false);
   const [tabLavadero, setTabLavadero] = useState<'desktop' | 'movil'>('desktop');
@@ -634,7 +630,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     else if (filtroSectorVentas === "Bar" && matchBar) sectorMatch = true;
     else if (filtroSectorVentas === "Cosmetica/Accesorios" && matchCosmetica) sectorMatch = true;
 
-    // Filtro por método de pago
+    // Filtro por m├®todo de pago
     let pagoMatch = false;
     if (filtroPagoVentas === "Todos") pagoMatch = true;
     else if (filtroPagoVentas === venta.metodoPago) pagoMatch = true;
@@ -676,10 +672,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [fechaCierre, setFechaCierre] = useState(() => new Date().toISOString().split('T')[0]);
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().split('T')[0]);
 
-  // Monto de inicio de caja del día del cierre (leído desde localStorage)
+  // Monto de inicio de caja del d├¡a del cierre (le├¡do desde localStorage)
   const [inicioCajaVersion, setInicioCajaVersion] = useState(0);
   const montoCajaInicio = useMemo(() => {
-    void inicioCajaVersion; // fuerza re-cálculo cuando se registra un inicio
+    void inicioCajaVersion; // fuerza re-c├ílculo cuando se registra un inicio
     const key = `gowash-inicio-monto-${fechaCierre}`;
     return parseFloat(localStorage.getItem(key) || '0') || 0;
   }, [fechaCierre, inicioCajaVersion]);
@@ -719,7 +715,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     'Promo',
     'Transferencia',
     'Billetera Virtual',
-    'Cupón de descuento',
+    'Cup├│n de descuento',
   ]);
   const [pagosMixtos, setPagosMixtos] = useState<PagoParcial[]>(crearPagosMixtosInicial);
   const [showNewMetodoPagoDialog, setShowNewMetodoPagoDialog] = useState(false);
@@ -748,7 +744,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     });
   };
 
-  // Calcula si debe habilitarse la estadía (> 1 hora)
+  // Calcula si debe habilitarse la estad├¡a (> 1 hora)
   const puedeEstadia = () => {
     if (!horaEntrada || !horaSalida) return false;
     const [hE, mE] = horaEntrada.split(':').map(Number);
@@ -757,57 +753,17 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     return diffMins > 60;
   };
 
-  // Estado para búsqueda de productos
+  // Estado para b├║squeda de productos
   const [searchBar, setSearchBar] = useState('');
   const [searchCosmeticos, setSearchCosmeticos] = useState('');
 
   const [ventaSeleccionada, setVentaSeleccionada] = useState<Venta | null>(null);
 
-  // Estados para búsqueda de vehículos
+  // Estados para b├║squeda de veh├¡culos
   const [searchVehiculo, setSearchVehiculo] = useState('');
-  const [showVehiculosList, setShowVehiculosList] = useState(false);
-  const [showQRMobileApp, setShowQRMobileApp] = useState(false);
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Price | null>(null);
-  const [guardandoCatalogo, setGuardandoCatalogo] = useState(false);
-  const [showGuardarCatalogoDialog, setShowGuardarCatalogoDialog] = useState(false);
-  const [catalogoNuevoSize, setCatalogoNuevoSize] = useState('Mediano');
-  const [catalogoNuevoPrice, setCatalogoNuevoPrice] = useState('0');
 
-  const confirmarGuardarCatalogo = async () => {
-    if (!searchVehiculo || searchVehiculo.length < 2) return;
-    setGuardandoCatalogo(true);
-    
-    const partes = searchVehiculo.trim().split(' ');
-    const brand = partes[0];
-    const model = partes.slice(1).join(' ') || 'General';
-    const size = catalogoNuevoSize;
-    const price = parseInt(catalogoNuevoPrice, 10) || 0;
-    
-    const exito = await agregarAlCatalogo({
-      Marca: brand,
-      Modelo: model,
-      Tamaño: size,
-      Precio: price
-    });
-    
-    if (exito) {
-      toast.success('Vehículo añadido al catálogo');
-      const nuevo: Price = {
-        id: `nuevo-${Date.now()}`,
-        brand, model, size, price, service: 'Lavado Artesanal'
-      };
-      setVehiculoSeleccionado(nuevo);
-      setServicio(nuevo.service);
-      setPrecioServicioLavado(nuevo.price);
-      setSearchVehiculo('');
-      setShowGuardarCatalogoDialog(false);
-    } else {
-      toast.error('Error al guardar en catálogo');
-    }
-    setGuardandoCatalogo(false);
-  };
-
-  // Estados para anulación
+  // Estados para anulaci├│n
   const [showAnulacionDialog, setShowAnulacionDialog] = useState(false);
   const [borradorRecuperado, setBorradorRecuperado] = useState<any>(null);
   const [showBorradorDialog, setShowBorradorDialog] = useState(false);
@@ -832,7 +788,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const nombre = nuevoExtraNombre.trim();
     const precio = parseFloat(nuevoExtraPrecio) || 0;
     if (!nombre) {
-      toast.warning('Ingresá el nombre del extra.');
+      toast.warning('Ingres├í el nombre del extra.');
       return;
     }
     if (extrasLavadoOpciones.some((e) => e.nombre.toLowerCase() === nombre.toLowerCase())) {
@@ -916,20 +872,20 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setBarProductsData(DEFAULT_BAR_PRODUCTS.map(p => ({ ...p, stock: 10 })));
     }
 
-    // Cargar productos de Bar y Cosméticos desde Google Sheets
+    // Cargar productos de Bar y Cosm├®ticos desde Google Sheets
     obtenerProductosDelSheets()
       .then(({ bar, cosmetica }) => {
         if (bar && bar.length > 0) {
           const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
           setBarProductsData(barConStock);
           localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
-          console.log(`[POS] ✅ Productos Bar sincronizados desde Sheets: ${bar.length}`);
+          console.log(`[POS] Ô£à Productos Bar sincronizados desde Sheets: ${bar.length}`);
         }
         if (cosmetica && cosmetica.length > 0) {
           const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
           setCosmeticosData(cosmeticaConStock);
           localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
-          console.log(`[POS] ✅ Productos Cosméticos sincronizados desde Sheets: ${cosmetica.length}`);
+          console.log(`[POS] Ô£à Productos Cosm├®ticos sincronizados desde Sheets: ${cosmetica.length}`);
         }
       })
       .catch(err => {
@@ -956,7 +912,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         setBorradorRecuperado(parsed);
         setShowBorradorDialog(true);
       } catch (e) {
-        console.error("Error al cargar el borrador de edición:", e);
+        console.error("Error al cargar el borrador de edici├│n:", e);
       }
     }
   }, []);
@@ -1001,7 +957,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     localStorage.setItem('gowash-ventas-anuladas', JSON.stringify(ventasAnuladas));
   }, [ventasAnuladas]);
 
-  // Polling de vehículos móviles desde Google Sheets (cada 20 segundos)
+  // Polling de veh├¡culos m├│viles desde Google Sheets (cada 20 segundos)
   const cargarVehiculosMovil = async () => {
     setCargandoMovil(true);
     try {
@@ -1009,7 +965,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       // Filtrar solo los que no tienen hora de salida (siguen en patio)
       setVehiculosMovil(data.filter(v => !v.horaSalida));
     } catch (err) {
-      console.error('[POS] Error cargando patio móvil:', err);
+      console.error('[POS] Error cargando patio m├│vil:', err);
     } finally {
       setCargandoMovil(false);
     }
@@ -1029,7 +985,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     localStorage.setItem('gowash-washCounts', JSON.stringify(washCounts));
   }, [washCounts]);
 
-  // Persistir borrador de edición/pedido activo para evitar pérdidas ante apagados
+  // Persistir borrador de edici├│n/pedido activo para evitar p├®rdidas ante apagados
   useEffect(() => {
     if (editingVentaId || activeOrderId) {
       const borrador = {
@@ -1118,7 +1074,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const descuentoCosmetica = calcularDescuentoSector('cosmetica');
   const descuento = descuentoLavadero + descuentoBar + descuentoCosmetica;
 
-  // Compat: flags para indicar qué sectores tienen descuento (para guardado en Venta)
+  // Compat: flags para indicar qu├® sectores tienen descuento (para guardado en Venta)
   const descLavadero  = descSectors.lavadero.activo  && descSectors.lavadero.valor  > 0;
   const descBar       = descSectors.bar.activo       && descSectors.bar.valor       > 0;
   const descCosmetica = descSectors.cosmetica.activo && descSectors.cosmetica.valor > 0;
@@ -1189,11 +1145,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const agregarMetodoPago = () => {
     if (!newMetodoPagoName.trim()) return;
     if (newMetodoPagoName.trim() === PAGO_MIXTO) {
-      toast.warning('Ese nombre está reservado para el sistema.');
+      toast.warning('Ese nombre est├í reservado para el sistema.');
       return;
     }
     if (metodosPago.includes(newMetodoPagoName.trim())) {
-      toast.warning('El método de pago ya existe.');
+      toast.warning('El m├®todo de pago ya existe.');
       return;
     }
     const nuevosMetodos = [...metodosPago, newMetodoPagoName.trim()];
@@ -1202,18 +1158,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setMetodoPago(newMetodoPagoName.trim());
     setNewMetodoPagoName('');
     setShowNewMetodoPagoDialog(false);
-    toast.success('Método de pago agregado exitosamente.');
+    toast.success('M├®todo de pago agregado exitosamente.');
   };
 
   const editarMetodoPago = (original: string) => {
     const nuevo = editingMetodoPagoName.trim();
     if (!nuevo) return;
     if (nuevo === PAGO_MIXTO) {
-      toast.warning('Ese nombre está reservado.');
+      toast.warning('Ese nombre est├í reservado.');
       return;
     }
     if (nuevo !== original && metodosPago.includes(nuevo)) {
-      toast.warning('Ese método de pago ya existe.');
+      toast.warning('Ese m├®todo de pago ya existe.');
       return;
     }
     const nuevosMetodos = metodosPago.map(m => m === original ? nuevo : m);
@@ -1222,25 +1178,25 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     if (metodoPago === original) setMetodoPago(nuevo);
     setEditingMetodoPago(null);
     setEditingMetodoPagoName('');
-    toast.success('Método de pago actualizado.');
+    toast.success('M├®todo de pago actualizado.');
   };
 
   const eliminarMetodoPago = (nombre: string) => {
     if (nombre === 'Efectivo' || nombre === PAGO_MIXTO) {
-      toast.warning('No se puede eliminar este método.');
+      toast.warning('No se puede eliminar este m├®todo.');
       return;
     }
     const nuevosMetodos = metodosPago.filter(m => m !== nombre);
     setMetodosPago(nuevosMetodos);
     localStorage.setItem('gowash-metodos-pago-ventas', JSON.stringify(nuevosMetodos));
     if (metodoPago === nombre) setMetodoPago('Efectivo');
-    toast.success('Método de pago eliminado.');
+    toast.success('M├®todo de pago eliminado.');
   };
 
   const validarPagoMixto = (totalVenta: number) => {
     const lineas = pagosMixtos.filter((p) => p.monto > 0);
     if (lineas.length < 2) {
-      toast.warning('Pago mixto', { description: 'Agregá al menos 2 métodos con monto.' });
+      toast.warning('Pago mixto', { description: 'Agreg├í al menos 2 m├®todos con monto.' });
       return false;
     }
     const suma = lineas.reduce((s, p) => s + p.monto, 0);
@@ -1254,13 +1210,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   };
 
   const registrarVenta = (ordenDirecta?: Venta) => {
-    try {
-      const totalVenta = ordenDirecta?.total ?? calcularTotal();
-      if (!ordenDirecta && metodoPago === PAGO_MIXTO && !validarPagoMixto(totalVenta)) {
-        return;
-      }
+    const totalVenta = ordenDirecta?.total ?? calcularTotal();
+    if (!ordenDirecta && metodoPago === PAGO_MIXTO && !validarPagoMixto(totalVenta)) {
+      return;
+    }
 
-      const nowTime = getCurrentTimeString();
+    const nowTime = getCurrentTimeString();
 
     // Si viene una ordenDirecta, usamos sus datos, pero actualizamos la hora de salida a la hora actual real.
     const vBase = ordenDirecta
@@ -1327,7 +1282,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     }
 
     if (!vBase.patente && !vBase.cliente) {
-      toast.warning('Identificación requerida', { description: 'Ingresa Patente o Cliente para registrar la venta.' });
+      toast.warning('Identificaci├│n requerida', { description: 'Ingresa Patente o Cliente para registrar la venta.' });
       setTimeout(() => document.getElementById('patente')?.focus(), 100);
       return;
     }
@@ -1361,10 +1316,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     });
     setCosmeticosData(newCosmeticosData);
 
-    // Si es una orden que estaba abierta, la marcamos como cobrada (no la quitamos todavía)
+    // Si es una orden que estaba abierta, la marcamos como cobrada (no la quitamos todav├¡a)
     const idABuscar = ordenDirecta ? ordenDirecta.id : (activeOrderId || editingVentaId);
     if (idABuscar && idABuscar.startsWith('movil-')) {
-      // Órdenes del patio móvil: eliminar directamente, no dejar pendiente de retiro
+      // ├ôrdenes del patio m├│vil: eliminar directamente, no dejar pendiente de retiro
       setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
       setOrdenesCobradas(prev => prev.filter(id => id !== idABuscar));
     } else if (ordenDirecta || activeOrderId) {
@@ -1373,18 +1328,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
     }
 
-    // Si viene del patio móvil, marcar como entregado en Google Sheets
+    // Si viene del patio m├│vil, marcar como entregado en Google Sheets
     if (idABuscar && idABuscar.startsWith('movil-')) {
       const patioId = idABuscar.replace('movil-', '');
-      // Sacar inmediatamente del panel Móvil (no esperar el polling)
+      // Sacar inmediatamente del panel M├│vil (no esperar el polling)
       setVehiculosMovil(prev => prev.filter(v => v.id !== patioId));
       // Actualizar en Sheets
       actualizarVehiculoEnPatio(patioId, {
         horaSalida: nuevaVenta.horaSalida || getCurrentTimeString(),
         estado: 'Entregado',
       }).then(() => {
-        console.log('[POS] ✅ Vehículo móvil marcado como entregado en Sheets');
-      }).catch(err => console.error('[POS] Error actualizando patio móvil:', err));
+        console.log('[POS] Ô£à Veh├¡culo m├│vil marcado como entregado en Sheets');
+      }).catch(err => console.error('[POS] Error actualizando patio m├│vil:', err));
     }
 
     if (editingVentaId) {
@@ -1412,12 +1367,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
       googleSheetsSync.syncVenta(nuevaVenta);
     }
-    
+
     limpiarFormulario();
-    } catch (err: any) {
-      alert("Error crítico al registrar la venta: " + err.message);
-      console.error("Error en registrarVenta:", err);
-    }
   };
 
   const cobrarOrdenEnProgreso = (orden: Venta) => {
@@ -1500,127 +1451,87 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     limpiarFormulario();
   };
 
-  // Carga un vehículo del patio móvil en el formulario POS para cerrar la venta
+  // Carga un veh├¡culo del patio m├│vil en el formulario POS para cerrar la venta
   const cargarVehiculoMovilEnPOS = (v: any) => {
-    try {
-      const now = new Date();
-      const hora = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const now = new Date();
+    const hora = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-      // Limpiar formulario primero
-      limpiarFormulario();
+    // Limpiar formulario primero
+    limpiarFormulario();
 
-      // Llenar con los datos del móvil
-      setPatente(v.patente || '');
-      setCliente(v.cliente || '');
-      setEmpleado(v.empleado || '');
-      setHoraEntrada(v.horaIngreso || hora);
-      setHoraSalida(hora);
-      setMetodoPago(v.metodoPago || 'Efectivo');
+    // Llenar con los datos del m├│vil
+    setPatente(v.patente || '');
+    setCliente(v.cliente || '');
+    setEmpleado(v.empleado || '');
+    setHoraEntrada(v.horaIngreso || hora);
+    setHoraSalida(hora);
+    setMetodoPago(v.metodoPago || 'Efectivo');
 
-      // Recuperar arrays de productos (si vienen) y asegurar que sean arrays
-      const prodsBar = Array.isArray(v.productosBar) ? v.productosBar : [];
-      const prodsCosmeticos = Array.isArray(v.productosCosmeticos) ? v.productosCosmeticos : [];
-      const desc = v.descuento || 0;
-
-      const totalBar = prodsBar.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
-      const totalCosmeticos = prodsCosmeticos.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
-
-      // Configurar estados en el formulario
-      setProductosBar(prodsBar);
-      setProductosCosmeticos(prodsCosmeticos);
-      if (desc > 0) {
-        setDescSectors((prev: any) => ({
-          ...prev,
-          lavadero: { activo: true, tipo: 'monto', valor: desc }
-        }));
-      }
-
-      // Precio del lavado: el móvil envía v.precio como Total Final.
-      // Base lavado = Total Final - Bar - Cosmeticos + Descuento
-      const baseLavado = v.precio > 0 ? (v.precio - totalBar - totalCosmeticos + desc) : 0;
-      setPrecioServicioLavado(baseLavado > 0 ? baseLavado : 0);
-      setLavado(baseLavado > 0 ? baseLavado : 0);
-
-      // Servicio: si el servicio seleccionado en el móvil no existe en el POS, lo agregamos temporalmente
-      if (v.servicio) {
-        const existeServicio = serviciosLavado.some(s => s.nombre === v.servicio);
-        if (!existeServicio) {
-          setServiciosLavado(prev => [...prev, { nombre: v.servicio, precio: baseLavado > 0 ? baseLavado : 0 }]);
-        }
-        setServicio(v.servicio);
-      }
-
-      // Buscar vehículo en catálogo por nombre
-      if (v.marcaModelo) {
-        const partes = v.marcaModelo.trim().split(' ');
-        const marca = partes[0] || '';
-        const modelo = partes.slice(1).join(' ') || '';
-        const encontrado = prices.find(p =>
-          (p.brand || '').toLowerCase() === marca.toLowerCase() ||
-          `${p.brand || ''} ${p.model || ''}`.toLowerCase() === v.marcaModelo.toLowerCase()
-        );
-        if (encontrado) {
-          setVehiculoSeleccionado({
-            ...encontrado,
-            service: v.servicio || encontrado.service
-          });
-        } else {
-          setVehiculoSeleccionado({
-            id: `custom-mobile-${Date.now()}`,
-            brand: marca || 'Vehículo',
-            model: modelo || '',
-            size: 'Mediano',
-            service: v.servicio || '',
-            price: 0
-          });
-        }
-      }
-
-      // Guardar el ID del vehículo móvil para marcarlo como entregado al cobrar
-      setActiveOrderId(`movil-${v.id}`);
-
-      // Agregar como orden abierta temporalmente para que quede en el panel
-      const ordenMovil: Venta = {
-        id: `movil-${v.id}`,
-        fecha: v.fecha || now.toISOString().split('T')[0],
-        hora: hora,
-        horaEntrada: v.horaIngreso || hora,
-        horaSalida: hora,
-        empleado: v.empleado || '',
-        patente: v.patente || '',
-        cliente: v.cliente || '',
-        lavado: v.precio > 0 ? (v.precio - totalBar - totalCosmeticos + desc > 0 ? v.precio - totalBar - totalCosmeticos + desc : 0) : 0,
-        bar: totalBar,
-        cosmeticos: totalCosmeticos,
-        total: v.precio || 0,
-        metodoPago: v.metodoPago || 'Efectivo',
-        descuento: desc,
-        recargo: 0,
-        productosBar: prodsBar,
-        productosCosmeticos: prodsCosmeticos,
-        servicio: v.servicio || '',
-        marca: v.marcaModelo?.split(' ')[0] || '',
-        modelo: v.marcaModelo?.split(' ').slice(1).join(' ') || '',
-      };
-
-      // Si ya existe, actualizarla para que refleje los cambios editados desde el móvil
-      setOrdenesAbiertas(prev => {
-        if (prev.some(o => o.id === ordenMovil.id)) {
-          return prev.map(o => o.id === ordenMovil.id ? ordenMovil : o);
-        }
-        return [...prev, ordenMovil];
-      });
-
-      setTabLavadero('desktop');
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-      
-      toast.success('Vehículo cargado', { description: 'Revisa los datos en el formulario y cobra la venta.' });
-    } catch (error: any) {
-      alert("Error crítico al cargar el vehículo: " + error.message);
-      console.error("Error en cargarVehiculoMovilEnPOS:", error);
+    // Precio del lavado
+    if (v.precio > 0) {
+      setPrecioServicioLavado(v.precio);
+      setLavado(v.precio);
     }
+
+    // Servicio
+    if (v.servicio) setServicio(v.servicio);
+
+    // Buscar veh├¡culo en cat├ílogo por nombre
+    if (v.marcaModelo) {
+      const partes = v.marcaModelo.trim().split(' ');
+      const marca = partes[0] || '';
+      const modelo = partes.slice(1).join(' ') || '';
+      const encontrado = prices.find(p =>
+        p.brand.toLowerCase() === marca.toLowerCase() ||
+        `${p.brand} ${p.model}`.toLowerCase() === v.marcaModelo.toLowerCase()
+      );
+      if (encontrado) setVehiculoSeleccionado(encontrado);
+    }
+
+    // Guardar el ID del veh├¡culo m├│vil para marcarlo como entregado al cobrar
+    setActiveOrderId(`movil-${v.id}`);
+
+    // Agregar como orden abierta temporalmente para que quede en el panel
+    const ordenMovil: Venta = {
+      id: `movil-${v.id}`,
+      fecha: v.fecha || now.toISOString().split('T')[0],
+      hora: hora,
+      horaEntrada: v.horaIngreso || hora,
+      horaSalida: hora,
+      empleado: v.empleado || '',
+      patente: v.patente || '',
+      cliente: v.cliente || '',
+      lavado: v.precio || 0,
+      bar: 0,
+      cosmeticos: 0,
+      total: v.precio || 0,
+      metodoPago: v.metodoPago || 'Efectivo',
+      pagosMixtos: [],
+      descuento: 0,
+      recargo: 0,
+      productosBar: [],
+      productosCosmeticos: [],
+      servicio: v.servicio || '',
+      extrasLavado: [],
+      marca: v.marcaModelo?.split(' ')[0] || '',
+      modelo: v.marcaModelo?.split(' ').slice(1).join(' ') || '',
+    };
+
+    // Solo agregar si no existe ya
+    setOrdenesAbiertas(prev => {
+      if (prev.some(o => o.id === ordenMovil.id)) return prev;
+      return [...prev, ordenMovil];
+    });
+
+    // Marcar como en proceso en Sheets
+    actualizarVehiculoEnPatio(v.id, { estado: 'En Lavado' }).catch(() => {});
+
+    toast.success(`Veh├¡culo ${v.patente} cargado en el POS`, {
+      description: 'Complet├í el cobro y registr├í la venta normalmente.'
+    });
+
+    // Scroll al formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const cargarOrden = (orden: Venta) => {
@@ -1635,7 +1546,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     aplicarExtrasYOrden(orden);
     setServicio(orden.servicio || '');
     
-    // Buscar el vehículo en la lista de precios para restaurar la selección
+    // Buscar el veh├¡culo en la lista de precios para restaurar la selecci├│n
     if (orden.marca && orden.modelo) {
       const v = prices.find(p => p.brand === orden.marca && p.model === orden.modelo && p.service === orden.servicio);
       if (v) setVehiculoSeleccionado(v);
@@ -1717,7 +1628,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const agregarEmpleadoVenta = () => {
     const nombre = nuevoEmpleadoVentaNombre.trim();
     if (!nombre) {
-      toast.warning('Ingresá el nombre del empleado.');
+      toast.warning('Ingres├í el nombre del empleado.');
       return;
     }
     if (listaEmpleados.some((e) => e.toLowerCase() === nombre.toLowerCase())) {
@@ -1792,7 +1703,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     
     setBorradorRecuperado(null);
     setShowBorradorDialog(false);
-    toast.success("Edición recuperada", { description: "Se cargaron los datos de la edición anterior." });
+    toast.success("Edici├│n recuperada", { description: "Se cargaron los datos de la edici├│n anterior." });
   };
 
   const descartarBorrador = () => {
@@ -1846,7 +1757,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setProductosBar(venta.productosBar);
     setProductosCosmeticos(venta.productosCosmeticos);
     
-    // Buscar el vehículo en la lista si existe
+    // Buscar el veh├¡culo en la lista si existe
     if (venta.marca && venta.modelo) {
       const v = prices.find(p => p.brand === venta.marca && p.model === venta.modelo);
       if (v) setVehiculoSeleccionado(v);
@@ -1858,7 +1769,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   const confirmarAnulacion = () => {
     if (!motivoAnulacion) {
-      toast.error('Motivo requerido', { description: 'Debe ingresar un motivo para la anulación' });
+      toast.error('Motivo requerido', { description: 'Debe ingresar un motivo para la anulaci├│n' });
       return;
     }
 
@@ -1966,7 +1877,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         fecha: new Date().toLocaleString('es-AR'),
         accion: 'EDICION',
         tipo: 'CONSUMO_EMPLEADO',
-        detalles: `Liquidación de ${nombre} editada. Nuevo total: ${formatMoney(total)}`,
+        detalles: `Liquidaci├│n de ${nombre} editada. Nuevo total: ${formatMoney(total)}`,
         registroId: editingConsumoId
       };
       setAuditLogs([log, ...auditLogs]);
@@ -1992,7 +1903,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       fecha: new Date().toLocaleString('es-AR'),
       accion: 'ELIMINACION',
       tipo: 'CONSUMO_EMPLEADO',
-      detalles: `Liquidación de ${item.empleado} eliminada. Monto: ${formatMoney(item.total)}`,
+      detalles: `Liquidaci├│n de ${item.empleado} eliminada. Monto: ${formatMoney(item.total)}`,
       registroId: id
     };
     setAuditLogs([log, ...auditLogs]);
@@ -2000,18 +1911,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   };
 
   const cargarConsumoParaEditar = (consumo: VentaEmpleado) => {
-    // 1. Registrar el movimiento en la auditoría antes de quitarlo
+    // 1. Registrar el movimiento en la auditor├¡a antes de quitarlo
     const log: AuditLog = {
       id: Date.now().toString(),
       fecha: new Date().toLocaleString('es-AR'),
       accion: 'EDICION',
       tipo: 'CONSUMO_EMPLEADO',
-      detalles: `Registro de ${consumo.empleado} retirado del historial para re-edición. Monto original: ${formatMoney(consumo.total)}`,
+      detalles: `Registro de ${consumo.empleado} retirado del historial para re-edici├│n. Monto original: ${formatMoney(consumo.total)}`,
       registroId: consumo.id
     };
     setAuditLogs([log, ...auditLogs]);
 
-    // 2. Cargar los datos al panel de edición
+    // 2. Cargar los datos al panel de edici├│n
     setEmpleadoConsumoSeleccionado(consumo.empleado);
     setConsumosEmpleados({
       ...consumosEmpleados,
@@ -2083,7 +1994,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       }
     });
 
-    // Órdenes abiertas con lavado
+    // ├ôrdenes abiertas con lavado
     ordenesAbiertas.forEach(o => {
       if (esLavaderoVenta(o)) {
         if (!mapByDate[o.fecha]) mapByDate[o.fecha] = [];
@@ -2195,7 +2106,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       const desglose = desglosePagosVenta(v);
       const metodosEnEstaVenta = new Set<string>();
       desglose.forEach((p) => {
-        const metodo = p.metodo?.trim() || 'Sin método';
+        const metodo = p.metodo?.trim() || 'Sin m├®todo';
         const cur = map.get(metodo) ?? { total: 0, cantidad: 0 };
         map.set(metodo, { total: cur.total + p.monto, cantidad: cur.cantidad });
         metodosEnEstaVenta.add(metodo);
@@ -2222,16 +2133,16 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     return filas.sort((a, b) => b.total - a.total);
   }, [ventasDelDia, metodosPago]);
 
-  // Desglose de ventas por sector con métodos de pago
+  // Desglose de ventas por sector con m├®todos de pago
   const detallesPorSector = useMemo(() => {
     const sectoresDef = [
       { nombre: 'Lavadero', getAmount: (v: Venta) => v.lavado, sectorKey: 'lavadero' as const },
       { nombre: 'Bar', getAmount: (v: Venta) => v.bar, sectorKey: 'bar' as const },
-      { nombre: 'Cosmética', getAmount: (v: Venta) => v.cosmeticos, sectorKey: 'cosmetica' as const },
+      { nombre: 'Cosm├®tica', getAmount: (v: Venta) => v.cosmeticos, sectorKey: 'cosmetica' as const },
     ];
 
     return sectoresDef.map(({ nombre, getAmount, sectorKey }) => {
-      // Función para verificar si un sector tiene descuento al 100%
+      // Funci├│n para verificar si un sector tiene descuento al 100%
       const isSector100Discount = (v: Venta): boolean => {
         const sectorDesc = v.descSectorsDetails?.[sectorKey];
         if (!sectorDesc?.activo) return false;
@@ -2250,7 +2161,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       // Filtrar ventas que tengan monto en este sector Y NO tengan descuento al 100%
       const ventasConSector = ventasDelDia.filter(v => getAmount(v) > 0 && !isSector100Discount(v));
 
-      // Mapa de método de pago → { total del sector, cantidad de ventas }
+      // Mapa de m├®todo de pago ÔåÆ { total del sector, cantidad de ventas }
       const metodoMap = new Map<string, { total: number; cantidad: number }>();
 
       ventasConSector.forEach(v => {
@@ -2263,7 +2174,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
         desglose.forEach(p => {
           if (p.monto <= 0) return;
-          const metodo = p.metodo?.trim() || 'Sin método';
+          const metodo = p.metodo?.trim() || 'Sin m├®todo';
           const cur = metodoMap.get(metodo) ?? { total: 0, cantidad: 0 };
           metodoMap.set(metodo, { total: cur.total + p.monto * proporcion, cantidad: cur.cantidad });
           metodosEnEstaVenta.add(metodo);
@@ -2329,7 +2240,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   const agregarDenominacionBillete = (valor: number) => {
     if (denominacionesBilletes.includes(valor)) {
-      toast.warning('Esa denominación ya existe.');
+      toast.warning('Esa denominaci├│n ya existe.');
       return;
     }
     setDenominacionesBilletes([...denominacionesBilletes, valor].sort((a, b) => a - b));
@@ -2338,7 +2249,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   const eliminarDenominacionBillete = (valor: number) => {
     if (denominacionesBilletes.length <= 1) {
-      toast.warning('Debe quedar al menos una denominación.');
+      toast.warning('Debe quedar al menos una denominaci├│n.');
       return;
     }
     setDenominacionesBilletes(denominacionesBilletes.filter((d) => d !== valor));
@@ -2352,7 +2263,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const editarDenominacionBillete = (valorAnterior: number, valorNuevo: number) => {
     if (valorAnterior === valorNuevo) return;
     if (denominacionesBilletes.includes(valorNuevo)) {
-      toast.warning('Esa denominación ya existe.');
+      toast.warning('Esa denominaci├│n ya existe.');
       return;
     }
     setDenominacionesBilletes(
@@ -2377,7 +2288,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   const realizarCierreCaja = async () => {
     if (ventasDelDia.length === 0) {
-      toast.warning('Sin ventas del día', {
+      toast.warning('Sin ventas del d├¡a', {
         description: `No hay ventas registradas para ${fechaCierre}.`,
       });
       return;
@@ -2385,7 +2296,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     if (!googleSheetsSync.getSpreadsheetId()) {
       toast.error('Google Sheets no configurado', {
-        description: 'Configurá la hoja en Ajustes antes de enviar el cierre.',
+        description: 'Configur├í la hoja en Ajustes antes de enviar el cierre.',
       });
       return;
     }
@@ -2401,7 +2312,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     // Desglosar ventas por sector
     const ventasDelDiaFecha = ventasDelDia.filter(v => v.fecha === fechaCierre);
     
-    // Calcular detalles por sector (Lavadero, Bar, Cosmética)
+    // Calcular detalles por sector (Lavadero, Bar, Cosm├®tica)
     const detallesPorSector = {
       lavadero: {
         ventas: ventasDelDiaFecha.filter(v => v.lavado > 0),
@@ -2441,7 +2352,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       },
     };
 
-    // Obtener gastos del día
+    // Obtener gastos del d├¡a
     const gastosDelDia: Array<{ fecha: string; monto: number; categoria: string; concepto: string; sector?: string }> = 
       JSON.parse(localStorage.getItem('gowash-gastos') || '[]')
         .filter((g: any) => g.fecha === fechaCierre);
@@ -2452,7 +2363,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const gastosPorSector = {
       lavadero: gastosDelDia.filter(g => g.sector === 'Lavadero').reduce((sum, g) => sum + (g.monto || 0), 0),
       bar: gastosDelDia.filter(g => g.sector === 'Bar').reduce((sum, g) => sum + (g.monto || 0), 0),
-      cosmetica: gastosDelDia.filter(g => g.sector === 'Cosmética').reduce((sum, g) => sum + (g.monto || 0), 0),
+      cosmetica: gastosDelDia.filter(g => g.sector === 'Cosm├®tica').reduce((sum, g) => sum + (g.monto || 0), 0),
     };
 
     const cierre = {
@@ -2460,7 +2371,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       fecha: fechaCierre,
       horaCierre: getCurrentTimeString(),
       
-      // COMPOSICIÓN DEL CIERRE
+      // COMPOSICI├ôN DEL CIERRE
       composicion: {
         ventasPorSector: {
           lavadero: detallesPorSector.lavadero.total,
@@ -2485,7 +2396,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         },
       },
 
-      // ARQUEO FÍSICO DE BILLETES
+      // ARQUEO F├ìSICO DE BILLETES
       arqueo: {
         totalContado: totalContadoBilletes,
         diferencia: diferenciaArqueo,
@@ -2502,13 +2413,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         detalle: gastosDelDia,
       },
 
-      // DETALLE DE VENTAS POR MÉTODO DE PAGO
+      // DETALLE DE VENTAS POR M├ëTODO DE PAGO
       detalleMetodos: resumenMetodosPago,
 
       // DETALLES SECTORIZADOS COMPLETOS
       detallesPorSector,
 
-      // INFORMACIÓN GENERAL
+      // INFORMACI├ôN GENERAL
       totalEfectivoSistema: totalEfectivo,
       totalGeneral,
       cantidadVentas: ventasDelDia.length,
@@ -2525,12 +2436,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       localStorage.setItem('gowash-cierres-caja', JSON.stringify([cierre, ...historial]));
       localStorage.setItem(`gowash-cierre-enviado-${fechaCierre}`, cierreId);
 
-      // Vaciar el patio (reiniciar aplicación del teléfono)
-      await vaciarPatio();
-      setOrdenesAbiertas([]);
-
       toast.success('Cierre de caja enviado', {
-        description: `Día ${fechaCierre} sincronizado con la nube. Patio reiniciado.`,
+        description: `D├¡a ${fechaCierre} sincronizado con la nube.`,
       });
 
       // Reiniciar ventas y caja para iniciar nuevo turno
@@ -2543,7 +2450,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setInicioCajaVersion(v => v + 1);
       localStorage.removeItem(`gowash-cierre-enviado-${fechaCierre}`);
 
-      // Reiniciar gastos del día cerrado
+      // Reiniciar gastos del d├¡a cerrado
       const gastosGuardados: Array<{ fecha: string }> = JSON.parse(localStorage.getItem('gowash-gastos') || '[]');
       const gastosRestantes = gastosGuardados.filter(g => g.fecha !== fechaCierre);
       localStorage.setItem('gowash-gastos', JSON.stringify(gastosRestantes));
@@ -2602,7 +2509,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 readOnly={!horaEntradaCongelada}
                 onChange={(e) => horaEntradaCongelada && setHoraEntrada(e.target.value)}
                 className={`bg-white ${!horaEntradaCongelada ? 'bg-slate-100 cursor-default' : ''}`}
-                title={horaEntradaCongelada ? 'Hora de ingreso del vehículo' : 'Se actualiza automáticamente con la hora del sistema'}
+                title={horaEntradaCongelada ? 'Hora de ingreso del veh├¡culo' : 'Se actualiza autom├íticamente con la hora del sistema'}
               />
               {!horaEntradaCongelada && (
                 <p className="text-[10px] text-blue-600 mt-0.5">Hora del sistema (se actualiza sola)</p>
@@ -2651,7 +2558,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                             <Check className="w-3 h-3" />
                           </Button>
                           <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={cancelarEdicionEmpleadoLista}>
-                            ✕
+                            Ô£ò
                           </Button>
                         </div>
                       ) : (
@@ -2729,12 +2636,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               />
             </div>
             <div>
-              <Label htmlFor="numeroCliente">Número de Cliente</Label>
+              <Label htmlFor="numeroCliente">N├║mero de Cliente</Label>
               <Input
                 id="numeroCliente"
                 value={numeroCliente}
                 onChange={(e) => setNumeroCliente(e.target.value)}
-                placeholder="ID o Teléfono"
+                placeholder="ID o Tel├®fono"
                 className="bg-white"
               />
               {numeroCliente && (
@@ -2751,7 +2658,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                     (washCounts[numeroCliente] || 0) % 6 === 5 ? 'text-green-600 animate-bounce' : 'text-slate-500'
                   }`}>
                     {(washCounts[numeroCliente] || 0) % 6 === 5 
-                      ? '¡Próximo Lavado Gratis!' 
+                      ? '┬íPr├│ximo Lavado Gratis!' 
                       : `Lavados: ${(washCounts[numeroCliente] || 0) % 6} / 5`}
                   </span>
                 </div>
@@ -2768,7 +2675,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                     className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
                   />
                   <Label htmlFor="estadia" className="font-semibold text-blue-900 cursor-pointer">
-                    Añadir Estadía / Estacionamiento
+                    A├▒adir Estad├¡a / Estacionamiento
                   </Label>
                 </div>
                 
@@ -2786,7 +2693,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                       />
                     </div>
                     <div>
-                      <Label htmlFor="precioEstadia" className="text-sm text-blue-800">Precio Estadía</Label>
+                      <Label htmlFor="precioEstadia" className="text-sm text-blue-800">Precio Estad├¡a</Label>
                       <Input
                         id="precioEstadia"
                         type="number"
@@ -2804,16 +2711,16 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           </div>
         </Card>
 
-        {/* Vehículo y Lavadero Unificado */}
+        {/* Veh├¡culo y Lavadero Unificado */}
         <Card className="p-3 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200">
           <h3 className="font-bold mb-3 text-indigo-900 text-xs uppercase tracking-tight flex items-center gap-1">
             <span className="w-2 h-2 bg-indigo-500 rounded-full"></span> Lavadero
           </h3>
           
           <div className="space-y-3">
-            {/* Buscador de Vehículo */}
+            {/* Buscador de Veh├¡culo */}
             <div className="space-y-1.5">
-              <Label htmlFor="searchVehiculo" className="text-[10px] font-bold text-indigo-800 uppercase block">Vehículo / Modelo</Label>
+              <Label htmlFor="searchVehiculo" className="text-[10px] font-bold text-indigo-800 uppercase block">Veh├¡culo / Modelo</Label>
               <Input
                 id="searchVehiculo"
                 value={searchVehiculo}
@@ -2852,25 +2759,6 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                       </div>
                     </Button>
                   ))}
-                </div>
-              )}
-              {filteredPricesList.length === 0 && searchVehiculo.length > 2 && (
-                <div className="border rounded bg-slate-50 p-2 mt-1 space-y-2">
-                  <p className="text-[10px] text-slate-500">Vehículo no encontrado en el catálogo.</p>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="w-full text-[10px] h-7 bg-blue-600 hover:bg-blue-700"
-                    disabled={guardandoCatalogo}
-                    onClick={() => {
-                      setCatalogoNuevoSize('Mediano');
-                      setCatalogoNuevoPrice('0');
-                      setShowGuardarCatalogoDialog(true);
-                    }}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Añadir al Catálogo
-                  </Button>
                 </div>
               )}
 
@@ -3000,7 +2888,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         {/* Bar */}
         <Card className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
           <h3 className="font-bold mb-2 text-amber-900 text-xs uppercase tracking-tight flex items-center gap-1">
-            <span className="w-2 h-2 bg-amber-500 rounded-full"></span> Bar / Cafetería
+            <span className="w-2 h-2 bg-amber-500 rounded-full"></span> Bar / Cafeter├¡a
           </h3>
           <div className="mb-2">
             <Input
@@ -3064,17 +2952,17 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           )}
         </Card>
 
-        {/* Cosmética/Accesorios */}
+        {/* Cosm├®tica/Accesorios */}
         <Card className="p-3 bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-200">
           <h3 className="font-bold mb-2 text-teal-900 text-xs uppercase tracking-tight flex items-center gap-1">
-            <span className="w-2 h-2 bg-teal-500 rounded-full"></span> Cosmética/Accesorios
+            <span className="w-2 h-2 bg-teal-500 rounded-full"></span> Cosm├®tica/Accesorios
           </h3>
           <div className="mb-2">
             <Input
               id="searchCosmeticos"
               value={searchCosmeticos}
               onChange={(e) => setSearchCosmeticos(e.target.value)}
-              placeholder="Buscar cosmético..."
+              placeholder="Buscar cosm├®tico..."
               className="bg-white mb-2 h-7 text-xs"
             />
 
@@ -3121,13 +3009,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 ))}
               </ul>
               <div className="mt-1.5 text-right font-black text-sm text-teal-900">
-                Total Cosmética/Accesorios: {formatMoney(calcularTotalCosmeticos())}
+                Total Cosm├®tica/Accesorios: {formatMoney(calcularTotalCosmeticos())}
               </div>
             </div>
           )}
         </Card>
 
-        {/* Liquidación y Pago */}
+        {/* Liquidaci├│n y Pago */}
         <Card className="p-4 bg-slate-50 border border-slate-200 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
@@ -3238,7 +3126,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         )}
                       </div>
 
-                      {/* Cosmética */}
+                      {/* Cosm├®tica */}
                       <div className={`rounded-lg p-2.5 border transition-all ${descSectors.cosmetica.activo ? 'bg-teal-50 border-teal-300 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-70'}`}>
                         <label className="flex items-center gap-1.5 cursor-pointer mb-2">
                           <input
@@ -3247,7 +3135,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                             onChange={(e) => updateDescSector('cosmetica', { activo: e.target.checked })}
                             className="rounded w-3.5 h-3.5 text-teal-600"
                           />
-                          <span className="text-[10px] font-black text-teal-900 uppercase">Cosmética</span>
+                          <span className="text-[10px] font-black text-teal-900 uppercase">Cosm├®tica</span>
                         </label>
                         {descSectors.cosmetica.activo && (
                           <div className="space-y-1.5">
@@ -3288,14 +3176,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               })()}
             </div>
 
-            {/* Sección Pago */}
+            {/* Secci├│n Pago */}
             <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-slate-200 pt-4 lg:pt-0 lg:pl-6">
               <h3 className="font-bold text-xs uppercase tracking-tight text-green-900 flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Método de Pago
+                M├®todo de Pago
               </h3>
               <div className="max-w-xs">
-                <Label htmlFor="metodoPago" className="text-[10px] block mb-1">Seleccionar Método de Pago General</Label>
+                <Label htmlFor="metodoPago" className="text-[10px] block mb-1">Seleccionar M├®todo de Pago General</Label>
                 <Select 
                   value={metodoPago} 
                   onValueChange={(val) => {
@@ -3310,22 +3198,22 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   }}
                 >
                   <SelectTrigger className="bg-white h-8 text-xs font-bold text-green-800 border-green-200">
-                    <SelectValue placeholder="Seleccionar método" />
+                    <SelectValue placeholder="Seleccionar m├®todo" />
                   </SelectTrigger>
                   <SelectContent>
                     {metodosPago.filter(m => m && m.trim() !== '').map(m => (
                       <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
                     ))}
                     <SelectItem value="NEW_METODO_PAGO" className="text-blue-600 font-bold border-t">
-                      + Nuevo Método
+                      + Nuevo M├®todo
                     </SelectItem>
                   </SelectContent>
                 </Select>
 
-                {/* Lista de métodos de pago con opciones de editar/eliminar */}
+                {/* Lista de m├®todos de pago con opciones de editar/eliminar */}
                 <Collapsible className="mt-2">
                   <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md bg-green-50 border border-green-200 px-2 py-1.5 text-left hover:bg-green-100 transition-colors">
-                    <span className="text-[10px] font-bold text-green-700 uppercase">Administrar métodos</span>
+                    <span className="text-[10px] font-bold text-green-700 uppercase">Administrar m├®todos</span>
                     <Pencil className="w-3 h-3 text-green-600" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-2 space-y-1.5">
@@ -3342,7 +3230,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                             <Check className="w-3 h-3" />
                           </Button>
                           <Button type="button" size="sm" variant="outline" className="h-7 px-2" onClick={() => { setEditingMetodoPago(null); setEditingMetodoPagoName(''); }}>
-                            ✕
+                            Ô£ò
                           </Button>
                         </div>
                       ) : (
@@ -3424,7 +3312,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         disabled={pagosMixtos.length <= 2}
                         onClick={() => setPagosMixtos(pagosMixtos.filter((_, i) => i !== idx))}
                       >
-                        ✕
+                        Ô£ò
                       </Button>
                     </div>
                   ))}
@@ -3441,7 +3329,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         ])
                       }
                     >
-                      + Línea
+                      + L├¡nea
                     </Button>
                     <Button
                       type="button"
@@ -3477,7 +3365,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 </div>
               )}
               
-              {/* Total Informativo Rápido */}
+              {/* Total Informativo R├ípido */}
               <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
                 <p className="text-[10px] font-bold text-green-800 uppercase tracking-wider mb-1">Monto a Cobrar</p>
                 <p className="text-2xl font-black text-green-600 leading-none">{formatMoney(calcularTotal())}</p>
@@ -3494,7 +3382,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         <Card className="p-3 bg-gradient-to-r from-green-100 to-emerald-100 border border-green-300 shadow-sm">
           {editingVentaId && (
             <p className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2 uppercase tracking-wide">
-              Editando venta cerrada — confirmá con Guardar
+              Editando venta cerrada ÔÇö confirm├í con Guardar
             </p>
           )}
           <div className="flex flex-col md:flex-row items-center justify-between gap-3">
@@ -3537,9 +3425,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>¿Cerrar Venta?</AlertDialogTitle>
+                        <AlertDialogTitle>┬┐Cerrar Venta?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Se registrará la venta y el vehículo quedará pendiente de retiro. Podrás marcarlo como retirado desde el panel de vehículos en lavadero.
+                          Se registrar├í la venta y el veh├¡culo quedar├í pendiente de retiro. Podr├ís marcarlo como retirado desde el panel de veh├¡culos en lavadero.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -3569,24 +3457,15 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         </Card>
           </div>
 
-          {/* Panel Lateral de Órdenes Abiertas */}
+          {/* Panel Lateral de ├ôrdenes Abiertas */}
           <div className="lg:col-span-1 space-y-3">
             <div className="sticky top-4">
-              <h3 className="font-bold text-sm text-white mb-3 flex items-center justify-between uppercase tracking-tighter">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                  Vehículos en Lavadero
-                </div>
-                <button
-                  onClick={() => setShowQRMobileApp(true)}
-                  className="p-1.5 bg-slate-800 text-slate-300 hover:text-emerald-400 hover:bg-slate-700 rounded-md transition-colors"
-                  title="Abrir QR para teléfono"
-                >
-                  <QrCode className="w-4 h-4" />
-                </button>
+              <h3 className="font-bold text-sm text-white mb-3 flex items-center gap-2 uppercase tracking-tighter">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                Veh├¡culos en Lavadero
               </h3>
 
-              {/* Pestañas Desktop / Móvil */}
+              {/* Pesta├▒as Desktop / M├│vil */}
               <div className="flex gap-1 mb-3 bg-slate-800/60 rounded-lg p-1">
                 <button
                   onClick={() => setTabLavadero('desktop')}
@@ -3613,7 +3492,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   }`}
                 >
                   <Smartphone className="w-3 h-3" />
-                  Móvil
+                  M├│vil
                   {vehiculosMovil.length > 0 && (
                     <span className="bg-purple-400 text-white text-[9px] rounded-full px-1.5 py-0.5 leading-none">
                       {vehiculosMovil.length}
@@ -3622,12 +3501,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 </button>
               </div>
 
-              {/* PESTAÑA DESKTOP */}
+              {/* PESTA├æA DESKTOP */}
               {tabLavadero === 'desktop' && (
                 <>
                   {ordenesAbiertas.length === 0 ? (
                     <Card className="p-4 text-center text-gray-500 border-dashed border-2 bg-gray-50/50">
-                      <p className="text-[10px]">No hay vehículos en lavadero</p>
+                      <p className="text-[10px]">No hay veh├¡culos en lavadero</p>
                     </Card>
                   ) : (
                     <div className="space-y-3 max-h-[calc(100vh-260px)] overflow-y-auto pr-2">
@@ -3635,7 +3514,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         <Card key={orden.id} className={`p-4 hover:shadow-md transition-all border-l-4 ${activeOrderId === orden.id ? 'border-l-green-500 bg-green-50/30 ring-1 ring-green-200' : 'border-l-blue-500 bg-white'}`}>
                           <div className="flex gap-3 mb-3">
                             {orden.imageUrl ? (
-                              <img src={orden.imageUrl} alt="Vehículo" className="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200" />
+                              <img src={orden.imageUrl} alt="Veh├¡culo" className="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200" />
                             ) : (
                               <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200">
                                 <Car className="w-8 h-8" />
@@ -3647,7 +3526,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 <div className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium shrink-0">{orden.horaEntrada}</div>
                               </div>
                               <div className="text-xs text-gray-600">
-                                {orden.cliente && <p className="truncate italic">👤 {orden.cliente}</p>}
+                                {orden.cliente && <p className="truncate italic">­ƒæñ {orden.cliente}</p>}
                                 <p className="font-bold text-blue-800 mt-0.5">{formatMoney(orden.total)}</p>
                               </div>
                             </div>
@@ -3670,27 +3549,27 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                   setOrdenesAbiertas(prev => prev.filter(o => o.id !== orden.id));
                                   setOrdenesCobradas(prev => prev.filter(id => id !== orden.id));
                                   if (activeOrderId === orden.id) setActiveOrderId(null);
-                                  toast.success('Vehículo retirado', { description: `${orden.patente} retirado del lavadero.` });
+                                  toast.success('Veh├¡culo retirado', { description: `${orden.patente} retirado del lavadero.` });
                                 }}
                               >
-                                ✓ Marcar como Retirado
+                                Ô£ô Marcar como Retirado
                               </Button>
                             )}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0">✕</Button>
+                                <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0">Ô£ò</Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Eliminar orden?</AlertDialogTitle>
-                                  <AlertDialogDescription>Se perderán los datos cargados para el vehículo {orden.patente}.</AlertDialogDescription>
+                                  <AlertDialogTitle>┬┐Eliminar orden?</AlertDialogTitle>
+                                  <AlertDialogDescription>Se perder├ín los datos cargados para el veh├¡culo {orden.patente}.</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>No, mantener</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => { setItemAAnular({ id: orden.id, type: 'orden' }); setShowAnulacionDialog(true); }}
                                     className="bg-red-600 hover:bg-red-700"
-                                  >Sí, eliminar</AlertDialogAction>
+                                  >S├¡, eliminar</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -3702,7 +3581,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 </>
               )}
 
-              {/* PESTAÑA MÓVIL */}
+              {/* PESTA├æA M├ôVIL */}
               {tabLavadero === 'movil' && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -3722,7 +3601,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                     <Card className="p-4 text-center border-dashed border-2 bg-slate-800/30 border-slate-600">
                       <Smartphone className="w-6 h-6 text-slate-500 mx-auto mb-2" />
                       <p className="text-[10px] text-slate-400">
-                        {cargandoMovil ? 'Cargando...' : 'Sin vehículos en patio desde móvil'}
+                        {cargandoMovil ? 'Cargando...' : 'Sin veh├¡culos en patio desde m├│vil'}
                       </p>
                     </Card>
                   ) : (
@@ -3748,12 +3627,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2">
-                              <span>👤 {v.cliente || 'Particular'}</span>
-                              <span>🕐 {v.horaIngreso}</span>
+                              <span>­ƒæñ {v.cliente || 'Particular'}</span>
+                              <span>­ƒòÉ {v.horaIngreso}</span>
                             </div>
                             {v.servicio && (
                               <div className="mb-2 text-[10px] text-purple-300 font-medium">
-                                🚿 {v.servicio} · ${(v.precio || 0).toLocaleString('es-AR')}
+                                ­ƒÜ┐ {v.servicio} ┬À ${(v.precio || 0).toLocaleString('es-AR')}
                               </div>
                             )}
                             <Button
@@ -3765,7 +3644,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               }`}
                               onClick={() => cargarVehiculoMovilEnPOS(v)}
                             >
-                              {yaCargado ? '✓ En POS - cobrar para cerrar' : '💰 Cerrar venta'}
+                              {yaCargado ? 'Ô£ô En POS - cobrar para cerrar' : '­ƒÆ░ Cerrar venta'}
                             </Button>
                           </Card>
                         );
@@ -3782,7 +3661,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         {/* Tabla de Ventas */}
         <Card className="p-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
-            <h3 className="font-bold text-xl">Registro de Ventas del Día</h3>
+            <h3 className="font-bold text-xl">Registro de Ventas del D├¡a</h3>
             <div className="flex flex-wrap gap-2 items-center">
               <Select value={filtroSectorVentas} onValueChange={setFiltroSectorVentas}>
                 <SelectTrigger className="w-[140px] h-9 text-xs font-semibold border-blue-200">
@@ -3792,7 +3671,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <SelectItem value="Todos">Todos los sectores</SelectItem>
                   <SelectItem value="Lavadero">Lavadero</SelectItem>
                   <SelectItem value="Bar">Bar</SelectItem>
-                  <SelectItem value="Cosmetica/Accesorios">Cosmética/Accesorios</SelectItem>
+                  <SelectItem value="Cosmetica/Accesorios">Cosm├®tica/Accesorios</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -3815,8 +3694,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <SelectValue placeholder="Orden" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="desc">Más recientes primero</SelectItem>
-                  <SelectItem value="asc">Más antiguas primero</SelectItem>
+                  <SelectItem value="desc">M├ís recientes primero</SelectItem>
+                  <SelectItem value="asc">M├ís antiguas primero</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -3830,14 +3709,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 <thead>
                   <tr className="bg-blue-600 text-white">
                     <th className="border p-2">Contador</th>
-                    <th className="border p-2">Nº Cliente</th>
+                    <th className="border p-2">N┬║ Cliente</th>
                     <th className="border p-2">Entrada</th>
                     <th className="border p-2">Salida</th>
                     <th className="border p-2">Patente</th>
-                    <th className="border p-2">Vehículo</th>
+                    <th className="border p-2">Veh├¡culo</th>
                     <th className="border p-2 bg-cyan-500">Lavado</th>
                     <th className="border p-2 bg-amber-500">Bar</th>
-                    <th className="border p-2 bg-teal-500">Cosmética/Accesorios</th>
+                    <th className="border p-2 bg-teal-500">Cosm├®tica/Accesorios</th>
                     <th className="border p-2 bg-purple-500">Descuento</th>
                     <th className="border p-2 bg-green-600">Total</th>
                     <th className="border p-2">Pago</th>
@@ -3907,7 +3786,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               <DialogHeader>
                                 <DialogTitle>Detalle de Venta</DialogTitle>
                                 <DialogDescription>
-                                  Información completa de la venta
+                                  Informaci├│n completa de la venta
                                 </DialogDescription>
                               </DialogHeader>
                               {ventaSeleccionada && (
@@ -3932,13 +3811,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                       <p>{ventaSeleccionada.cliente || 'N/A'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-sm font-semibold text-gray-600">Nº Cliente</p>
+                                      <p className="text-sm font-semibold text-gray-600">N┬║ Cliente</p>
                                       <p>{ventaSeleccionada.numeroCliente || 'N/A'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-sm font-semibold text-gray-600">Estadía</p>
+                                      <p className="text-sm font-semibold text-gray-600">Estad├¡a</p>
                                       {ventaSeleccionada.estadia ? (
-                                        <p>Sí ({ventaSeleccionada.horasEstadia} hs - {formatMoney(ventaSeleccionada.precioEstadia || 0)})</p>
+                                        <p>S├¡ ({ventaSeleccionada.horasEstadia} hs - {formatMoney(ventaSeleccionada.precioEstadia || 0)})</p>
                                       ) : (
                                         <p>No</p>
                                       )}
@@ -3987,7 +3866,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
                                   {ventaSeleccionada.productosCosmeticos.length > 0 && (
                                     <div className="bg-teal-50 p-4 rounded-lg">
-                                      <h4 className="font-bold text-teal-900 mb-2">Cosmética/Accesorios</h4>
+                                      <h4 className="font-bold text-teal-900 mb-2">Cosm├®tica/Accesorios</h4>
                                       <ul className="space-y-1 mb-2">
                                         {ventaSeleccionada.productosCosmeticos.map((p, idx) => (
                                           <li key={idx} className="flex justify-between text-sm">
@@ -3997,7 +3876,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                         ))}
                                       </ul>
                                       <div className="flex justify-between font-bold border-t border-teal-200 pt-2 text-sm">
-                                        <span>Total Cosmética/Accesorios:</span>
+                                        <span>Total Cosm├®tica/Accesorios:</span>
                                         <span>{formatMoney(ventaSeleccionada.cosmeticos)}</span>
                                       </div>
                                     </div>
@@ -4015,7 +3894,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                     <div className="flex justify-between items-end">
                                       <p className="text-2xl font-bold text-green-700">{formatMoney(ventaSeleccionada.total)}</p>
                                       <div className="text-right">
-                                        <p className="text-sm text-green-800">Método de Pago</p>
+                                        <p className="text-sm text-green-800">M├®todo de Pago</p>
                                         <p className="font-bold text-green-900 text-sm">
                                           {formatMetodoPagoDisplay(ventaSeleccionada, formatMoney)}
                                         </p>
@@ -4039,9 +3918,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Desea editar o eliminar esta venta?</AlertDialogTitle>
+                                <AlertDialogTitle>┬┐Desea editar o eliminar esta venta?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Puede editar los datos de esta venta, o eliminarla de forma permanente (requiere motivo para auditoría).
+                                  Puede editar los datos de esta venta, o eliminarla de forma permanente (requiere motivo para auditor├¡a).
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="sm:justify-between">
@@ -4074,7 +3953,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           )}
         </Card>
 
-        {/* Auditoría de Ventas (Solo Admin) Compacta */}
+        {/* Auditor├¡a de Ventas (Solo Admin) Compacta */}
         {isAdmin && (
           <Card className="p-3 border border-indigo-300 bg-gradient-to-br from-indigo-900 to-indigo-800 mt-3 shadow-lg">
             <h3 className="font-bold text-xs mb-2 text-indigo-200 flex items-center gap-2 uppercase tracking-tighter">
@@ -4099,7 +3978,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               onChange={(e) => setEditingLogText(e.target.value)}
                               className="h-6 text-[10px] py-0 bg-indigo-600 border-indigo-500 text-white"
                             />
-                            <Button size="sm" className="h-6 px-1.5 bg-green-600 hover:bg-green-700" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
+                            <Button size="sm" className="h-6 px-1.5 bg-green-600 hover:bg-green-700" onClick={() => guardarEdicionLog(log.id)}>Ô£ô</Button>
                           </div>
                         ) : (
                           <>
@@ -4123,7 +4002,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               className="rounded-lg text-xs font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               <span className="flex items-center gap-1.5">
-                🟡 Inicio de Caja
+                ­ƒƒí Inicio de Caja
               </span>
             </TabsTrigger>
             <TabsTrigger
@@ -4131,7 +4010,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               className="rounded-lg text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               <span className="flex items-center gap-1.5">
-                🟢 Cierre de Caja
+                ­ƒƒó Cierre de Caja
               </span>
             </TabsTrigger>
           </TabsList>
@@ -4220,7 +4099,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 className="bg-white text-sm"
               />
               <Button onClick={agregarEmpleado} className="w-full bg-slate-800 hover:bg-slate-900 text-xs">
-                Añadir Empleado
+                A├▒adir Empleado
               </Button>
             </div>
           </Card>
@@ -4258,7 +4137,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-700 flex items-center gap-2">
                       <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                      Añadir Producto
+                      A├▒adir Producto
                     </h4>
                     <Input
                       placeholder="Buscar producto..."
@@ -4319,7 +4198,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 onClick={() => eliminarConsumoEmpleado(idx)}
                                 className="text-red-400 hover:text-red-600"
                               >
-                                ✕
+                                Ô£ò
                               </button>
                             </div>
                           </div>
@@ -4345,9 +4224,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>¿Confirmar liquidación?</AlertDialogTitle>
+                              <AlertDialogTitle>┬┐Confirmar liquidaci├│n?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Se cobrarán {formatMoney(
+                                Se cobrar├ín {formatMoney(
                                   ((consumosEmpleados[empleadoConsumoSeleccionado] || []).reduce((sum, p) => sum + p.precio, 0)) * 
                                   (1 - descuentoEmpleadoConsumo / 100)
                                 )} a {empleadoConsumoSeleccionado} (con {descuentoEmpleadoConsumo}% de descuento).
@@ -4372,7 +4251,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
-                  👤
+                  ­ƒæñ
                 </div>
                 <p className="text-center italic">Selecciona un empleado de la lista para ver o registrar su consumo.</p>
               </div>
@@ -4438,8 +4317,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Eliminar registro?</AlertDialogTitle>
-                                    <AlertDialogDescription>Esta acción quedará registrada en el log de auditoría.</AlertDialogDescription>
+                                    <AlertDialogTitle>┬┐Eliminar registro?</AlertDialogTitle>
+                                    <AlertDialogDescription>Esta acci├│n quedar├í registrada en el log de auditor├¡a.</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -4483,7 +4362,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 onChange={(e) => setEditingLogText(e.target.value)}
                                 className="h-7 text-xs bg-amber-600 border-amber-500 text-white"
                               />
-                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => guardarEdicionLog(log.id)}>✓</Button>
+                              <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => guardarEdicionLog(log.id)}>Ô£ô</Button>
                             </div>
                           ) : (
                             <>
@@ -4500,7 +4379,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           className="h-6 w-6 p-0 text-amber-300 hover:text-amber-100 hover:bg-amber-700"
                           onClick={() => { setEditingLogId(log.id); setEditingLogText(log.detalles); }}
                         >
-                          ✎
+                          Ô£Ä
                         </Button>
                         <span className="text-[9px] font-mono text-amber-300">ID: {log.registroId}</span>
                       </div>
@@ -4523,13 +4402,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           setCosmeticosData={setCosmeticosData}
         />
       </TabsContent>
-      {/* Diálogo de Motivo de Anulación */}
+      {/* Di├ílogo de Motivo de Anulaci├│n */}
       <Dialog open={showAnulacionDialog} onOpenChange={setShowAnulacionDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Motivo de Anulación</DialogTitle>
+            <DialogTitle>Motivo de Anulaci├│n</DialogTitle>
             <DialogDescription>
-              Por favor, indique el motivo por el cual se está dando de baja esta venta o pedido.
+              Por favor, indique el motivo por el cual se est├í dando de baja esta venta o pedido.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -4551,7 +4430,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               Cancelar
             </Button>
             <Button onClick={confirmarAnulacion} className="bg-red-600 hover:bg-red-700 text-white">
-              Confirmar Anulación
+              Confirmar Anulaci├│n
             </Button>
           </div>
         </DialogContent>
@@ -4560,10 +4439,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       <Dialog open={showNewMetodoPagoDialog} onOpenChange={setShowNewMetodoPagoDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Método de Pago</DialogTitle>
+            <DialogTitle>Agregar Nuevo M├®todo de Pago</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="newMetodoPagoName">Nombre del Método de Pago</Label>
+            <Label htmlFor="newMetodoPagoName">Nombre del M├®todo de Pago</Label>
             <Input 
               id="newMetodoPagoName" 
               value={newMetodoPagoName} 
@@ -4574,7 +4453,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowNewMetodoPagoDialog(false)}>Cancelar</Button>
-            <Button onClick={agregarMetodoPago} className="bg-blue-600 text-white">Guardar Método</Button>
+            <Button onClick={agregarMetodoPago} className="bg-blue-600 text-white">Guardar M├®todo</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -4583,14 +4462,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">
-              ⚠️ Edición en Progreso Detectada
+              ÔÜá´©Å Edici├│n en Progreso Detectada
             </DialogTitle>
             <DialogDescription className="text-slate-600 mt-2">
-              Se detectó una edición o un pedido en proceso que quedó sin guardar (posiblemente por un apagado o corte inesperado).
+              Se detect├│ una edici├│n o un pedido en proceso que qued├│ sin guardar (posiblemente por un apagado o corte inesperado).
               <br /><br />
               {borradorRecuperado && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 space-y-1">
-                  <p><strong>Tipo:</strong> {borradorRecuperado.editingVentaId ? "Edición de venta cerrada" : "Pedido/Orden en progreso"}</p>
+                  <p><strong>Tipo:</strong> {borradorRecuperado.editingVentaId ? "Edici├│n de venta cerrada" : "Pedido/Orden en progreso"}</p>
                   {borradorRecuperado.patente && <p><strong>Patente:</strong> {borradorRecuperado.patente}</p>}
                   {borradorRecuperado.cliente && <p><strong>Cliente:</strong> {borradorRecuperado.cliente}</p>}
                   {borradorRecuperado.servicio && <p><strong>Servicio:</strong> {borradorRecuperado.servicio}</p>}
@@ -4598,7 +4477,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 </div>
               )}
               <br />
-              ¿Deseás recuperar los datos para continuar o descartarlos?
+              ┬┐Dese├ís recuperar los datos para continuar o descartarlos?
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
@@ -4606,75 +4485,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               Descartar Borrador
             </Button>
             <Button onClick={recuperarBorrador} className="bg-green-600 hover:bg-green-700 text-white font-bold">
-              Recuperar Edición
+              Recuperar Edici├│n
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Guardar Catálogo */}
-      <Dialog open={showGuardarCatalogoDialog} onOpenChange={setShowGuardarCatalogoDialog}>
-        <DialogContent className="bg-slate-900 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle>Guardar en Catálogo</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Agregar "{searchVehiculo}" al catálogo de vehículos.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Tamaño del Vehículo</Label>
-              <Select value={catalogoNuevoSize} onValueChange={setCatalogoNuevoSize}>
-                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                  <SelectValue placeholder="Seleccionar tamaño" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600 text-white">
-                  <SelectItem value="Pequeño">Pequeño</SelectItem>
-                  <SelectItem value="Mediano">Mediano</SelectItem>
-                  <SelectItem value="Grande">Grande</SelectItem>
-                  <SelectItem value="SUV">SUV</SelectItem>
-                  <SelectItem value="PickUp">PickUp</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">Precio base recomendado ($)</Label>
-              <Input
-                type="number"
-                value={catalogoNuevoPrice}
-                onChange={e => setCatalogoNuevoPrice(e.target.value)}
-                className="bg-slate-800 border-slate-600 text-white"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowGuardarCatalogoDialog(false)} className="border-slate-600 text-slate-300 hover:bg-slate-800">
-              Cancelar
-            </Button>
-            <Button onClick={confirmarGuardarCatalogo} disabled={guardandoCatalogo} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              {guardandoCatalogo ? 'Guardando...' : 'Guardar y Seleccionar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog QR Aplicación Móvil */}
-      <Dialog open={showQRMobileApp} onOpenChange={setShowQRMobileApp}>
-        <DialogContent className="bg-slate-900 border-slate-700 text-white sm:max-w-xs">
-          <DialogHeader className="items-center">
-            <DialogTitle>App Móvil GoWash</DialogTitle>
-            <DialogDescription className="text-slate-400 text-center text-xs mt-2">
-              Escaneá este QR para abrir la app de recepción en tu teléfono.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center p-4 bg-white rounded-xl mx-auto my-2 border-4 border-slate-800">
-            <QRCode value="https://go-wash-ok.vercel.app" size={200} />
-          </div>
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={() => setShowQRMobileApp(false)} className="bg-blue-600 hover:bg-blue-700 text-white w-full">
-              Cerrar
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Tabs>

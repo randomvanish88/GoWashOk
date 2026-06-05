@@ -12,7 +12,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { toast } from 'sonner';
 import { GoogleSheetsConfig } from '../components/GoogleSheetsConfig';
 import { googleSheetsSync } from '../services/googleSheetsSync';
-import { sincronizarDesdeGoogleSheets } from '../services/vehiculosSync';
+import { sincronizarDesdeGoogleSheets, agregarAlCatalogo } from '../services/vehiculosSync';
 import { agregarVehiculoAlPatio, actualizarVehiculoEnPatio, obtenerVehiculosDelPatio, obtenerProductosDelSheets } from '../services/patioSync';
 import type { Price } from '../app/App';
 
@@ -45,11 +45,16 @@ interface Vehiculo {
   tiempoEstimado?: number; // minutos
 }
 
-const SERVICIOS = [
-  { nombre: 'Básico', precio: 4000, descripcion: 'Lavado exterior', tiempoEstimado: 30 },
-  { nombre: 'Premium', precio: 6000, descripcion: 'Exterior + Interior', tiempoEstimado: 45 },
-  { nombre: 'Completo', precio: 8000, descripcion: 'Premium + Encerado', tiempoEstimado: 60 },
-  { nombre: 'Detailing', precio: 12000, descripcion: 'Servicio completo profesional', tiempoEstimado: 90 },
+const SERVICIOS_DEFAULT = [
+  { nombre: 'M', precio: 25000, descripcion: 'Lavado M', tiempoEstimado: 30 },
+  { nombre: 'L', precio: 28000, descripcion: 'Lavado L', tiempoEstimado: 35 },
+  { nombre: 'XL', precio: 30000, descripcion: 'Lavado XL', tiempoEstimado: 40 },
+  { nombre: 'XXL', precio: 35000, descripcion: 'Lavado XXL', tiempoEstimado: 45 },
+  { nombre: 'XXXL', precio: 40000, descripcion: 'Lavado XXXL', tiempoEstimado: 50 },
+  { nombre: 'CXL', precio: 40000, descripcion: 'Lavado CXL', tiempoEstimado: 50 },
+  { nombre: 'CXXL', precio: 45000, descripcion: 'Lavado CXXL', tiempoEstimado: 60 },
+  { nombre: 'Moto (250cc)', precio: 22000, descripcion: 'Lavado Moto', tiempoEstimado: 25 },
+  { nombre: 'Moto Grande', precio: 28000, descripcion: 'Lavado Moto Grande', tiempoEstimado: 30 },
 ];
 
 // Los productos Bar y Cosméticos se cargan dinámicamente desde Google Sheets
@@ -71,6 +76,12 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     const savedEntregados = localStorage.getItem('gowash-mobile-entregados');
     return savedEntregados ? JSON.parse(savedEntregados) : [];
   });
+  
+  // Registro de ediciones (para Reportes del Día)
+  const [edicionesDelDia, setEdicionesDelDia] = useState<any[]>(() => {
+    const savedEdiciones = localStorage.getItem('gowash-mobile-ediciones');
+    return savedEdiciones ? JSON.parse(savedEdiciones) : [];
+  });
 
   // Catálogo de vehículos (desde Google Sheets / JSON)
   const [catalogoVehiculos, setCatalogoVehiculos] = useState<Price[]>([]);
@@ -78,6 +89,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
 
   // Productos Bar y Cosméticos dinámicos desde Google Sheets
+  const [serviciosList, setServiciosList] = useState(SERVICIOS_DEFAULT);
   const [productosBar, setProductosBar] = useState<{ group: string; nombre: string; precio: number }[]>([]);
   const [productosCosmeticos, setProductosCosmeticos] = useState<{ nombre: string; contenido: string; precio: number }[]>([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
@@ -88,6 +100,8 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   // Login
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
+
+  const isAdmin = user === 'admin' || user === 'Usuario' || user === 'Admin';
   const [usuarios, setUsuarios] = useState<any[]>([]);
 
   // Formulario de ingreso
@@ -96,7 +110,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [color, setColor] = useState('Blanco');
   const [clienteNombre, setClienteNombre] = useState('');
   const [telefono, setTelefono] = useState('');
-  const [servicioSeleccionado, setServicioSeleccionado] = useState(SERVICIOS[1]);
+  const [servicioSeleccionado, setServicioSeleccionado] = useState(SERVICIOS_DEFAULT[0]);
   const [observaciones, setObservaciones] = useState('');
   const [metodoPago, setMetodoPago] = useState('Efectivo');
   const [metodoPagoCustom, setMetodoPagoCustom] = useState('');
@@ -110,8 +124,44 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   // Nuevos estados para productos adicionales
   const [productosBarSeleccionados, setProductosBarSeleccionados] = useState<{ nombre: string; precio: number }[]>([]);
   const [productosCosmeticosSeleccionados, setProductosCosmeticosSeleccionados] = useState<{ nombre: string; precio: number }[]>([]);
-  const [descuento, setDescuento] = useState(0);
-  const [descuentoTipo, setDescuentoTipo] = useState<'$' | '%'>('$');
+  const [descuento, setDescuento] = useState<number>(0);
+  const [descuentoTipo, setDescuentoTipo] = useState<string>('%');
+  
+  // Guardar catálogo
+  const [guardandoCatalogo, setGuardandoCatalogo] = useState(false);
+  const handleGuardarCatalogo = async () => {
+    if (!marcaModelo || marcaModelo.length < 2) return;
+    setGuardandoCatalogo(true);
+    
+    // Promt user for size (default Mediano) and price (default 0)
+    const partes = marcaModelo.trim().split(' ');
+    const brand = partes[0];
+    const model = partes.slice(1).join(' ') || 'General';
+    
+    const size = window.prompt('¿Qué tamaño es? (Ej: Pequeño, Mediano, Grande, SUV, PickUp)', 'Mediano');
+    if (size === null) { setGuardandoCatalogo(false); return; }
+    
+    const price = parseInt(window.prompt('Precio base recomendado para lavado artesanal', '0') || '0', 10);
+    
+    const exito = await agregarAlCatalogo({
+      Marca: brand,
+      Modelo: model,
+      Tamaño: size,
+      Precio: price
+    });
+    
+    if (exito) {
+      toast.success('Vehículo añadido al catálogo');
+      setCatalogoVehiculos([...catalogoVehiculos, {
+        id: `nuevo-${Date.now()}`,
+        brand, model, size, price, service: 'Lavado Artesanal'
+      }]);
+    } else {
+      toast.error('Error al guardar en catálogo');
+    }
+    setGuardandoCatalogo(false);
+    setMostrarSugerencias(false);
+  };
   
   // Estados para fotos
   const [fotos, setFotos] = useState<string[]>([]);
@@ -144,8 +194,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       setUsuarios(JSON.parse(savedUsers));
     } else {
       setUsuarios([
-        { username: 'admin', role: 'admin', password: '123' },
-        { username: 'empleado', role: 'empleado', password: '123' }
+        { username: 'admin', role: 'admin', password: 'tomadmin' },
+        { username: 'supervisor', role: 'supervisor', password: 'admin1' },
+        { username: 'empleado', role: 'empleado', password: 'admin2' }
       ]);
     }
 
@@ -186,6 +237,18 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       })
       .catch(err => console.error('[MobileApp] Error cargando productos:', err))
       .finally(() => setCargandoProductos(false));
+      
+    // Cargar Servicios desde Google Sheets
+    fetch('/api/servicios')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.data && data.data.length > 0) {
+          setServiciosList(data.data);
+          setServicioSeleccionado(data.data[0]);
+          console.log(`[MobileApp] Servicios cargados: ${data.data.length}`);
+        }
+      })
+      .catch(err => console.error('[MobileApp] Error cargando servicios:', err));
   }, []);
 
   // Polling de vehículos en patio desde Google Sheets (cada 10 segundos)
@@ -197,6 +260,15 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
             const activos = vehiculosSheet.filter(v => !v.horaSalida);
             setVehiculosEnPatio(activos);
             localStorage.setItem('gowash-mobile-patio', JSON.stringify(activos));
+            
+            // Si la hoja está vacía (por ej. tras el cierre de caja), reiniciar también los entregados
+            if (vehiculosSheet.length === 0) {
+              setVehiculosEntregados([]);
+              localStorage.removeItem('gowash-mobile-entregados');
+              setEdicionesDelDia([]);
+              localStorage.removeItem('gowash-mobile-ediciones');
+            }
+
             console.log(`[MobileApp] Polling: Patio actualizado con ${activos.length} vehículos`);
           }
         })
@@ -233,6 +305,10 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   useEffect(() => {
     localStorage.setItem('gowash-mobile-entregados', JSON.stringify(vehiculosEntregados));
   }, [vehiculosEntregados]);
+
+  useEffect(() => {
+    localStorage.setItem('gowash-mobile-ediciones', JSON.stringify(edicionesDelDia));
+  }, [edicionesDelDia]);
 
   // Formatear moneda
   const formatMoney = (amount: number) => {
@@ -311,7 +387,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         )
         .slice(0, 6);
       setSugerencias(encontrados);
-      setMostrarSugerencias(encontrados.length > 0);
+      setMostrarSugerencias(true);
     } else {
       setSugerencias([]);
       setMostrarSugerencias(false);
@@ -324,9 +400,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setMostrarSugerencias(false);
     // Autocompletar precio si el servicio no tiene uno definido
     if (v.price > 0) {
-      const servicioMatchIndex = SERVICIOS.findIndex(s => s.precio === v.price);
+      const servicioMatchIndex = serviciosList.findIndex(s => s.precio === v.price);
       if (servicioMatchIndex >= 0) {
-        setServicioSeleccionado(SERVICIOS[servicioMatchIndex]);
+        setServicioSeleccionado(serviciosList[servicioMatchIndex]);
       }
     }
   };
@@ -366,7 +442,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       estado: 'Ingresado',
       productosBar: productosBarSeleccionados,
       productosCosmeticos: productosCosmeticosSeleccionados,
-      descuento: descuento,
+      descuento: calcularMontoDescuento(),
       fotos: fotos,
       tiempoEstimado: servicioSeleccionado.tiempoEstimado
     };
@@ -389,6 +465,10 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       horaIngreso: nuevoVehiculo.horaIngreso,
       estado: nuevoVehiculo.estado,
       observaciones: nuevoVehiculo.observaciones,
+      productosBar: nuevoVehiculo.productosBar,
+      productosCosmeticos: nuevoVehiculo.productosCosmeticos,
+      descuento: nuevoVehiculo.descuento,
+      tiempoEstimado: nuevoVehiculo.tiempoEstimado,
     }).then(r => {
       if (r.success) toast.success('✅ Ingreso sincronizado con Google Sheets');
       else console.warn('[MobileApp] No se pudo sincronizar con Sheets:', r.error);
@@ -453,7 +533,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setProductosCosmeticosSeleccionados(vehiculo.productosCosmeticos || []);
     setDescuento(vehiculo.descuento || 0);
     setFotos(vehiculo.fotos || []);
-    const servicio = SERVICIOS.find(s => s.nombre === vehiculo.servicio) || SERVICIOS[1];
+    const servicio = serviciosList.find(s => s.nombre === vehiculo.servicio) || serviciosList[1] || SERVICIOS_DEFAULT[1];
     setServicioSeleccionado(servicio);
     setPantalla('ingreso');
   };
@@ -481,7 +561,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       horaSalida: horaSalida,
       productosBar: productosBarSeleccionados,
       productosCosmeticos: productosCosmeticosSeleccionados,
-      descuento: descuento,
+      descuento: calcularMontoDescuento(),
       fotos: fotos,
       tiempoEstimado: servicioSeleccionado.tiempoEstimado
     };
@@ -489,6 +569,34 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setVehiculosEnPatio(vehiculosEnPatio.map(v => 
       v.id === vehiculoEditando.id ? vehiculoActualizado : v
     ));
+    
+    // Guardar en el registro de ediciones
+    const nuevaEdicion = {
+      id: Date.now().toString(),
+      vehiculoId: vehiculoEditando.id,
+      patente: vehiculoActualizado.patente,
+      usuario: user,
+      hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setEdicionesDelDia([nuevaEdicion, ...edicionesDelDia]);
+    
+    // Sincronizar edición con Google Sheets
+    actualizarVehiculoEnPatio(vehiculoEditando.id, {
+      patente: vehiculoActualizado.patente,
+      marcaModelo: vehiculoActualizado.marcaModelo,
+      color: vehiculoActualizado.color,
+      cliente: vehiculoActualizado.cliente,
+      telefono: vehiculoActualizado.telefono,
+      servicio: vehiculoActualizado.servicio,
+      precio: vehiculoActualizado.precio,
+      metodoPago: vehiculoActualizado.metodoPago,
+      empleado: vehiculoActualizado.empleado,
+      observaciones: vehiculoActualizado.observaciones,
+      productosBar: vehiculoActualizado.productosBar,
+      productosCosmeticos: vehiculoActualizado.productosCosmeticos,
+      descuento: vehiculoActualizado.descuento,
+      tiempoEstimado: vehiculoActualizado.tiempoEstimado,
+    }).catch(err => console.error('[MobileApp] Error actualizando edición en Sheets:', err));
     
     // Limpiar
     cancelarEdicion();
@@ -525,7 +633,13 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFotos(prev => [...prev, reader.result as string]);
+        setFotos(prev => {
+          if (prev.length >= 5) {
+            toast.error('Límite de fotos', { description: 'Solo puedes subir hasta 5 fotos por vehículo.' });
+            return prev;
+          }
+          return [...prev, reader.result as string];
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -873,20 +987,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </button>
-
-              <button
-                onClick={() => setMostrarGoogleSheets(true)}
-                className="w-full bg-gradient-to-r from-purple-900/70 to-blue-900/70 border border-purple-700/50 hover:border-purple-600 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-between group transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <Database className="w-6 h-6 text-purple-300" />
-                  <div className="text-left">
-                    <p className="font-black">Google Sheets</p>
-                    <p className="text-xs text-purple-200 font-normal">Sincronización en la nube</p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
-              </button>
             </div>
           </div>
         )}
@@ -895,7 +995,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         {pantalla === 'ingreso' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-white">Ingreso de Vehículo</h2>
+              <h2 className="text-xl font-black text-white">
+                {vehiculoEditando ? 'Editar Vehículo' : 'Ingreso de Vehículo'}
+              </h2>
               <button
                 onClick={() => setPantalla('inicio')}
                 className="p-2 text-slate-400 hover:text-white transition-colors"
@@ -926,14 +1028,14 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Marca / Modelo</label>
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Vehículo / Modelo</label>
                   <div className="relative">
                     <input
                       type="text"
                       value={marcaModelo}
                       onChange={(e) => handleMarcaModeloChange(e.target.value)}
                       onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
-                      onFocus={() => marcaModelo.length >= 2 && sugerencias.length > 0 && setMostrarSugerencias(true)}
+                      onFocus={() => marcaModelo.length >= 2 && setMostrarSugerencias(true)}
                       placeholder="Ej: COROLLA, GOL, HILUX..."
                       className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
                     />
@@ -960,6 +1062,24 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                             </div>
                           </button>
                         ))}
+                      </div>
+                    )}
+                    {mostrarSugerencias && sugerencias.length === 0 && marcaModelo.length > 2 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-600 rounded-xl shadow-xl p-3">
+                        <p className="text-sm text-slate-300 mb-2">Vehículo no encontrado en el catálogo.</p>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); handleGuardarCatalogo(); }}
+                          disabled={guardandoCatalogo}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 transition-colors"
+                        >
+                          {guardandoCatalogo ? 'Guardando...' : (
+                            <>
+                              <Plus size={16} />
+                              Añadir al Catálogo
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1055,12 +1175,12 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   <select
                     value={servicioSeleccionado.nombre}
                     onChange={(e) => {
-                      const servicio = SERVICIOS.find(s => s.nombre === e.target.value) || SERVICIOS[1];
+                      const servicio = serviciosList.find(s => s.nombre === e.target.value) || serviciosList[0];
                       setServicioSeleccionado(servicio);
                     }}
                     className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
                   >
-                    {SERVICIOS.map(servicio => (
+                    {serviciosList.map(servicio => (
                       <option key={servicio.nombre} value={servicio.nombre}>
                         {servicio.nombre} - {formatMoney(servicio.precio)} ({servicio.tiempoEstimado} min)
                       </option>
@@ -1103,14 +1223,16 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   className="hidden"
                 />
                 
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
-                >
-                  <Camera className="w-5 h-5" />
-                  Tomar/Seleccionar Fotos
-                </button>
+                {fotos.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Camera className="w-5 h-5" />
+                    Tomar/Seleccionar Fotos (Max 5)
+                  </button>
+                )}
 
                 {fotos.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
@@ -1215,13 +1337,17 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                       </span>
                       <input
                         type="number"
-                        value={descuento}
+                        value={descuento === 0 ? '' : descuento}
                         onChange={(e) => {
-                          const val = Math.max(0, parseFloat(e.target.value) || 0);
+                          const rawVal = e.target.value;
+                          if (rawVal === '') {
+                            setDescuento(0);
+                            return;
+                          }
+                          const val = Math.max(0, parseFloat(rawVal) || 0);
                           setDescuento(descuentoTipo === '%' ? Math.min(100, val) : val);
                         }}
                         placeholder="0"
-                        max={descuentoTipo === '%' ? 100 : undefined}
                         className="w-full bg-slate-950/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
                       />
                     </div>
@@ -1466,8 +1592,8 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
               </div>
               
               {/* Filtros por estado */}
-              <div className="flex gap-2 flex-wrap">
-                {(['Todos', 'Ingresado', 'En Lavado', 'Secado', 'Listo'] as const).map(estado => (
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {(['Todos', 'Ingresado', 'En Lavado', 'Listo'] as const).map(estado => (
                   <button
                     key={estado}
                     onClick={() => setFiltroEstado(estado)}
@@ -1502,11 +1628,10 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                           <span className="text-xl font-black text-white font-mono bg-slate-950 px-3 py-1 rounded-lg border border-slate-700">
                             {vehiculo.patente}
                           </span>
-                          <span className={`text-xs font-bold px-2 py-1 rounded ${
-                            vehiculo.estado === 'Listo' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                            vehiculo.estado === 'En Lavado' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                            vehiculo.estado === 'Secado' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                            'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            vehiculo.estado === 'Ingresado' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                            vehiculo.estado === 'En Lavado' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
+                            'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                           }`}>
                             {vehiculo.estado}
                           </span>
@@ -1541,8 +1666,8 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     </div>
 
                     {/* Estados */}
-                    <div className="flex gap-2">
-                      {(['Ingresado', 'En Lavado', 'Secado', 'Listo'] as const).map(estado => (
+                    <div className="flex flex-wrap gap-2">
+                      {(['Ingresado', 'En Lavado', 'Listo'] as const).map(estado => (
                         <button
                           key={estado}
                           onClick={() => actualizarEstado(vehiculo.id, estado)}
@@ -1559,14 +1684,16 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
                     {/* Acciones */}
                     <div className="flex gap-2 pt-2 flex-wrap">
-                      <button
-                        onClick={() => iniciarEdicion(vehiculo)}
-                        className="flex-1 min-w-[100px] p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-2"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        <span className="text-xs font-bold">Editar</span>
-                      </button>
+                      {user !== 'empleado' && (
+                        <button
+                          onClick={() => iniciarEdicion(vehiculo)}
+                          className="flex-1 min-w-[100px] p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-2"
+                          title="Editar"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span className="text-xs font-bold">Editar</span>
+                        </button>
+                      )}
                       {vehiculo.telefono && (
                         <button
                           onClick={() => enviarWhatsApp(vehiculo)}
@@ -1736,6 +1863,23 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
               </button>
             </div>
 
+            {/* Google Sheets Modal Trigger en Reportes */}
+            {isAdmin && (
+              <button
+                onClick={() => setMostrarGoogleSheets(true)}
+                className="w-full bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/20 hover:border-purple-500/40 text-white font-bold py-4 px-6 rounded-3xl flex items-center justify-between group transition-all active:scale-[0.98] mb-4"
+              >
+                <div className="flex items-center gap-3">
+                  <Database className="w-6 h-6 text-purple-300" />
+                  <div className="text-left">
+                    <p className="font-black text-purple-100">Google Sheets</p>
+                    <p className="text-xs text-purple-300/70 font-normal">Sincronización en la nube y configuración</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+              </button>
+            )}
+
             {/* Estadísticas del día */}
             <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border border-purple-500/20 rounded-3xl p-6">
               <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider mb-4">Resumen de Ventas</h3>
@@ -1780,6 +1924,30 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+            {/* Registro de Ediciones */}
+            <div className="space-y-3 pb-8">
+              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Registro de Edición</h3>
+              {edicionesDelDia.length === 0 ? (
+                <div className="bg-slate-900/30 border border-dashed border-slate-700 rounded-2xl p-8 text-center">
+                  <Edit2 className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                  <p className="text-slate-400 text-sm">No hay ediciones registradas hoy</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {edicionesDelDia.map(edicion => (
+                    <div key={edicion.id} className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-white text-sm">{edicion.patente}</p>
+                        <p className="text-xs text-slate-400">Editado por: <span className="font-semibold text-slate-300">{edicion.usuario}</span></p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">{edicion.hora} hs</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -1943,17 +2111,19 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
             <span className="text-[10px] font-bold uppercase tracking-wider">Retiro</span>
           </button>
 
-          <button
-            onClick={() => setPantalla('reportes')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
-              pantalla === 'reportes'
-                ? 'text-blue-400 bg-blue-500/10'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <BarChart3 className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Reportes</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setPantalla('reportes')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+                pantalla === 'reportes'
+                  ? 'text-blue-400 bg-blue-500/10'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <BarChart3 className="w-6 h-6" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Reportes</span>
+            </button>
+          )}
         </div>
       </nav>
     </div>
