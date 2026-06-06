@@ -1910,6 +1910,35 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
               </div>
             </div>
 
+            {/* Lista de vehículos en patio para selección rápida */}
+            {!vehiculoSeleccionado && (
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-3xl p-5 space-y-4">
+                <h3 className="text-sm font-bold text-purple-300 uppercase tracking-wider">Selección Rápida (Vehículos en Patio)</h3>
+                {vehiculosEnPatio.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-2">No hay vehículos registrados en el patio.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto pr-1">
+                    {vehiculosEnPatio.map(v => (
+                      <button
+                        key={v.id}
+                        onClick={() => setVehiculoSeleccionado(v)}
+                        className="flex items-center justify-between p-3 bg-slate-950/40 hover:bg-slate-950/80 border border-white/5 rounded-xl text-left transition-all"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-white font-mono">{v.patente}</p>
+                          <p className="text-[10px] text-slate-400">{v.marcaModelo} · {v.servicio}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-bold text-emerald-400">{formatMoney(v.precio)}</p>
+                          <span className="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-medium">{v.estado}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Vehículo seleccionado para entrega */}
             {vehiculoSeleccionado && (
               <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-2 border-emerald-500/30 rounded-3xl p-6 space-y-5 animate-in zoom-in-95 duration-200">
