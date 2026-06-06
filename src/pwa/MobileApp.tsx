@@ -417,17 +417,23 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       return;
     }
     
-    if (!patente.trim()) {
-      toast.error('La patente es obligatoria');
-      return;
+    let patenteFinal = patente.trim().toUpperCase();
+    if (!patenteFinal) {
+      const tieneConsumos = productosBarSeleccionados.length > 0 || productosCosmeticosSeleccionados.length > 0;
+      if (tieneConsumos) {
+        patenteFinal = 'CONSUMO';
+      } else {
+        toast.error('La patente es obligatoria para registrar un vehículo.');
+        return;
+      }
     }
 
     const totalFinal = calcularTotal();
     const metodoPagoFinal = metodoPago === 'Mixto' && metodoPagoCustom ? metodoPagoCustom : metodoPago;
     
     const nuevoVehiculo: Vehiculo = {
-      id: `GW${Date.now()}${patente.replace(/\s/g, '').toUpperCase()}`,
-      patente: patente.toUpperCase(),
+      id: `GW${Date.now()}${patenteFinal.replace(/\s/g, '')}`,
+      patente: patenteFinal,
       marcaModelo: marcaModelo || 'No especificado',
       color: color,
       cliente: clienteNombre || 'Particular',
@@ -563,12 +569,23 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const guardarEdicion = () => {
     if (!vehiculoEditando) return;
     
+    let patenteFinal = patente.trim().toUpperCase();
+    if (!patenteFinal) {
+      const tieneConsumos = productosBarSeleccionados.length > 0 || productosCosmeticosSeleccionados.length > 0;
+      if (tieneConsumos) {
+        patenteFinal = 'CONSUMO';
+      } else {
+        toast.error('La patente es obligatoria para registrar un vehículo.');
+        return;
+      }
+    }
+    
     const totalFinal = calcularTotal();
     const metodoPagoFinal = metodoPago === 'Mixto' && metodoPagoCustom ? metodoPagoCustom : metodoPago;
     
     const vehiculoActualizado: Vehiculo = {
       ...vehiculoEditando,
-      patente: patente.toUpperCase(),
+      patente: patenteFinal,
       marcaModelo: marcaModelo || 'No especificado',
       color: color,
       cliente: clienteNombre || 'Particular',
