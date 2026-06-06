@@ -198,6 +198,12 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [checkoutMixtoMetodo2, setCheckoutMixtoMetodo2] = useState('Transferencia');
   const [checkoutMixtoMonto1, setCheckoutMixtoMonto1] = useState<number>(0);
 
+  // Lista de métodos de pago dinámicos
+  const [metodosPagoList, setMetodosPagoList] = useState<string[]>(['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta']);
+  const [cargandoMetodosPago, setCargandoMetodosPago] = useState(false);
+  const [nuevoMetodoPago, setNuevoMetodoPago] = useState('');
+  const [guardandoMetodo, setGuardandoMetodo] = useState(false);
+
   useEffect(() => {
     if (checkoutMetodoPago === 'Mixto') {
       const total = calcularCheckoutTotal();
@@ -206,15 +212,84 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     }
   }, [checkoutMetodoPago, checkoutMixtoMetodo1, checkoutMixtoMetodo2, checkoutMixtoMonto1, checkoutDescuento, checkoutDescuentoTipo, vehiculoSeleccionado]);
 
+  // Cargar metodos de pago al iniciar
+  useEffect(() => {
+    const saved = localStorage.getItem('gowash-metodos-pago-ventas');
+    if (saved) {
+      try {
+        setMetodosPagoList(JSON.parse(saved));
+      } catch (e) {
+        console.error("Error parseando metodos de pago locales:", e);
+      }
+    }
+
+    setCargandoMetodosPago(true);
+    fetch('/api/metodospago')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && Array.isArray(data.data) && data.data.length > 0) {
+          setMetodosPagoList(data.data);
+          localStorage.setItem('gowash-metodos-pago-ventas', JSON.stringify(data.data));
+        }
+      })
+      .catch(err => console.error('[MobileApp] Error cargando metodos pago:', err))
+      .finally(() => setCargandoMetodosPago(false));
+  }, []);
+
+  const guardarMetodosPagoList = async (lista: string[]) => {
+    setMetodosPagoList(lista);
+    localStorage.setItem('gowash-metodos-pago-ventas', JSON.stringify(lista));
+    setGuardandoMetodo(true);
+    try {
+      const response = await fetch('/api/metodospago', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ methods: lista })
+      });
+      const data = await response.json();
+      if (data.ok) {
+        toast.success('Métodos de pago guardados y sincronizados');
+      } else {
+        throw new Error(data.error || 'Error de sincronización');
+      }
+    } catch (e) {
+      console.error('Error al sincronizar metodos pago:', e);
+      toast.warning('Guardado localmente. Error al sincronizar con Sheets.');
+    } finally {
+      setGuardandoMetodo(false);
+    }
+  };
+
+  // Validaciones para asegurar que los estados de checkout no queden con valores obsoletos si se elimina un método
+  useEffect(() => {
+    const validos = [...metodosPagoList.filter(m => m !== 'Mixto'), 'Mixto'];
+    if (!validos.includes(checkoutMetodoPago)) {
+      setCheckoutMetodoPago('Efectivo');
+    }
+  }, [metodosPagoList, checkoutMetodoPago]);
+
+  useEffect(() => {
+    const listWithoutMixto = metodosPagoList.filter(m => m !== 'Mixto');
+    if (listWithoutMixto.length > 0) {
+      if (!listWithoutMixto.includes(checkoutMixtoMetodo1)) {
+        setCheckoutMixtoMetodo1(listWithoutMixto[0] || 'Efectivo');
+      }
+      if (!listWithoutMixto.includes(checkoutMixtoMetodo2)) {
+        const secondary = listWithoutMixto.find(m => m !== checkoutMixtoMetodo1) || listWithoutMixto[0] || 'Efectivo';
+        setCheckoutMixtoMetodo2(secondary);
+      }
+    }
+  }, [metodosPagoList, checkoutMixtoMetodo1, checkoutMixtoMetodo2]);
+
   useEffect(() => {
     if (vehiculoSeleccionado) {
-      const isStandard = ['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].includes(vehiculoSeleccionado.metodoPago);
+      const isStandard = metodosPagoList.includes(vehiculoSeleccionado.metodoPago);
       setCheckoutMetodoPago(isStandard ? vehiculoSeleccionado.metodoPago : (vehiculoSeleccionado.metodoPago ? 'Mixto' : 'Efectivo'));
       setCheckoutMetodoPagoCustom(isStandard ? '' : (vehiculoSeleccionado.metodoPago || ''));
       setCheckoutDescuento(vehiculoSeleccionado.descuento || 0);
       setCheckoutDescuentoTipo('$');
     }
-  }, [vehiculoSeleccionado]);
+  }, [vehiculoSeleccionado, metodosPagoList]);
 
   const calcularCheckoutTotal = () => {
     if (!vehiculoSeleccionado) return 0;
@@ -1896,7 +1971,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 <div className="space-y-2">
                   <p className="text-xs text-slate-300 uppercase font-black tracking-wider">Forma de Pago</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {['Efectivo', 'Tarjeta', 'Transferencia', 'Mixto'].map((met) => {
+                    {[...metodosPagoList.filter(m => m !== 'Mixto'), 'Mixto'].map((met) => {
                       const isSel = checkoutMetodoPago === met;
                       return (
                         <button
@@ -1927,7 +2002,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                             onChange={(e) => setCheckoutMixtoMetodo1(e.target.value)}
                             className="w-full bg-slate-900 border border-white/10 rounded-xl h-10 px-2 text-xs text-white focus:outline-none focus:border-blue-500"
                           >
-                            {['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].map(m => (
+                            {metodosPagoList.filter(m => m !== 'Mixto').map(m => (
                               <option key={`m1-${m}`} value={m} disabled={m === checkoutMixtoMetodo2}>{m}</option>
                             ))}
                           </select>
@@ -1941,7 +2016,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                             onChange={(e) => setCheckoutMixtoMetodo2(e.target.value)}
                             className="w-full bg-slate-900 border border-white/10 rounded-xl h-10 px-2 text-xs text-white focus:outline-none focus:border-blue-500"
                           >
-                            {['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].map(m => (
+                            {metodosPagoList.filter(m => m !== 'Mixto').map(m => (
                               <option key={`m2-${m}`} value={m} disabled={m === checkoutMixtoMetodo1}>{m}</option>
                             ))}
                           </select>
@@ -2072,6 +2147,101 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 </div>
                 <ChevronRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
               </button>
+            )}
+
+            {/* Gestión de Métodos de Pago */}
+            {(isAdmin || user === 'supervisor' || user === 'Supervisor') && (
+              <div className="bg-gradient-to-r from-slate-900/50 to-slate-950/50 border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-500/20 p-2 rounded-2xl">
+                    <DollarSign className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-sm">Métodos de Pago</h3>
+                    <p className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Configuración móvil</p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Agregá o eliminá formas de pago habilitadas para el cobro en el teléfono. Se sincronizan en la nube.
+                </p>
+
+                {/* Formulario Agregar */}
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const trimmed = nuevoMetodoPago.trim();
+                    if (!trimmed) return;
+                    if (metodosPagoList.map(m => m.toLowerCase()).includes(trimmed.toLowerCase())) {
+                      toast.error('Este método de pago ya existe');
+                      return;
+                    }
+                    if (trimmed.toLowerCase() === 'mixto') {
+                      toast.error('El nombre "Mixto" está reservado para el sistema');
+                      return;
+                    }
+                    const newList = [...metodosPagoList, trimmed];
+                    guardarMetodosPagoList(newList);
+                    setNuevoMetodoPago('');
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    type="text"
+                    placeholder="Nuevo método (ej: Tarjeta, QR...)"
+                    value={nuevoMetodoPago}
+                    onChange={(e) => setNuevoMetodoPago(e.target.value)}
+                    disabled={guardandoMetodo}
+                    className="flex-1 bg-slate-950/60 border border-white/10 rounded-2xl h-12 px-4 text-xs text-white focus:outline-none focus:border-emerald-500/50 disabled:opacity-50 font-medium"
+                  />
+                  <button
+                    type="submit"
+                    disabled={guardandoMetodo || !nuevoMetodoPago.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:opacity-50 text-white rounded-2xl w-12 h-12 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-emerald-900/30"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </form>
+
+                {/* Lista de Métodos */}
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {cargandoMetodosPago ? (
+                    <div className="text-center py-4 text-xs text-slate-500">Cargando métodos de pago...</div>
+                  ) : metodosPagoList.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-slate-500 font-medium">No hay métodos de pago configurados</div>
+                  ) : (
+                    metodosPagoList.map((metodo) => {
+                      const esEfectivo = metodo.toLowerCase() === 'efectivo';
+                      return (
+                        <div 
+                          key={metodo} 
+                          className="flex items-center justify-between bg-slate-900/60 border border-white/5 rounded-2xl px-4 py-3 hover:border-white/10 transition-colors"
+                        >
+                          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">{metodo}</span>
+                          {!esEfectivo ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`¿Estás seguro de eliminar el método de pago "${metodo}"?`)) {
+                                  const newList = metodosPagoList.filter(m => m !== metodo);
+                                  guardarMetodosPagoList(newList);
+                                }
+                              }}
+                              disabled={guardandoMetodo}
+                              className="text-red-400 hover:text-red-300 disabled:text-red-800/50 p-2 rounded-xl hover:bg-white/5 transition-colors"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider select-none px-2 py-1 bg-white/5 rounded-lg border border-white/5">Requerido</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             )}
 
             {/* Estadísticas del día */}
