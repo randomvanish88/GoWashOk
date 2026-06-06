@@ -788,10 +788,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   });
 
   // Enviar por WhatsApp
-  const enviarWhatsApp = (vehiculo: Vehiculo) => {
+  const enviarWhatsApp = async (vehiculo: Vehiculo) => {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(vehiculo.id)}`;
-    const mensaje = encodeURIComponent(
-      `✨ *GOWASH - Lavadero Artesanal* ✨\n\n` +
+    const textoMensaje = `✨ *GOWASH - Lavadero Artesanal* ✨\n\n` +
       `¡Hola ${vehiculo.cliente}!\n\n` +
       `Tu vehículo ha ingresado exitosamente:\n\n` +
       `🚗 *Patente:* ${vehiculo.patente}\n` +
@@ -804,9 +803,30 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       `🔑 *Código de Retiro:* \`${vehiculo.id}\`\n\n` +
       `📲 *Tu QR de retiro:*\n${qrUrl}\n\n` +
       `_Presenta este mensaje o el QR al retirar tu vehículo._\n` +
-      `¡Gracias por confiar en GoWash! 🏆`
-    );
+      `¡Gracias por confiar en GoWash! 🏆`;
 
+    const mensaje = encodeURIComponent(textoMensaje);
+
+    // Intentar compartir como archivo (imagen QR) + texto si es compatible
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `gowash-${vehiculo.patente}.png`, { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Ticket GoWash ${vehiculo.patente}`,
+          text: textoMensaje
+        });
+        toast.success('Ticket con QR compartido exitosamente');
+        return;
+      }
+    } catch (e) {
+      console.warn('[WhatsApp] navigator.share falló o no es compatible:', e);
+    }
+
+    // Fallback: abrir enlace de WhatsApp directo (solo texto con el link al QR)
     const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const whatsappUrl = isMobile 
       ? `https://api.whatsapp.com/send?text=${mensaje}`

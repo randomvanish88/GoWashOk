@@ -1363,28 +1363,20 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     // Si es una orden que estaba abierta, la marcamos como cobrada (no la quitamos todavía)
     const idABuscar = ordenDirecta ? ordenDirecta.id : (activeOrderId || editingVentaId);
-    if (idABuscar && idABuscar.startsWith('movil-')) {
-      // Órdenes del patio móvil: eliminar directamente, no dejar pendiente de retiro
-      setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
-      setOrdenesCobradas(prev => prev.filter(id => id !== idABuscar));
-    } else if (ordenDirecta || activeOrderId) {
+    if (ordenDirecta || activeOrderId) {
       setOrdenesCobradas(prev => prev.includes(idABuscar) ? prev : [...prev, idABuscar]);
     } else {
       setOrdenesAbiertas(prev => prev.filter(o => o.id !== idABuscar));
     }
 
-    // Si viene del patio móvil, marcar como entregado en Google Sheets
+    // Si viene del patio móvil, marcar como "Listo" en Google Sheets (ya fue cobrado en caja, pero sigue en patio)
     if (idABuscar && idABuscar.startsWith('movil-')) {
       const patioId = idABuscar.replace('movil-', '');
-      // Sacar inmediatamente del panel Móvil (no esperar el polling)
-      setVehiculosMovil(prev => prev.filter(v => v.id !== patioId));
-      // Actualizar en Sheets
       actualizarVehiculoEnPatio(patioId, {
-        horaSalida: nuevaVenta.horaSalida || getCurrentTimeString(),
-        estado: 'Entregado',
+        estado: 'Listo',
       }).then(() => {
-        console.log('[POS] ✅ Vehículo móvil marcado como entregado en Sheets');
-      }).catch(err => console.error('[POS] Error actualizando patio móvil:', err));
+        console.log('[POS] ✅ Vehículo móvil marcado como Listo en Sheets');
+      }).catch(err => console.error('[POS] Error actualizando estado a Listo:', err));
     }
 
     if (editingVentaId) {
@@ -3763,6 +3755,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                   setOrdenesAbiertas(prev => prev.filter(o => o.id !== orden.id));
                                   setOrdenesCobradas(prev => prev.filter(id => id !== orden.id));
                                   if (activeOrderId === orden.id) setActiveOrderId(null);
+
+                                  if (orden.id.startsWith('movil-')) {
+                                    const patioId = orden.id.replace('movil-', '');
+                                    // Sacar inmediatamente de la lista móvil local
+                                    setVehiculosMovil(prev => prev.filter(v => v.id !== patioId));
+                                    // Sincronizar retiro en Google Sheets
+                                    actualizarVehiculoEnPatio(patioId, {
+                                      horaSalida: getCurrentTimeString(),
+                                      estado: 'Entregado',
+                                    }).catch(err => console.error('[POS] Error registrando retiro móvil en Sheets:', err));
+                                  }
+
                                   toast.success('Vehículo retirado', { description: `${orden.patente} retirado del lavadero.` });
                                 }}
                               >
