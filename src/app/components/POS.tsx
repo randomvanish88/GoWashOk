@@ -1688,10 +1688,25 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setServicio(orden.servicio || '');
     
     // Buscar el vehículo en la lista de precios para restaurar la selección
-    if (orden.marca && orden.modelo) {
-      const v = prices.find(p => p.brand === orden.marca && p.model === orden.modelo && p.service === orden.servicio);
-      if (v) setVehiculoSeleccionado(v);
-      else setVehiculoSeleccionado(null);
+    if (orden.marca || orden.modelo) {
+      const v = prices.find(p => p.brand === orden.marca && p.model === orden.modelo);
+      if (v) {
+        setVehiculoSeleccionado({
+          ...v,
+          service: orden.servicio || v.service,
+          imageUrl: orden.imageUrl || v.imageUrl
+        });
+      } else {
+        setVehiculoSeleccionado({
+          id: `custom-restored-${Date.now()}`,
+          brand: orden.marca || 'Vehículo',
+          model: orden.modelo || '',
+          size: (orden.tamano as any) || 'Mediano',
+          service: orden.servicio || '',
+          price: orden.lavado || 0,
+          imageUrl: orden.imageUrl
+        });
+      }
     } else {
       setVehiculoSeleccionado(null);
     }
@@ -1899,9 +1914,26 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setProductosCosmeticos(venta.productosCosmeticos);
     
     // Buscar el vehículo en la lista si existe
-    if (venta.marca && venta.modelo) {
+    if (venta.marca || venta.modelo) {
       const v = prices.find(p => p.brand === venta.marca && p.model === venta.modelo);
-      if (v) setVehiculoSeleccionado(v);
+      if (v) {
+        setVehiculoSeleccionado({
+          ...v,
+          imageUrl: venta.imageUrl || v.imageUrl
+        });
+      } else {
+        setVehiculoSeleccionado({
+          id: `custom-restored-${Date.now()}`,
+          brand: venta.marca || 'Vehículo',
+          model: venta.modelo || '',
+          size: (venta.tamano as any) || 'Mediano',
+          service: venta.servicio || '',
+          price: venta.lavado || 0,
+          imageUrl: venta.imageUrl
+        });
+      }
+    } else {
+      setVehiculoSeleccionado(null);
     }
 
     // Scroll al tope del formulario
