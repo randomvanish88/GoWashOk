@@ -6,10 +6,10 @@ import { toast } from 'sonner';
 
 // Claves a migrar con su nombre de hoja en Google Sheets
 const CLAVES_MIGRACION = [
-  { key: 'gowash-lavado-precios',           hoja: 'PWA_Servicios',    label: 'Servicios de Lavado' },
+  { key: 'gowash-lavado-precios',           hoja: 'Servicios',        label: 'Servicios de Lavado' },
   { key: 'gowash-extras-lavado',            hoja: 'PWA_Extras',       label: 'Extras de Lavado' },
-  { key: 'gowash-bar-precios',              hoja: 'PWA_Bar',          label: 'Productos Bar' },
-  { key: 'gowash-cosmeticos-precios',       hoja: 'PWA_Cosmetica',    label: 'Cosmética/Accesorios' },
+  { key: 'gowash-bar-precios',              hoja: 'Bar',              label: 'Productos Bar' },
+  { key: 'gowash-cosmeticos-precios',       hoja: 'Cosmetica',        label: 'Cosmética/Accesorios' },
   { key: 'gowash-lista-empleados',          hoja: 'PWA_Empleados',    label: 'Empleados' },
   { key: 'gowash-metodos-pago-ventas',      hoja: 'PWA_MetodosPago',  label: 'Métodos de Pago' },
   { key: 'carwash-prices',                  hoja: 'PWA_Vehiculos',    label: 'Precios por Vehículo' },
