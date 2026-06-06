@@ -193,6 +193,19 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [checkoutDescuento, setCheckoutDescuento] = useState<number>(0);
   const [checkoutDescuentoTipo, setCheckoutDescuentoTipo] = useState<string>('$');
 
+  // Estados para pago mixto
+  const [checkoutMixtoMetodo1, setCheckoutMixtoMetodo1] = useState('Efectivo');
+  const [checkoutMixtoMetodo2, setCheckoutMixtoMetodo2] = useState('Transferencia');
+  const [checkoutMixtoMonto1, setCheckoutMixtoMonto1] = useState<number>(0);
+
+  useEffect(() => {
+    if (checkoutMetodoPago === 'Mixto') {
+      const total = calcularCheckoutTotal();
+      const monto2 = Math.max(0, total - checkoutMixtoMonto1);
+      setCheckoutMetodoPagoCustom(`${checkoutMixtoMetodo1} $${checkoutMixtoMonto1} + ${checkoutMixtoMetodo2} $${monto2}`);
+    }
+  }, [checkoutMetodoPago, checkoutMixtoMetodo1, checkoutMixtoMetodo2, checkoutMixtoMonto1, checkoutDescuento, checkoutDescuentoTipo, vehiculoSeleccionado]);
+
   useEffect(() => {
     if (vehiculoSeleccionado) {
       const isStandard = ['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].includes(vehiculoSeleccionado.metodoPago);
@@ -348,15 +361,11 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     return `$${amount.toLocaleString('es-AR')}`;
   };
 
-  // Calcular total con productos adicionales
+  // Calcular total con productos adicionales (fase de ingreso, sin descuento)
   const calcularTotal = () => {
     const totalBar = productosBarSeleccionados.reduce((sum, p) => sum + p.precio, 0);
     const totalCosmeticos = productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0);
-    const subtotal = (servicioSeleccionado ? servicioSeleccionado.precio : 0) + totalBar + totalCosmeticos;
-    const montoDescuento = descuentoTipo === '%'
-      ? (subtotal * descuento) / 100
-      : descuento;
-    return Math.max(0, subtotal - montoDescuento);
+    return (servicioSeleccionado ? servicioSeleccionado.precio : 0) + totalBar + totalCosmeticos;
   };
 
   // Calcular monto de descuento para mostrar en resumen
@@ -462,7 +471,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     }
 
     const totalFinal = calcularTotal();
-    const metodoPagoFinal = metodoPago === 'Mixto' && metodoPagoCustom ? metodoPagoCustom : metodoPago;
     
     const nuevoVehiculo: Vehiculo = {
       id: `GW${Date.now()}${patenteFinal.replace(/\s/g, '')}`,
@@ -473,7 +481,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       telefono: telefono || '',
       servicio: servicioSeleccionado ? servicioSeleccionado.nombre : 'Ninguno',
       precio: totalFinal,
-      metodoPago: metodoPagoFinal,
+      metodoPago: 'Efectivo',
       empleado: empleadoRecibe || user || 'Sistema',
       observaciones: observaciones,
       fecha: fechaIngreso,
@@ -481,7 +489,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       estado: 'Ingresado',
       productosBar: productosBarSeleccionados,
       productosCosmeticos: productosCosmeticosSeleccionados,
-      descuento: calcularMontoDescuento(),
+      descuento: 0,
       fotos: fotos,
       tiempoEstimado: servicioSeleccionado ? servicioSeleccionado.tiempoEstimado : 0
     };
@@ -1500,133 +1508,25 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     <div className="pt-2 border-t border-pink-500/20">
                       <div className="flex justify-between text-sm font-bold">
                         <span className="text-pink-300">Subtotal Cosméticos:</span>
-                        <span className="text-pink-400">{formatMoney(productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0))}</span>
+                        <span className="text-pink-400">
+                          {formatMoney(productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0))}
+                        </span>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Forma de Pago */}
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 space-y-4">
-                <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  Forma de Pago
-                </h3>
-
-                <div className="grid grid-cols-5 gap-2">
-                  {METODOS_PAGO.map(metodo => (
-                    <button
-                      key={metodo}
-                      type="button"
-                      onClick={() => setMetodoPago(metodo)}
-                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
-                        metodoPago === metodo
-                          ? 'bg-amber-600 text-white shadow-lg'
-                          : 'bg-slate-950/50 border border-slate-700 text-slate-300 hover:border-slate-600'
-                      }`}
-                    >
-                      {metodo}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Campo editable para pago mixto */}
-                {metodoPago === 'Mixto' && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <label className="text-xs font-bold text-amber-300 uppercase tracking-wider">
-                      Detalle del Pago Mixto
-                    </label>
-                    <input
-                      type="text"
-                      value={metodoPagoCustom}
-                      onChange={(e) => setMetodoPagoCustom(e.target.value)}
-                      placeholder="Ej: Efectivo $3000 + Tarjeta $3000"
-                      className="w-full bg-amber-950/20 border border-amber-500/30 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-                    />
-                    <p className="text-xs text-slate-500 italic">
-                      Especifica cómo se divide el pago entre métodos
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Descuento */}
-              <div className="bg-gradient-to-br from-orange-900/30 to-slate-900/50 border border-orange-500/20 rounded-2xl p-5 space-y-4">
-                <h3 className="text-sm font-bold text-orange-300 uppercase tracking-wider flex items-center gap-2">
-                  <Percent className="w-4 h-4" />
-                  Descuento
-                </h3>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-300 uppercase">Monto del Descuento</label>
-                  <div className="flex gap-2">
-                    {/* Toggle $ / % */}
-                    <div className="flex rounded-xl overflow-hidden border border-slate-700">
-                      <button
-                        type="button"
-                        onClick={() => setDescuentoTipo('$')}
-                        className={`px-4 py-3 text-sm font-black transition-all ${
-                          descuentoTipo === '$'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        $
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDescuentoTipo('%')}
-                        className={`px-4 py-3 text-sm font-black transition-all ${
-                          descuentoTipo === '%'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        %
-                      </button>
-                    </div>
-                    <div className="relative flex-1">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 font-bold">
-                        {descuentoTipo}
-                      </span>
-                      <input
-                        type="number"
-                        value={descuento === 0 ? '' : descuento}
-                        onChange={(e) => {
-                          const rawVal = e.target.value;
-                          if (rawVal === '') {
-                            setDescuento(0);
-                            return;
-                          }
-                          const val = Math.max(0, parseFloat(rawVal) || 0);
-                          setDescuento(descuentoTipo === '%' ? Math.min(100, val) : val);
-                        }}
-                        placeholder="0"
-                        className="w-full bg-slate-950/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
-                      />
-                    </div>
-                  </div>
-                  {descuento > 0 && (
-                    <p className="text-xs text-orange-300 font-bold">
-                      {descuentoTipo === '%'
-                        ? `= ${formatMoney(calcularMontoDescuento())} de descuento`
-                        : `${descuento}% del subtotal`}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Resumen de Total */}
+              {/* Resumen de Total (Fase de Ingreso, sin descuento) */}
               <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/30 rounded-2xl p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-blue-300 font-bold uppercase tracking-wider">Total a Cobrar</p>
+                    <p className="text-xs text-blue-300 font-bold uppercase tracking-wider">Total del Ingreso</p>
                     <p className="text-3xl font-black text-white mt-1">{formatMoney(calcularTotal())}</p>
                   </div>
                   <Package className="w-12 h-12 text-blue-500/20" />
                 </div>
-                {(productosBarSeleccionados.length > 0 || productosCosmeticosSeleccionados.length > 0 || descuento > 0) && (
+                {(productosBarSeleccionados.length > 0 || productosCosmeticosSeleccionados.length > 0) && (
                   <div className="mt-3 pt-3 border-t border-blue-500/20 text-xs space-y-1 text-slate-400">
                     <div className="flex justify-between">
                       <span>Servicio base:</span>
@@ -1642,12 +1542,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                       <div className="flex justify-between">
                         <span>Cosméticos ({productosCosmeticosSeleccionados.length}):</span>
                         <span className="text-pink-400 font-bold">{formatMoney(productosCosmeticosSeleccionados.reduce((sum, p) => sum + p.precio, 0))}</span>
-                      </div>
-                    )}
-                    {descuento > 0 && (
-                      <div className="flex justify-between">
-                        <span>Descuento{descuentoTipo === '%' ? ` (${descuento}%)` : ''}:</span>
-                        <span className="text-red-400 font-bold">-{formatMoney(calcularMontoDescuento())}</span>
                       </div>
                     )}
                   </div>
@@ -2021,15 +1915,70 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     })}
                   </div>
                   {checkoutMetodoPago === 'Mixto' && (
-                    <div className="mt-2 space-y-1 animate-in slide-in-from-top-2 duration-200">
-                      <label className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Detalle de pago mixto / Otro</label>
-                      <input 
-                        type="text"
-                        value={checkoutMetodoPagoCustom}
-                        onChange={(e) => setCheckoutMetodoPagoCustom(e.target.value)}
-                        placeholder="Ej: Efectivo + Transferencia"
-                        className="w-full bg-slate-950/80 border border-white/10 rounded-xl h-10 px-3 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-600"
-                      />
+                    <div className="mt-3 bg-slate-950/40 border border-white/5 rounded-2xl p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                      <p className="text-[10px] uppercase font-black text-blue-300 tracking-wider">Configuración de Pago Mixto</p>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Método 1 */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase font-bold text-slate-500">Método 1</label>
+                          <select
+                            value={checkoutMixtoMetodo1}
+                            onChange={(e) => setCheckoutMixtoMetodo1(e.target.value)}
+                            className="w-full bg-slate-900 border border-white/10 rounded-xl h-10 px-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                          >
+                            {['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].map(m => (
+                              <option key={`m1-${m}`} value={m} disabled={m === checkoutMixtoMetodo2}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {/* Método 2 */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase font-bold text-slate-500">Método 2</label>
+                          <select
+                            value={checkoutMixtoMetodo2}
+                            onChange={(e) => setCheckoutMixtoMetodo2(e.target.value)}
+                            className="w-full bg-slate-900 border border-white/10 rounded-xl h-10 px-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                          >
+                            {['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].map(m => (
+                              <option key={`m2-${m}`} value={m} disabled={m === checkoutMixtoMetodo1}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Monto 1 */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase font-bold text-slate-500">Monto {checkoutMixtoMetodo1}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max={calcularCheckoutTotal()}
+                            value={checkoutMixtoMonto1 || ''}
+                            onChange={(e) => {
+                              const val = Math.min(calcularCheckoutTotal(), Math.max(0, parseFloat(e.target.value) || 0));
+                              setCheckoutMixtoMonto1(val);
+                            }}
+                            placeholder="Monto 1"
+                            className="w-full bg-slate-900 border border-white/10 rounded-xl h-10 px-3 text-xs text-white focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        {/* Monto 2 (Autocalculado) */}
+                        <div className="space-y-1">
+                          <label className="text-[9px] uppercase font-bold text-slate-500">Monto {checkoutMixtoMetodo2} (Auto)</label>
+                          <div className="w-full bg-slate-900/50 border border-white/5 rounded-xl h-10 px-3 text-xs text-slate-400 flex items-center font-bold font-mono">
+                            {formatMoney(Math.max(0, calcularCheckoutTotal() - checkoutMixtoMonto1))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-slate-400 bg-slate-900/30 p-2 rounded-lg border border-white/5 font-mono text-center">
+                        <span className="text-slate-500">Resumen Mixto: </span>
+                        <span className="font-bold text-slate-300">{checkoutMetodoPagoCustom}</span>
+                      </div>
                     </div>
                   )}
                 </div>
