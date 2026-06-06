@@ -71,13 +71,13 @@ export async function obtenerVehiculosDelPatio(): Promise<any[]> {
       if (!result?.success || !Array.isArray(result.data)) return [];
       return result.data
         .map(rowToVehiculo)
-        .filter((v: any) => v && v.id && !v.horaSalida);
+        .filter((v: any) => v && v.id);
     } else {
       // Web/Vercel: usar API serverless
       const resp = await fetch('/api/patio', { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-      return (data.data || []).filter((v: any) => !v.horaSalida);
+      return (data.data || []);
     }
   } catch (error: any) {
     console.warn('[PatioSync] Error obteniendo patio:', error.message);

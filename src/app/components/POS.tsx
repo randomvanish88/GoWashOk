@@ -1006,8 +1006,88 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     setCargandoMovil(true);
     try {
       const data = await obtenerVehiculosDelPatio();
-      // Filtrar solo los que no tienen hora de salida (siguen en patio)
-      setVehiculosMovil(data.filter(v => !v.horaSalida));
+      // Filtrar los que no tienen hora de salida y su estado no es Entregado (siguen en patio)
+      setVehiculosMovil(data.filter(v => !v.horaSalida && v.estado !== 'Entregado'));
+
+      // Procesar los vehículos marcados como 'Entregado' (cobradas desde el celular)
+      const cobrados = data.filter(v => v.estado === 'Entregado');
+      if (cobrados.length > 0) {
+        // Leer ventas actuales del localStorage para evitar duplicados
+        const savedVentasRaw = localStorage.getItem('gowash-ventas');
+        let ventasActuales: Venta[] = [];
+        if (savedVentasRaw) {
+          try {
+            ventasActuales = JSON.parse(savedVentasRaw);
+          } catch (e) {
+            console.error("Error al parsear ventas en polling:", e);
+          }
+        }
+
+        let huboCambios = false;
+        const nuevasVentas: Venta[] = [...ventasActuales];
+
+        for (const v of cobrados) {
+          const cleanId = v.id.replace('movil-', '');
+          const existe = nuevasVentas.some(sale => sale.id === v.id || sale.id === cleanId || sale.id === `movil-${v.id}`);
+
+          if (!existe) {
+            const prodsBar = Array.isArray(v.productosBar) ? v.productosBar : [];
+            const prodsCosmeticos = Array.isArray(v.productosCosmeticos) ? v.productosCosmeticos : [];
+            const totalBar = prodsBar.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
+            const totalCosmeticos = prodsCosmeticos.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
+            const desc = v.descuento || 0;
+            const baseLavado = v.precio > 0 ? (v.precio - totalBar - totalCosmeticos + desc) : 0;
+
+            const nuevaVenta: Venta = {
+              id: v.id,
+              fecha: v.fecha || new Date().toISOString().split('T')[0],
+              hora: v.horaSalida || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              horaEntrada: v.horaIngreso || '',
+              horaSalida: v.horaSalida || '',
+              empleado: v.empleado || 'Celular',
+              patente: v.patente || '',
+              cliente: v.cliente || 'Particular',
+              lavado: baseLavado > 0 ? baseLavado : 0,
+              bar: totalBar,
+              cosmeticos: totalCosmeticos,
+              total: v.precio || 0,
+              metodoPago: v.metodoPago || 'Efectivo',
+              descuento: desc,
+              recargo: 0,
+              productosBar: prodsBar,
+              productosCosmeticos: prodsCosmeticos,
+              servicio: v.servicio || '',
+              marca: v.marcaModelo?.split(' ')[0] || '',
+              modelo: v.marcaModelo?.split(' ').slice(1).join(' ') || '',
+            };
+
+            nuevasVentas.unshift(nuevaVenta); // Agregar al inicio del registro de ventas
+            huboCambios = true;
+
+            // Mostrar notificación visual en el POS
+            toast.success(`Venta unificada desde celular: ${v.patente} (${v.servicio || 'Lavado'})`, {
+              description: `Monto: $${(v.precio || 0).toLocaleString('es-AR')} con ${v.metodoPago}`,
+              duration: 6000
+            });
+
+            // Si estaba como orden abierta en el POS de la PC, quitarla
+            setOrdenesAbiertas(prev => prev.filter(o => o.id !== v.id && o.id !== `movil-${v.id}`));
+          }
+
+          // Marcar en la planilla de Google Sheets como 'Sincronizado' para que no vuelva a procesarse
+          try {
+            await actualizarVehiculoEnPatio(v.id, { estado: 'Sincronizado' });
+            console.log(`[POS] Vehículo ${v.patente} marcado como Sincronizado en Sheets.`);
+          } catch (e) {
+            console.error(`[POS] Error al actualizar estado de ${v.patente} en Sheets:`, e);
+          }
+        }
+
+        if (huboCambios) {
+          setVentas(nuevasVentas);
+          localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
+        }
+      }
     } catch (err) {
       console.error('[POS] Error cargando patio móvil:', err);
     } finally {

@@ -187,6 +187,39 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Vehiculo | null>(null);
   const qrReaderRef = useRef<Html5Qrcode | null>(null);
 
+  // Estados para checkout en retiro (cobro móvil)
+  const [checkoutMetodoPago, setCheckoutMetodoPago] = useState('Efectivo');
+  const [checkoutMetodoPagoCustom, setCheckoutMetodoPagoCustom] = useState('');
+  const [checkoutDescuento, setCheckoutDescuento] = useState<number>(0);
+  const [checkoutDescuentoTipo, setCheckoutDescuentoTipo] = useState<string>('$');
+
+  useEffect(() => {
+    if (vehiculoSeleccionado) {
+      const isStandard = ['Efectivo', 'Tarjeta', 'Transferencia', 'Cuenta'].includes(vehiculoSeleccionado.metodoPago);
+      setCheckoutMetodoPago(isStandard ? vehiculoSeleccionado.metodoPago : (vehiculoSeleccionado.metodoPago ? 'Mixto' : 'Efectivo'));
+      setCheckoutMetodoPagoCustom(isStandard ? '' : (vehiculoSeleccionado.metodoPago || ''));
+      setCheckoutDescuento(vehiculoSeleccionado.descuento || 0);
+      setCheckoutDescuentoTipo('$');
+    }
+  }, [vehiculoSeleccionado]);
+
+  const calcularCheckoutTotal = () => {
+    if (!vehiculoSeleccionado) return 0;
+    const subtotal = vehiculoSeleccionado.precio + (vehiculoSeleccionado.descuento || 0);
+    const montoDescuento = checkoutDescuentoTipo === '%'
+      ? (subtotal * checkoutDescuento) / 100
+      : checkoutDescuento;
+    return Math.max(0, subtotal - montoDescuento);
+  };
+
+  const calcularCheckoutMontoDescuento = () => {
+    if (!vehiculoSeleccionado) return 0;
+    const subtotal = vehiculoSeleccionado.precio + (vehiculoSeleccionado.descuento || 0);
+    return checkoutDescuentoTipo === '%'
+      ? (subtotal * checkoutDescuento) / 100
+      : checkoutDescuento;
+  };
+
   // Cargar datos al iniciar
   useEffect(() => {
     const savedUsers = localStorage.getItem('gowash-users');
@@ -693,9 +726,19 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     const now = new Date();
     const hora = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
+    const finalPrice = calcularCheckoutTotal();
+    const finalDescuento = calcularCheckoutMontoDescuento();
+    const finalMetodoPago = checkoutMetodoPago === 'Mixto' && checkoutMetodoPagoCustom 
+      ? checkoutMetodoPagoCustom 
+      : checkoutMetodoPago;
+
     const vehiculoEntregado = {
       ...vehiculo,
-      horaSalida: hora
+      precio: finalPrice,
+      descuento: finalDescuento,
+      metodoPago: finalMetodoPago,
+      horaSalida: hora,
+      estado: 'Entregado' as const
     };
 
     setVehiculosEntregados([vehiculoEntregado, ...vehiculosEntregados]);
@@ -703,6 +746,9 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     
     // Sincronizar hora de salida y estado en Sheets via patioSync
     actualizarVehiculoEnPatio(vehiculo.id, {
+      precio: finalPrice,
+      descuento: finalDescuento,
+      metodoPago: finalMetodoPago,
       horaSalida: hora,
       estado: 'Entregado',
     }).then(r => {
@@ -713,7 +759,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setVehiculoSeleccionado(null);
     setPantalla('inicio');
     
-    toast.success(`Vehículo ${vehiculo.patente} entregado exitosamente`);
+    toast.success(`Vehículo ${vehiculo.patente} cobrado y entregado exitosamente`);
   };
 
   // Escanear QR
@@ -1903,10 +1949,109 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   </div>
                 </div>
 
-                <div className="bg-emerald-950/30 border border-emerald-500/20 rounded-2xl p-4">
-                  <p className="text-xs text-emerald-400 uppercase font-bold mb-1">Total a cobrar</p>
-                  <p className="text-3xl font-black text-emerald-300">{formatMoney(vehiculoSeleccionado.precio)}</p>
-                  <p className="text-xs text-slate-400 mt-1">Método: {vehiculoSeleccionado.metodoPago}</p>
+                {/* Consumos adicionales del bar y cosmética si los tiene */}
+                {((vehiculoSeleccionado.productosBar && vehiculoSeleccionado.productosBar.length > 0) || 
+                  (vehiculoSeleccionado.productosCosmeticos && vehiculoSeleccionado.productosCosmeticos.length > 0)) && (
+                  <div className="bg-slate-950/30 border border-white/5 rounded-2xl p-4 space-y-2 text-xs">
+                    <p className="font-bold text-slate-300 uppercase tracking-wider text-[10px]">Consumos adicionales</p>
+                    {vehiculoSeleccionado.productosBar?.map((p, idx) => (
+                      <div key={`checkout-bar-${idx}`} className="flex justify-between text-slate-400">
+                        <span>☕ {p.nombre}</span>
+                        <span>{formatMoney(p.precio)}</span>
+                      </div>
+                    ))}
+                    {vehiculoSeleccionado.productosCosmeticos?.map((p, idx) => (
+                      <div key={`checkout-cos-${idx}`} className="flex justify-between text-slate-400">
+                        <span>✨ {p.nombre}</span>
+                        <span>{formatMoney(p.precio)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Forma de Pago */}
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-300 uppercase font-black tracking-wider">Forma de Pago</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Efectivo', 'Tarjeta', 'Transferencia', 'Mixto'].map((met) => {
+                      const isSel = checkoutMetodoPago === met;
+                      return (
+                        <button
+                          key={met}
+                          type="button"
+                          onClick={() => setCheckoutMetodoPago(met)}
+                          className={`py-3 px-2 rounded-xl text-center border font-bold text-xs uppercase transition-all duration-200 ${
+                            isSel 
+                              ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/20' 
+                              : 'bg-slate-900/50 border-white/10 text-slate-300 hover:bg-slate-900'
+                          }`}
+                        >
+                          {met}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {checkoutMetodoPago === 'Mixto' && (
+                    <div className="mt-2 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                      <label className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Detalle de pago mixto / Otro</label>
+                      <input 
+                        type="text"
+                        value={checkoutMetodoPagoCustom}
+                        onChange={(e) => setCheckoutMetodoPagoCustom(e.target.value)}
+                        placeholder="Ej: Efectivo + Transferencia"
+                        className="w-full bg-slate-950/80 border border-white/10 rounded-xl h-10 px-3 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-600"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Descuento */}
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-300 uppercase font-black tracking-wider">Descuento</p>
+                  <div className="flex gap-2">
+                    <div className="flex bg-slate-900/50 border border-white/10 rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setCheckoutDescuentoTipo('$')}
+                        className={`px-3 py-2 font-bold text-xs ${checkoutDescuentoTipo === '$' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                      >
+                        $
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCheckoutDescuentoTipo('%')}
+                        className={`px-3 py-2 font-bold text-xs ${checkoutDescuentoTipo === '%' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={checkoutDescuento || ''}
+                      onChange={(e) => setCheckoutDescuento(Math.max(0, parseFloat(e.target.value) || 0))}
+                      placeholder="Monto de descuento"
+                      className="flex-1 bg-slate-950/80 border border-white/10 rounded-xl h-10 px-3 text-xs text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Resumen Final */}
+                <div className="bg-slate-950/60 border border-white/5 rounded-2xl p-4 space-y-2">
+                  <div className="flex justify-between text-xs text-slate-400">
+                    <span>Subtotal:</span>
+                    <span>{formatMoney(vehiculoSeleccionado.precio + (vehiculoSeleccionado.descuento || 0))}</span>
+                  </div>
+                  {calcularCheckoutMontoDescuento() > 0 && (
+                    <div className="flex justify-between text-xs text-red-400">
+                      <span>Descuento aplicado:</span>
+                      <span>-{formatMoney(calcularCheckoutMontoDescuento())}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-white/5 pt-2 flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Total a Cobrar:</span>
+                    <span className="text-2xl font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">{formatMoney(calcularCheckoutTotal())}</span>
+                  </div>
                 </div>
 
                 <button
@@ -1914,7 +2059,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                 >
                   <CheckCircle2 className="w-5 h-5" />
-                  MARCAR COMO ENTREGADO
+                  COBRAR Y ENTREGAR VEHÍCULO
                 </button>
               </div>
             )}
