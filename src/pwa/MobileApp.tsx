@@ -129,38 +129,35 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
   
   // Guardar catálogo
   const [guardandoCatalogo, setGuardandoCatalogo] = useState(false);
-  const handleGuardarCatalogo = async () => {
+  const [mostrarModalCatalogo, setMostrarModalCatalogo] = useState(false);
+  const [catalogoMarca, setCatalogoMarca] = useState('');
+  const [catalogoModelo, setCatalogoModelo] = useState('');
+  const [catalogoSize, setCatalogoSize] = useState('Mediano');
+  const [catalogoPrecio, setCatalogoPrecio] = useState('0');
+  const [catalogoFoto, setCatalogoFoto] = useState<string | null>(null);
+  
+  const catalogoCameraRef = useRef<HTMLInputElement>(null);
+  const catalogoGalleryRef = useRef<HTMLInputElement>(null);
+
+  const handleGuardarCatalogo = () => {
     if (!marcaModelo || marcaModelo.length < 2) return;
-    setGuardandoCatalogo(true);
-    
-    // Promt user for size (default Mediano) and price (default 0)
     const partes = marcaModelo.trim().split(' ');
-    const brand = partes[0];
-    const model = partes.slice(1).join(' ') || 'General';
-    
-    const size = window.prompt('¿Qué tamaño es? (Ej: Pequeño, Mediano, Grande, SUV, PickUp)', 'Mediano');
-    if (size === null) { setGuardandoCatalogo(false); return; }
-    
-    const price = parseInt(window.prompt('Precio base recomendado para lavado artesanal', '0') || '0', 10);
-    
-    const exito = await agregarAlCatalogo({
-      Marca: brand,
-      Modelo: model,
-      Tamaño: size,
-      Precio: price
-    });
-    
-    if (exito) {
-      toast.success('Vehículo añadido al catálogo');
-      setCatalogoVehiculos([...catalogoVehiculos, {
-        id: `nuevo-${Date.now()}`,
-        brand, model, size, price, service: 'Lavado Artesanal'
-      }]);
-    } else {
-      toast.error('Error al guardar en catálogo');
-    }
-    setGuardandoCatalogo(false);
-    setMostrarSugerencias(false);
+    setCatalogoMarca(partes[0] || '');
+    setCatalogoModelo(partes.slice(1).join(' ') || 'General');
+    setCatalogoSize('Mediano');
+    setCatalogoPrecio('0');
+    setCatalogoFoto(null);
+    setMostrarModalCatalogo(true);
+  };
+
+  const handleCatalogoFotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCatalogoFoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
   
   // Estados para fotos
@@ -2427,6 +2424,191 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
             if (savedEntregados) setVehiculosEntregados(JSON.parse(savedEntregados));
           }}
         />
+      )}
+
+      {/* MODAL AGREGAR AL CATÁLOGO */}
+      {mostrarModalCatalogo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setMostrarModalCatalogo(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <h3 className="text-lg font-black text-white">Añadir Vehículo al Catálogo</h3>
+              <p className="text-xs text-slate-400">Registrá un nuevo modelo en el catálogo general</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Marca y Modelo */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Marca</label>
+                  <input
+                    type="text"
+                    value={catalogoMarca}
+                    onChange={(e) => setCatalogoMarca(e.target.value)}
+                    className="w-full bg-slate-950/50 border border-white/10 rounded-2xl h-11 px-4 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                    placeholder="Ej: Toyota"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Modelo</label>
+                  <input
+                    type="text"
+                    value={catalogoModelo}
+                    onChange={(e) => setCatalogoModelo(e.target.value)}
+                    className="w-full bg-slate-950/50 border border-white/10 rounded-2xl h-11 px-4 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                    placeholder="Ej: Hilux"
+                  />
+                </div>
+              </div>
+
+              {/* Tamaño */}
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tamaño</label>
+                <select
+                  value={catalogoSize}
+                  onChange={(e) => setCatalogoSize(e.target.value)}
+                  className="w-full bg-slate-950/50 border border-white/10 rounded-2xl h-11 px-3 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                >
+                  {['Pequeño', 'Mediano', 'Grande', 'SUV', 'PickUp', 'Moto', 'Otro'].map(sz => (
+                    <option key={sz} value={sz}>{sz}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Precio Base */}
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Precio Base Lavado ($)</label>
+                <input
+                  type="number"
+                  value={catalogoPrecio}
+                  onChange={(e) => setCatalogoPrecio(e.target.value)}
+                  className="w-full bg-slate-950/50 border border-white/10 rounded-2xl h-11 px-4 text-xs text-white focus:outline-none focus:border-blue-500 font-medium"
+                  placeholder="Ej: 15000"
+                />
+              </div>
+
+              {/* Foto (Opcional) */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Foto del Vehículo (Opcional)</label>
+                
+                {/* Inputs ocultos */}
+                <input
+                  ref={catalogoCameraRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleCatalogoFotoCapture}
+                  className="hidden"
+                />
+                <input
+                  ref={catalogoGalleryRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCatalogoFotoCapture}
+                  className="hidden"
+                />
+
+                {catalogoFoto ? (
+                  <div className="relative rounded-2xl border border-white/10 overflow-hidden bg-slate-950/40 p-2 animate-in fade-in duration-200">
+                    <img 
+                      src={catalogoFoto} 
+                      alt="Vista previa catálogo" 
+                      className="w-full h-40 object-cover rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCatalogoFoto(null)}
+                      className="absolute top-4 right-4 bg-red-600 hover:bg-red-500 text-white p-2 rounded-xl transition-colors shadow-lg"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => catalogoCameraRef.current?.click()}
+                      className="flex flex-col items-center justify-center border border-dashed border-white/15 hover:border-blue-500/40 rounded-2xl p-4 space-y-2 bg-slate-950/20 hover:bg-slate-950/40 transition-all text-slate-300 hover:text-white"
+                    >
+                      <Camera className="w-5 h-5 text-blue-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Sacar Foto</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => catalogoGalleryRef.current?.click()}
+                      className="flex flex-col items-center justify-center border border-dashed border-white/15 hover:border-blue-500/40 rounded-2xl p-4 space-y-2 bg-slate-950/20 hover:bg-slate-950/40 transition-all text-slate-300 hover:text-white"
+                    >
+                      <ImageIcon className="w-5 h-5 text-purple-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Desde Galería</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setMostrarModalCatalogo(false)}
+                className="flex-1 bg-slate-950/50 hover:bg-slate-950 border border-white/10 text-slate-300 font-bold py-3 rounded-2xl text-xs uppercase transition-all"
+              >
+                Cancelar
+              </button>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!catalogoMarca.trim() || !catalogoModelo.trim()) {
+                    toast.error('Marca y Modelo son obligatorios');
+                    return;
+                  }
+                  setGuardandoCatalogo(true);
+                  const basePrice = parseInt(catalogoPrecio, 10) || 0;
+                  
+                  const exito = await agregarAlCatalogo({
+                    Marca: catalogoMarca.trim(),
+                    Modelo: catalogoModelo.trim(),
+                    Tamaño: catalogoSize,
+                    Precio: basePrice,
+                    URL_Imagen: catalogoFoto || ''
+                  });
+
+                  if (exito) {
+                    toast.success('Vehículo añadido al catálogo');
+                    setCatalogoVehiculos(prev => [...prev, {
+                      id: `nuevo-${Date.now()}`,
+                      brand: catalogoMarca.trim(),
+                      model: catalogoModelo.trim(),
+                      size: catalogoSize,
+                      price: basePrice,
+                      service: 'Lavado Artesanal',
+                      imageUrl: catalogoFoto || undefined
+                    }]);
+                    
+                    setMarcaModelo(`${catalogoMarca.trim()} ${catalogoModelo.trim()}`);
+                    setMostrarModalCatalogo(false);
+                    setMostrarSugerencias(false);
+                  } else {
+                    toast.error('Error al guardar en catálogo');
+                  }
+                  setGuardandoCatalogo(false);
+                }}
+                disabled={guardandoCatalogo}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-bold py-3 rounded-2xl text-xs uppercase transition-all flex justify-center items-center gap-2"
+              >
+                {guardandoCatalogo ? 'Guardando...' : 'Aceptar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* NAVEGACIÓN INFERIOR */}

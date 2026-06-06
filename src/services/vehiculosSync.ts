@@ -200,7 +200,7 @@ export function obtenerModelos(marca: string, vehiculos: Price[]): string[] {
 /**
  * Agrega un vehículo al catálogo dinámicamente
  */
-export async function agregarAlCatalogo(vehiculo: { Marca: string, Modelo: string, Tamaño: string, Precio: number }): Promise<boolean> {
+export async function agregarAlCatalogo(vehiculo: { Marca: string, Modelo: string, Tamaño: string, Precio: number, URL_Imagen?: string }): Promise<boolean> {
   const isElectron = typeof window !== 'undefined' 
     && 'electronAPI' in window 
     && 'googleSheets' in (window as any).electronAPI;
@@ -213,7 +213,7 @@ export async function agregarAlCatalogo(vehiculo: { Marca: string, Modelo: strin
         Modelo: vehiculo.Modelo,
         Tamaño: vehiculo.Tamaño,
         Precio: vehiculo.Precio,
-        URL_Imagen: ''
+        URL_Imagen: vehiculo.URL_Imagen || ''
       });
       success = result?.success === true;
     } else {
@@ -235,7 +235,7 @@ export async function agregarAlCatalogo(vehiculo: { Marca: string, Modelo: strin
         size: vehiculo.Tamaño,
         service: 'Lavado Artesanal',
         price: vehiculo.Precio,
-        imageUrl: undefined
+        imageUrl: vehiculo.URL_Imagen
       });
       guardarVehiculos(vehiculosLocales);
       
