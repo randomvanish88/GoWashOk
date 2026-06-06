@@ -3715,6 +3715,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 <div className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium shrink-0">{orden.horaEntrada}</div>
                               </div>
                               <div className="text-xs text-gray-600">
+                                {(orden.marca || orden.modelo) && (
+                                  <p className="font-medium text-slate-700 truncate">
+                                    🚗 {orden.marca} {orden.modelo}
+                                  </p>
+                                )}
                                 {orden.cliente && <p className="truncate italic">👤 {orden.cliente}</p>}
                                 {orden.servicio && <p className="text-[10px] text-slate-500 font-semibold truncate">🚿 {orden.servicio}</p>}
                                 <p className="font-bold text-blue-800 mt-0.5">{formatMoney(orden.total)}</p>
