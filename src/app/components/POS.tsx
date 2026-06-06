@@ -3662,10 +3662,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   </button>
                   <button
                     onClick={iniciarEscaneoCameraQR}
-                    className="p-1.5 bg-slate-800 text-slate-300 hover:text-emerald-400 hover:bg-slate-700 rounded-md transition-colors"
+                    className="p-1 bg-slate-800 text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 rounded-md transition-colors flex items-center justify-center border border-slate-700/50"
                     title="Escanear ticket de cliente"
                   >
-                    <QrCode className="w-4 h-4" />
+                    <QrCode className="w-5 h-5" />
                   </button>
                 </div>
               </h3>
@@ -3806,7 +3806,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         };
                         const colorBadge = estadoColor[v.estado] || 'bg-slate-500';
                         return (
-                          <Card key={v.id} className="p-4 hover:shadow-md transition-all border-l-4 border-l-purple-400 border-dashed bg-purple-50/5">
+                          <Card key={v.id} className="p-4 hover:shadow-md transition-all border-l-4 border-l-purple-500 bg-white shadow-sm text-slate-800">
                             <div className="flex gap-3 mb-3">
                               <div className="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center text-purple-400 border border-purple-100 shrink-0">
                                 <Smartphone className="w-8 h-8" />
