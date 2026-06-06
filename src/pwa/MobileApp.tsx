@@ -1074,7 +1074,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 </h3>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Patente *</label>
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Patente</label>
                   <input
                     type="text"
                     value={patente}
@@ -1082,7 +1082,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     placeholder="AB123CD"
                     maxLength={7}
                     className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white text-lg font-mono font-bold placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-                    required
                   />
                 </div>
 
@@ -1323,116 +1322,6 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                 )}
               </div>
 
-              {/* Forma de Pago */}
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 space-y-4">
-                <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  4. Forma de Pago
-                </h3>
-
-                <div className="grid grid-cols-5 gap-2">
-                  {METODOS_PAGO.map(metodo => (
-                    <button
-                      key={metodo}
-                      type="button"
-                      onClick={() => setMetodoPago(metodo)}
-                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
-                        metodoPago === metodo
-                          ? 'bg-amber-600 text-white shadow-lg'
-                          : 'bg-slate-950/50 border border-slate-700 text-slate-300 hover:border-slate-600'
-                      }`}
-                    >
-                      {metodo}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Campo editable para pago mixto */}
-                {metodoPago === 'Mixto' && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <label className="text-xs font-bold text-amber-300 uppercase tracking-wider">
-                      Detalle del Pago Mixto
-                    </label>
-                    <input
-                      type="text"
-                      value={metodoPagoCustom}
-                      onChange={(e) => setMetodoPagoCustom(e.target.value)}
-                      placeholder="Ej: Efectivo $3000 + Tarjeta $3000"
-                      className="w-full bg-amber-950/20 border border-amber-500/30 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
-                    />
-                    <p className="text-xs text-slate-500 italic">
-                      Especifica cómo se divide el pago entre métodos
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Descuento */}
-              <div className="bg-gradient-to-br from-orange-900/30 to-slate-900/50 border border-orange-500/20 rounded-2xl p-5 space-y-4">
-                <h3 className="text-sm font-bold text-orange-300 uppercase tracking-wider flex items-center gap-2">
-                  <Percent className="w-4 h-4" />
-                  Descuento
-                </h3>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-300 uppercase">Monto del Descuento</label>
-                  <div className="flex gap-2">
-                    {/* Toggle $ / % */}
-                    <div className="flex rounded-xl overflow-hidden border border-slate-700">
-                      <button
-                        type="button"
-                        onClick={() => setDescuentoTipo('$')}
-                        className={`px-4 py-3 text-sm font-black transition-all ${
-                          descuentoTipo === '$'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        $
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDescuentoTipo('%')}
-                        className={`px-4 py-3 text-sm font-black transition-all ${
-                          descuentoTipo === '%'
-                            ? 'bg-orange-600 text-white'
-                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        %
-                      </button>
-                    </div>
-                    <div className="relative flex-1">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 font-bold">
-                        {descuentoTipo}
-                      </span>
-                      <input
-                        type="number"
-                        value={descuento === 0 ? '' : descuento}
-                        onChange={(e) => {
-                          const rawVal = e.target.value;
-                          if (rawVal === '') {
-                            setDescuento(0);
-                            return;
-                          }
-                          const val = Math.max(0, parseFloat(rawVal) || 0);
-                          setDescuento(descuentoTipo === '%' ? Math.min(100, val) : val);
-                        }}
-                        placeholder="0"
-                        className="w-full bg-slate-950/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
-                      />
-                    </div>
-                  </div>
-                  {descuento > 0 && (
-                    <p className="text-xs text-orange-300 font-bold">
-                      {descuentoTipo === '%'
-                        ? `= ${formatMoney(calcularMontoDescuento())} de descuento`
-                        : `${descuento}% del subtotal`}
-                    </p>
-                  )}
-                </div>
-              </div>
-
               {/* Productos del Bar (DESPLEGABLE) */}
               <div className="bg-gradient-to-br from-green-900/30 to-slate-900/50 border border-green-500/20 rounded-2xl p-5 space-y-4">
                 <h3 className="text-sm font-bold text-green-300 uppercase tracking-wider flex items-center gap-2">
@@ -1570,6 +1459,116 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Forma de Pago */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-5 space-y-4">
+                <h3 className="text-sm font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Forma de Pago
+                </h3>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {METODOS_PAGO.map(metodo => (
+                    <button
+                      key={metodo}
+                      type="button"
+                      onClick={() => setMetodoPago(metodo)}
+                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${
+                        metodoPago === metodo
+                          ? 'bg-amber-600 text-white shadow-lg'
+                          : 'bg-slate-950/50 border border-slate-700 text-slate-300 hover:border-slate-600'
+                      }`}
+                    >
+                      {metodo}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Campo editable para pago mixto */}
+                {metodoPago === 'Mixto' && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <label className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                      Detalle del Pago Mixto
+                    </label>
+                    <input
+                      type="text"
+                      value={metodoPagoCustom}
+                      onChange={(e) => setMetodoPagoCustom(e.target.value)}
+                      placeholder="Ej: Efectivo $3000 + Tarjeta $3000"
+                      className="w-full bg-amber-950/20 border border-amber-500/30 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                    />
+                    <p className="text-xs text-slate-500 italic">
+                      Especifica cómo se divide el pago entre métodos
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Descuento */}
+              <div className="bg-gradient-to-br from-orange-900/30 to-slate-900/50 border border-orange-500/20 rounded-2xl p-5 space-y-4">
+                <h3 className="text-sm font-bold text-orange-300 uppercase tracking-wider flex items-center gap-2">
+                  <Percent className="w-4 h-4" />
+                  Descuento
+                </h3>
+                
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-300 uppercase">Monto del Descuento</label>
+                  <div className="flex gap-2">
+                    {/* Toggle $ / % */}
+                    <div className="flex rounded-xl overflow-hidden border border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setDescuentoTipo('$')}
+                        className={`px-4 py-3 text-sm font-black transition-all ${
+                          descuentoTipo === '$'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        $
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDescuentoTipo('%')}
+                        className={`px-4 py-3 text-sm font-black transition-all ${
+                          descuentoTipo === '%'
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-slate-950/50 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400 font-bold">
+                        {descuentoTipo}
+                      </span>
+                      <input
+                        type="number"
+                        value={descuento === 0 ? '' : descuento}
+                        onChange={(e) => {
+                          const rawVal = e.target.value;
+                          if (rawVal === '') {
+                            setDescuento(0);
+                            return;
+                          }
+                          const val = Math.max(0, parseFloat(rawVal) || 0);
+                          setDescuento(descuentoTipo === '%' ? Math.min(100, val) : val);
+                        }}
+                        placeholder="0"
+                        className="w-full bg-slate-950/50 border border-slate-700 rounded-xl pl-8 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                  {descuento > 0 && (
+                    <p className="text-xs text-orange-300 font-bold">
+                      {descuentoTipo === '%'
+                        ? `= ${formatMoney(calcularMontoDescuento())} de descuento`
+                        : `${descuento}% del subtotal`}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Resumen de Total */}
