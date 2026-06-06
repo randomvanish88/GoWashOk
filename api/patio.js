@@ -90,6 +90,8 @@ async function getRows(token) {
     productosBar: row[15] ? JSON.parse(row[15]) : [],
     productosCosmeticos: row[16] ? JSON.parse(row[16]) : [],
     descuento: parseFloat(row[17])||0,
+    fotos: row[18] ? JSON.parse(row[18]) : [],
+    tiempoEstimado: parseInt(row[19])||0,
   }));
 }
 

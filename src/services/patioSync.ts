@@ -54,6 +54,7 @@ function rowToVehiculo(row: any): any {
       productosCosmeticos: (typeof (row.productosCosmeticos || row.ProductosCosmeticos) === 'string' && (row.productosCosmeticos || row.ProductosCosmeticos) !== '') ? JSON.parse(row.productosCosmeticos || row.ProductosCosmeticos) : ((row.productosCosmeticos || row.ProductosCosmeticos) || []),
       descuento: parseFloat(row.descuento || row.Descuento) || 0,
       tiempoEstimado: parseInt(row.tiempoEstimado || row.TiempoEstimado) || 0,
+      fotos: (typeof (row.fotos || row.Fotos) === 'string' && (row.fotos || row.Fotos) !== '') ? JSON.parse(row.fotos || row.Fotos) : ((row.fotos || row.Fotos) || []),
     };
   }
   return null;

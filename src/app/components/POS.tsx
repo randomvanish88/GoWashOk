@@ -3842,12 +3842,26 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           'Listo': 'bg-green-500',
                         };
                         const colorBadge = estadoColor[v.estado] || 'bg-slate-500';
+                        const partes = v.marcaModelo?.trim().split(' ') || [];
+                        const marca = partes[0] || '';
+                        const modelo = partes.slice(1).join(' ') || '';
+                        const catalogMatch = prices.find(p =>
+                          (p.brand || '').toLowerCase() === marca.toLowerCase() ||
+                          `${p.brand || ''} ${p.model || ''}`.toLowerCase() === (v.marcaModelo || '').toLowerCase()
+                        );
+                        const firstPhoto = v.fotos && v.fotos.length > 0 ? v.fotos[0] : null;
+                        const displayImg = firstPhoto || catalogMatch?.imageUrl;
+
                         return (
                           <Card key={v.id} className="p-4 hover:shadow-md transition-all border-l-4 border-l-purple-500 bg-white shadow-sm text-slate-800">
                             <div className="flex gap-3 mb-3">
-                              <div className="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center text-purple-400 border border-purple-100 shrink-0">
-                                <Smartphone className="w-8 h-8" />
-                              </div>
+                              {displayImg ? (
+                                <img src={displayImg} alt="Vehículo" className="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200 shrink-0" />
+                              ) : (
+                                <div className="w-16 h-16 bg-purple-50 rounded-lg flex items-center justify-center text-purple-400 border border-purple-100 shrink-0">
+                                  <Smartphone className="w-8 h-8" />
+                                </div>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start mb-1 gap-1">
                                   <div className="flex items-center gap-1 min-w-0">
