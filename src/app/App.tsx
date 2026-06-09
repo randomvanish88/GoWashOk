@@ -240,8 +240,9 @@ function App() {
     };
     setPrices([...prices, newPrice]);
 
-    // Sincronizar con Google Sheets si está en Electron y tiene imagen de Drive
-    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+    // Sincronizar con Google Sheets
+    const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets;
+    if (isElectron) {
       const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
       (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
         return (window as any).electronAPI.googleSheets.addRow('PWA_Vehiculos', {
@@ -252,9 +253,30 @@ function App() {
           URL_Imagen: newPrice.imageUrl || '',
         });
       }).then(() => {
-        console.log('[App] ✅ Vehículo nuevo sincronizado con Sheets');
+        console.log('[App] ✅ Vehículo nuevo sincronizado con Sheets (Electron)');
       }).catch((err: any) => {
-        console.error('[App] Error sincronizando nuevo vehículo:', err);
+        console.error('[App] Error sincronizando nuevo vehículo (Electron):', err);
+      });
+    } else {
+      // Web: llamar a /api/pos-sync con action: 'upsert'
+      fetch('/api/pos-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sheet: 'PWA_Vehiculos',
+          action: 'upsert',
+          data: {
+            brand: newPrice.brand,
+            model: newPrice.model,
+            size: newPrice.size,
+            price: newPrice.price,
+            imageUrl: newPrice.imageUrl || ''
+          }
+        })
+      }).then(res => {
+        if (res.ok) console.log('[App] ✅ Vehículo nuevo sincronizado con Sheets (Web)');
+      }).catch(err => {
+        console.error('[App] Error sincronizando nuevo vehículo (Web):', err);
       });
     }
   };
@@ -263,8 +285,9 @@ function App() {
     setPrices(prices.map(p => p.id === updatedPrice.id ? updatedPrice : p));
     setEditingPrice(null);
 
-    // Sincronizar actualización con Google Sheets si está en Electron
-    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+    // Sincronizar actualización con Google Sheets
+    const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets;
+    if (isElectron) {
       const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
       (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
         return (window as any).electronAPI.googleSheets.updateRow(
@@ -278,15 +301,71 @@ function App() {
           }
         );
       }).then(() => {
-        console.log('[App] ✅ Vehículo actualizado en Sheets');
+        console.log('[App] ✅ Vehículo actualizado en Sheets (Electron)');
       }).catch((err: any) => {
-        console.error('[App] Error actualizando vehículo en Sheets:', err);
+        console.error('[App] Error actualizando vehículo en Sheets (Electron):', err);
+      });
+    } else {
+      // Web: llamar a /api/pos-sync con action: 'upsert'
+      fetch('/api/pos-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sheet: 'PWA_Vehiculos',
+          action: 'upsert',
+          data: {
+            brand: updatedPrice.brand,
+            model: updatedPrice.model,
+            size: updatedPrice.size,
+            price: updatedPrice.price,
+            imageUrl: updatedPrice.imageUrl || ''
+          }
+        })
+      }).then(res => {
+        if (res.ok) console.log('[App] ✅ Vehículo actualizado en Sheets (Web)');
+      }).catch(err => {
+        console.error('[App] Error actualizando vehículo en Sheets (Web):', err);
       });
     }
   };
 
   const handleDeletePrice = (id: string) => {
+    const priceToDelete = prices.find(p => p.id === id);
     setPrices(prices.filter(p => p.id !== id));
+
+    if (priceToDelete) {
+      const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets;
+      if (isElectron) {
+        const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+        (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
+          return (window as any).electronAPI.googleSheets.deleteRow(
+            'PWA_Vehiculos', 'Marca', priceToDelete.brand, { model: priceToDelete.model }
+          );
+        }).then(() => {
+          console.log('[App] ✅ Vehículo eliminado de Sheets (Electron)');
+        }).catch((err: any) => {
+          console.error('[App] Error eliminando vehículo de Sheets (Electron):', err);
+        });
+      } else {
+        // Web: llamar a /api/pos-sync con action: 'delete'
+        fetch('/api/pos-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sheet: 'PWA_Vehiculos',
+            action: 'delete',
+            data: {
+              brand: priceToDelete.brand,
+              model: priceToDelete.model
+            }
+          })
+        }).then(res => {
+          if (res.ok) console.log('[App] ✅ Vehículo eliminado de Sheets (Web)');
+        }).catch(err => {
+          console.error('[App] Error eliminando vehículo de Sheets (Web):', err);
+        });
+      }
+    }
   };
 
   const handleMovePrice = (id: string, direction: 'up' | 'down') => {

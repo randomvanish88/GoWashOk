@@ -100,13 +100,13 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 200;
+          const MAX_WIDTH = 400;
           const scaleSize = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scaleSize;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-          setImageUrl(canvas.toDataURL('image/jpeg', 0.7));
+          setImageUrl(canvas.toDataURL('image/jpeg', 0.8));
         };
         img.src = event.target?.result as string;
       };
@@ -114,31 +114,18 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
       return;
     }
     
-    // En Electron: crear archivo temporal y subir a Drive
+    // En Electron: usar la ruta del archivo real provista por el input file
     setUploadingImage(true);
     toast.info('Subiendo imagen a Google Drive...');
     
     try {
-      // Leer el archivo como ArrayBuffer y escribirlo temporalmente
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      // Usar una ruta temporal
-      const tempPath = `${require?.main || ''}`.includes('electron')
-        ? file.name
-        : file.name;
-
-      // El handler de Electron necesita la ruta del archivo en el filesystem
-      // Primero seleccionamos con el diálogo nativo para obtener la ruta real
-      const filePath = await (window as any).electronAPI.selectImage();
-      if (!filePath) {
+      const realPath = (file as any).path;
+      if (!realPath) {
+        toast.error("No se pudo obtener la ruta de la imagen.");
         setUploadingImage(false);
         return;
       }
-
-      // Extraer la ruta real del app-image:// prefix
-      const realPath = filePath.replace('app-image://', '');
-      const fileName = realPath.split('/').pop() || file.name;
+      const fileName = file.name || 'vehiculo.jpg';
       
       // Determinar carpeta de Drive según el precio
       const priceNum = price ? Math.round(parseFloat(price) / 1000) * 1000 : 0;
@@ -215,34 +202,11 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
       imageUrl: imageUrl || undefined,
     };
 
-    // Guardar localmente
+    // Guardar localmente y gatillar submit
     if (editingPrice) {
       onSubmit({ ...priceData, id: editingPrice.id });
     } else {
       onSubmit(priceData);
-    }
-
-    // Si está en Electron, también guardar en Google Sheets automáticamente
-    const isElectron = (window as any).electronAPI?.googleSheets;
-    if (isElectron && imageUrl) {
-      try {
-        const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
-        // Inicializar Google Sheets si no está inicializado
-        await (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID);
-        
-        // Agregar o actualizar fila en PWA_Vehiculos
-        await (window as any).electronAPI.googleSheets.addRow('PWA_Vehiculos', {
-          Marca: brand,
-          Modelo: model,
-          'Tamaño': size || 'Mediano',
-          Precio: price || '0',
-          URL_Imagen: imageUrl,
-        });
-        toast.success('✅ Vehículo guardado en Google Sheets. Disponible en todos los dispositivos.');
-      } catch (err: any) {
-        console.error('[PriceForm] Error guardando en Sheets:', err);
-        toast.error('No se pudo guardar en Sheets: ' + err.message);
-      }
     }
 
     if (!editingPrice) resetForm();
@@ -376,8 +340,8 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         </div>
 
         {/* Imagen de Referencia */}
-        <div className="space-y-2 bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
-          <Label className="flex items-center gap-2 text-orange-700">
+        <div className="space-y-3 bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
+          <Label className="flex items-center gap-2 text-orange-700 font-bold">
             <ImageIcon className="w-4 h-4" />
             Imagen del Vehículo
           </Label>
@@ -387,9 +351,12 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
             {imageUrl && (
               <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-orange-200">
                 <img src={imageUrl} alt="Preview" className="w-16 h-16 object-cover rounded-md shadow-sm border border-orange-300" />
-                <div className="flex flex-col">
+                <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-xs font-bold text-green-700">✅ Imagen cargada</span>
-                  <span className="text-[10px] text-gray-500 break-all">{imageUrl.startsWith('https://lh3') ? 'Guardada en Google Drive' : 'Vista previa local'}</span>
+                  <span className="text-[9px] text-gray-500 truncate" title={imageUrl}>
+                    {imageUrl.startsWith('https://lh3') ? 'Guardada en Google Drive' : 
+                     imageUrl.startsWith('data:image') ? 'Vista previa local (Base64)' : 'Enlace directo'}
+                  </span>
                 </div>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setImageUrl('')} className="ml-auto text-red-500 hover:bg-red-50">
                   <X className="w-4 h-4" />
@@ -397,22 +364,46 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
               </div>
             )}
 
-            {/* Botón principal: seleccionar y subir a Drive */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSelectLocalImage}
-              disabled={uploadingImage}
-              className="w-full bg-white border-orange-400 text-orange-700 hover:bg-orange-100 border-2 font-bold"
-            >
-              {uploadingImage ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Subiendo a Google Drive...</>
-              ) : (
-                <><Upload className="w-4 h-4 mr-2" />Seleccionar y subir imagen a Drive</>
-              )}
-            </Button>
-            <p className="text-[10px] text-orange-600 font-medium italic">
-              La imagen se sube automáticamente a Google Drive y queda disponible en web y desktop.
+            {/* Opción A: Archivo desde la PC */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block">Opción A: Cargar archivo desde la PC</span>
+              <div className="flex gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  disabled={uploadingImage}
+                  className="bg-white border-orange-300 text-xs h-9 cursor-pointer flex-1 file:bg-orange-50 file:text-orange-700 file:border-0 file:rounded-md file:text-[10px] file:font-black file:uppercase file:px-2 file:h-full file:mr-2 file:cursor-pointer"
+                />
+                
+                {typeof window !== 'undefined' && (window as any).electronAPI?.uploadImageToDrive && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSelectLocalImage}
+                    disabled={uploadingImage}
+                    className="bg-white border-orange-400 text-orange-700 hover:bg-orange-100 border-2 font-black text-[10px] h-9 px-3"
+                  >
+                    📁 Examinar PC
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Opción B: Enlace directo */}
+            <div className="space-y-1 pt-1 border-t border-orange-200/50">
+              <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block">Opción B: Pegar enlace de imagen directamente</span>
+              <Input
+                type="text"
+                placeholder="Pegá la URL de la imagen aquí (ej. de Sheets o Drive)"
+                value={imageUrl.startsWith('data:image') ? '' : imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="bg-white border-orange-300 text-xs h-9"
+              />
+            </div>
+            
+            <p className="text-[9px] text-orange-600 font-medium italic leading-tight">
+              En la versión de escritorio, las imágenes de la PC se suben automáticamente a Google Drive.
             </p>
           </div>
         </div>

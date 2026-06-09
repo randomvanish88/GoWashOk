@@ -218,10 +218,6 @@ export default async function handler(req, res) {
       const fullSheetName = getSheetName(sheet, isTest);
 
       if (action === 'upsert') {
-        const idColName = sheet === 'PWA_Extras' ? 'nombre' : 'ID';
-        const id = item.id || item.ID || item.nombre;
-        if (!id) return res.status(400).json({ error: `Falta identificador (${idColName}) para upsert` });
-
         let columns, rowConverter;
         if (sheet === 'Ventas') {
           columns = HEADERS_VENTAS;
@@ -235,6 +231,15 @@ export default async function handler(req, res) {
         } else if (sheet === 'PWA_Extras') {
           columns = HEADERS_EXTRAS;
           rowConverter = (ext) => [ext.nombre || '', (ext.precio || 0).toString()];
+        } else if (sheet === 'PWA_Vehiculos') {
+          columns = ['Marca', 'Modelo', 'Tamaño', 'Precio', 'URL_Imagen'];
+          rowConverter = (v) => [
+            v.brand || v.Marca || '',
+            v.model || v.Modelo || '',
+            v.size || v.Tamaño || 'Mediano',
+            (v.price ?? v.Precio ?? 0).toString(),
+            v.imageUrl || v.URL_Imagen || ''
+          ];
         } else {
           return res.status(400).json({ error: `Sheet no soportado para upsert: ${sheet}` });
         }
@@ -248,8 +253,19 @@ export default async function handler(req, res) {
         // Buscar fila existente por identificador
         const dIds = await sheetsRequest(token, 'GET', `${fullSheetName}!A:Z`);
         const rows = dIds.values || [];
-        const idColIndex = columns.indexOf(idColName);
-        const idx = rows.findIndex((r, i) => i > 0 && r[idColIndex] === id);
+        
+        let idx = -1;
+        if (sheet === 'PWA_Vehiculos') {
+          const brand = item.brand || item.Marca || '';
+          const model = item.model || item.Modelo || '';
+          idx = rows.findIndex((r, i) => i > 0 && r[0] === brand && r[1] === model);
+        } else {
+          const idColName = sheet === 'PWA_Extras' ? 'nombre' : 'ID';
+          const id = item.id || item.ID || item.nombre;
+          if (!id) return res.status(400).json({ error: `Falta identificador (${idColName}) para upsert` });
+          const idColIndex = columns.indexOf(idColName);
+          idx = rows.findIndex((r, i) => i > 0 && r[idColIndex] === id);
+        }
 
         const rowData = rowConverter(item);
 
@@ -265,9 +281,6 @@ export default async function handler(req, res) {
       }
 
       if (action === 'delete') {
-        const id = body.id || (item && (item.id || item.ID || item.nombre));
-        if (!id) return res.status(400).json({ error: 'Falta ID o nombre para delete' });
-
         let columns, idColName;
         if (sheet === 'Ventas') {
           columns = HEADERS_VENTAS;
@@ -278,14 +291,26 @@ export default async function handler(req, res) {
         } else if (sheet === 'PWA_Extras') {
           columns = HEADERS_EXTRAS;
           idColName = 'nombre';
+        } else if (sheet === 'PWA_Vehiculos') {
+          columns = ['Marca', 'Modelo', 'Tamaño', 'Precio', 'URL_Imagen'];
         } else {
           return res.status(400).json({ error: `Sheet no soportado para delete: ${sheet}` });
         }
 
         const dIds = await sheetsRequest(token, 'GET', `${fullSheetName}!A:Z`);
         const rows = dIds.values || [];
-        const idColIndex = columns.indexOf(idColName);
-        const idx = rows.findIndex((r, i) => i > 0 && r[idColIndex] === id);
+        
+        let idx = -1;
+        if (sheet === 'PWA_Vehiculos') {
+          const brand = item?.brand || item?.Marca || body.brand || body.Marca || '';
+          const model = item?.model || item?.Modelo || body.model || body.Modelo || '';
+          idx = rows.findIndex((r, i) => i > 0 && r[0] === brand && r[1] === model);
+        } else {
+          const id = body.id || (item && (item.id || item.ID || item.nombre));
+          if (!id) return res.status(400).json({ error: 'Falta ID o nombre para delete' });
+          const idColIndex = columns.indexOf(idColName);
+          idx = rows.findIndex((r, i) => i > 0 && r[idColIndex] === id);
+        }
 
         if (idx >= 0) {
           const n = idx + 1;

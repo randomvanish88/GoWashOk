@@ -103,13 +103,18 @@ class GoogleSheetsHandler {
   /**
    * Borra una fila buscando por una columna y valor específico
    */
-  async deleteRow(sheetTitle, searchColumn, searchValue) {
+  async deleteRow(sheetTitle, searchColumn, searchValue, extraOptions = null) {
     if (!this.doc) throw new Error('Google Sheets no inicializado.');
     const sheet = this.doc.sheetsByTitle[sheetTitle];
     if (!sheet) return { success: false, error: 'Hoja no encontrada' };
 
     const rows = await sheet.getRows();
-    const rowToDelete = rows.find(row => row.get(searchColumn) == searchValue);
+    let rowToDelete;
+    if (sheetTitle === 'PWA_Vehiculos' && extraOptions && extraOptions.model) {
+      rowToDelete = rows.find(row => row.get('Marca') == searchValue && row.get('Modelo') == extraOptions.model);
+    } else {
+      rowToDelete = rows.find(row => row.get(searchColumn) == searchValue);
+    }
 
     if (rowToDelete) {
       await rowToDelete.delete();
@@ -127,7 +132,14 @@ class GoogleSheetsHandler {
     if (!sheet) return { success: false, error: 'Hoja no encontrada' };
 
     const rows = await sheet.getRows();
-    const rowToUpdate = rows.find(row => row.get(searchColumn) == searchValue);
+    let rowToUpdate;
+    if (sheetTitle === 'PWA_Vehiculos') {
+      const brand = newData.Marca || newData.brand || searchValue;
+      const model = newData.Modelo || newData.model;
+      rowToUpdate = rows.find(row => row.get('Marca') == brand && row.get('Modelo') == model);
+    } else {
+      rowToUpdate = rows.find(row => row.get(searchColumn) == searchValue);
+    }
 
     if (rowToUpdate) {
       // Actualizamos los valores usando rowToUpdate.set() para compatibilidad con google-spreadsheet v5

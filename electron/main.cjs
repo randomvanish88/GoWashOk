@@ -368,9 +368,9 @@ ipcMain.handle('get-vehiculos-data', async () => {
   }
 });
 
-ipcMain.handle('google-sheets-delete-row', async (event, { sheetTitle, searchColumn, searchValue }) => {
+ipcMain.handle('google-sheets-delete-row', async (event, { sheetTitle, searchColumn, searchValue, extraOptions }) => {
   try {
-    return await googleSheets.deleteRow(sheetTitle, searchColumn, searchValue);
+    return await googleSheets.deleteRow(sheetTitle, searchColumn, searchValue, extraOptions);
   } catch (error) {
     console.error('[GoogleSheets] Error al borrar fila:', error.message);
     return { success: false, error: error.message };

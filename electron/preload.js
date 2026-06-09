@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     init: (spreadsheetId) => ipcRenderer.invoke('google-sheets-init', spreadsheetId),
     addRow: (sheetTitle, data) => ipcRenderer.invoke('google-sheets-add-row', { sheetTitle, data }),
     getRows: (sheetTitle) => ipcRenderer.invoke('google-sheets-get-rows', sheetTitle),
-    deleteRow: (sheetTitle, searchColumn, searchValue) => ipcRenderer.invoke('google-sheets-delete-row', { sheetTitle, searchColumn, searchValue }),
+    deleteRow: (sheetTitle, searchColumn, searchValue, extraOptions) => ipcRenderer.invoke('google-sheets-delete-row', { sheetTitle, searchColumn, searchValue, extraOptions }),
     updateRow: (sheetTitle, searchColumn, searchValue, newData) => ipcRenderer.invoke('google-sheets-update-row', { sheetTitle, searchColumn, searchValue, newData }),
     clearSheet: (sheetTitle) => ipcRenderer.invoke('google-sheets-clear-sheet', sheetTitle),
     writeSheet: (sheetTitle, data) => ipcRenderer.invoke('google-sheets-write-sheet', { sheetTitle, data }),
