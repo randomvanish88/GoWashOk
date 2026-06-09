@@ -304,6 +304,24 @@ ipcMain.handle('upload-image-to-drive', async (event, { filePath, fileName, fold
   }
 });
 
+ipcMain.handle('read-file-as-base64', async (event, filePath) => {
+  try {
+    const fs = require('fs');
+    let finalPath = filePath.replace(/^app-image:\/\//, '').replace(/\\/g, '/');
+    finalPath = decodeURIComponent(finalPath);
+    if (process.platform === 'win32' && finalPath.startsWith('/')) {
+      finalPath = finalPath.substring(1);
+    }
+    const data = fs.readFileSync(finalPath);
+    const mime = filePath.match(/\.(png)$/i) ? 'image/png' :
+                 filePath.match(/\.(webp)$/i) ? 'image/webp' : 'image/jpeg';
+    return { success: true, base64: `data:${mime};base64,${data.toString('base64')}` };
+  } catch (error) {
+    console.error('[Base64 Read] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 // --- LÓGICA DE GOOGLE SHEETS ---
 const googleSheets = require('./googleSheets.cjs');
 

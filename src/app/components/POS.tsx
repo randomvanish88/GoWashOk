@@ -1051,10 +1051,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         } else {
           console.warn('Google Drive upload failed, falling back to base64:', result.error);
           toast.warning('No se pudo subir a Drive (límite de cuota). Guardando en base64...');
-          const resp = await fetch(filePath);
-          const blob = await resp.blob();
-          const reader = new FileReader();
-          reader.onload = () => {
+          const readResult = await (window as any).electronAPI.readFileAsBase64(filePath);
+          if (readResult.success && readResult.base64) {
             const img = new Image();
             img.onload = () => {
               const canvas = document.createElement('canvas');
@@ -1066,9 +1064,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
               setCatalogoNuevoFoto(canvas.toDataURL('image/jpeg', 0.8));
             };
-            img.src = reader.result as string;
-          };
-          reader.readAsDataURL(blob);
+            img.src = readResult.base64;
+          } else {
+            toast.error('No se pudo leer la imagen local: ' + (readResult.error || 'desconocido'));
+          }
         }
       } catch (err: any) {
         toast.error('Error: ' + err.message);
