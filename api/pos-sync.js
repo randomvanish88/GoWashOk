@@ -19,7 +19,8 @@ const CREDENTIALS = {
 const HEADERS_VENTAS = [
   'Fecha', 'Hora_Entrada', 'Hora_Salida', 'Empleado', 'Patente',
   'Cliente', 'Numero_Cliente', 'Vehiculo', 'Servicio', 'Lavado',
-  'Bar', 'Cosmeticos', 'Descuento', 'Estadia', 'Total', 'Metodo_Pago', 'ID'
+  'Bar', 'Cosmeticos', 'Descuento', 'Estadia', 'Total', 'Metodo_Pago', 'ID',
+  'productosBar', 'productosCosmeticos'
 ];
 
 const HEADERS_GASTOS = [
@@ -143,7 +144,9 @@ function parseVentaToRow(v) {
     v.estadia ? 'Sí' : 'No',
     (v.total || 0).toString(),
     v.metodoPago || '',
-    v.id || ''
+    v.id || '',
+    JSON.stringify(v.productosBar || []),
+    JSON.stringify(v.productosCosmeticos || [])
   ];
 }
 

@@ -163,12 +163,15 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
       const resBar = await (window as any).electronAPI.googleSheets.getRows(`${testModePrefix}Bar`);
       const bar: ProductoBar[] = (resBar?.success && Array.isArray(resBar.data))
         ? resBar.data
-            .filter((r: any) => r.nombre || r.name)
+            .filter((r: any) => {
+              const name = r.nombre ?? r.Nombre ?? r.name ?? r.Name;
+              return name && name.toString().trim() !== '';
+            })
             .map((r: any) => ({
-              group: r.grupo || r.group || 'General',
-              name: r.nombre || r.name || '',
-              value: parseFloat(r.precio || r.value) || 0,
-              stock: parseInt(r.stock) || 10,
+              group: r.grupo ?? r.Grupo ?? r.group ?? r.Group ?? 'General',
+              name: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
+              value: parseFloat(r.precio ?? r.Precio ?? r.value ?? r.Value ?? r.pvp ?? r.Pvp ?? r.PVP) || 0,
+              stock: parseInt(r.stock ?? r.Stock) || 10,
             }))
         : [];
 
@@ -176,12 +179,15 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
       const resCos = await (window as any).electronAPI.googleSheets.getRows(`${testModePrefix}Cosmetica`);
       const cosmetica: ProductoCosmetica[] = (resCos?.success && Array.isArray(resCos.data))
         ? resCos.data
-            .filter((r: any) => r.nombre)
+            .filter((r: any) => {
+              const name = r.nombre ?? r.Nombre ?? r.name ?? r.Name;
+              return name && name.toString().trim() !== '';
+            })
             .map((r: any) => ({
-              nombre: r.nombre || '',
-              contenido: r.contenido || '',
-              pvp: parseFloat(r.pvp) || 0,
-              stock: parseInt(r.stock) || 10,
+              nombre: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
+              contenido: r.contenido ?? r.Contenido ?? '',
+              pvp: parseFloat(r.pvp ?? r.Pvp ?? r.PVP ?? r.precio ?? r.Precio ?? r.value ?? r.Value) || 0,
+              stock: parseInt(r.stock ?? r.Stock) || 10,
             }))
         : [];
 

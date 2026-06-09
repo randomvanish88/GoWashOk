@@ -51,14 +51,20 @@ async function getBarProducts(token, sheetName = SHEET_BAR) {
     const d = await sheetsGet(token, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return [];
-    // Saltear encabezado (fila 1)
+
+    const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
+    const groupIdx = headers.indexOf('grupo');
+    const nameIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+    const valueIdx = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : (headers.indexOf('value') !== -1 ? headers.indexOf('value') : headers.indexOf('pvp'));
+    const stockIdx = headers.indexOf('stock');
+
     return rows.slice(1)
-      .filter(r => r[1]) // debe tener nombre
+      .filter(r => nameIdx !== -1 && r[nameIdx]) // debe tener nombre
       .map(r => ({
-        group: r[0] || 'General',
-        name: r[1] || '',
-        value: parseFloat(r[2]) || 0,
-        stock: r[3] !== undefined ? parseInt(r[3]) : 10,
+        group: (groupIdx !== -1 && r[groupIdx]) || 'General',
+        name: (nameIdx !== -1 && r[nameIdx]) || '',
+        value: parseFloat(valueIdx !== -1 && r[valueIdx]) || 0,
+        stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
       }));
   } catch (e) {
     console.error('[api/productos] Error leyendo Bar:', e.message);
@@ -76,14 +82,20 @@ async function getCosmeticaProducts(token, sheetName = SHEET_COSMETICA) {
     const d = await sheetsGet(token, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return [];
-    // Saltear encabezado (fila 1)
+
+    const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
+    const nombreIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+    const contenidoIdx = headers.indexOf('contenido');
+    const pvpIdx = headers.indexOf('pvp') !== -1 ? headers.indexOf('pvp') : (headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('value'));
+    const stockIdx = headers.indexOf('stock');
+
     return rows.slice(1)
-      .filter(r => r[0]) // debe tener nombre
+      .filter(r => nombreIdx !== -1 && r[nombreIdx]) // debe tener nombre
       .map(r => ({
-        nombre: r[0] || '',
-        contenido: r[1] || '',
-        pvp: parseFloat(r[2]) || 0,
-        stock: r[3] !== undefined ? parseInt(r[3]) : 10,
+        nombre: (nombreIdx !== -1 && r[nombreIdx]) || '',
+        contenido: (contenidoIdx !== -1 && r[contenidoIdx]) || '',
+        pvp: parseFloat(pvpIdx !== -1 && r[pvpIdx]) || 0,
+        stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
       }));
   } catch (e) {
     console.error('[api/productos] Error leyendo Cosmetica:', e.message);

@@ -380,13 +380,19 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
     try {
       const columns = ['grupo', 'nombre', 'precio', 'stock'];
       const rows = barProductsData
-        .filter(p => p.name.trim() !== '')
+        .filter(p => (p.name || (p as any).nombre || '').trim() !== '')
         .map(p => [
           p.group || 'General',
-          p.name,
-          (p.value || 0).toString(),
+          p.name || (p as any).nombre,
+          (p.value ?? (p as any).precio ?? (p as any).pvp ?? 0).toString(),
           (p.stock ?? 10).toString()
         ]);
+      
+      if (rows.length === 0) {
+        toast.warning('No hay productos válidos de Bar para guardar');
+        setSavingBar(false);
+        return;
+      }
       
       const testMode = googleSheetsSync.isTestMode();
       const sheet = 'Bar';
@@ -426,13 +432,19 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
     try {
       const columns = ['nombre', 'contenido', 'pvp', 'stock'];
       const rows = cosmeticosData
-        .filter(c => c.nombre.trim() !== '')
+        .filter(c => (c.nombre || (c as any).name || '').trim() !== '')
         .map(c => [
-          c.nombre,
+          c.nombre || (c as any).name,
           c.contenido || '',
-          (c.pvp || 0).toString(),
+          (c.pvp ?? (c as any).precio ?? (c as any).value ?? 0).toString(),
           (c.stock ?? 10).toString()
         ]);
+      
+      if (rows.length === 0) {
+        toast.warning('No hay cosméticos válidos para guardar');
+        setSavingCosmeticos(false);
+        return;
+      }
       
       const testMode = googleSheetsSync.isTestMode();
       const sheet = 'Cosmetica';
@@ -1232,14 +1244,22 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     if (savedWashCounts) setWashCounts(JSON.parse(savedWashCounts));
     if (savedCosmeticos) {
       const parsed = JSON.parse(savedCosmeticos);
-      setCosmeticosData(parsed.map((c: any) => ({ ...c, stock: c.stock ?? 10 })));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setCosmeticosData(parsed.map((c: any) => ({ ...c, stock: c.stock ?? 10 })));
+      } else {
+        setCosmeticosData(DEFAULT_COSMETICOS.map(c => ({ ...c, stock: 10 })));
+      }
     } else {
       setCosmeticosData(DEFAULT_COSMETICOS.map(c => ({ ...c, stock: 10 })));
     }
     
     if (savedBar) {
       const parsed = JSON.parse(savedBar);
-      setBarProductsData(parsed.map((p: any) => ({ ...p, stock: p.stock ?? 10 })));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setBarProductsData(parsed.map((p: any) => ({ ...p, stock: p.stock ?? 10 })));
+      } else {
+        setBarProductsData(DEFAULT_BAR_PRODUCTS.map(p => ({ ...p, stock: 10 })));
+      }
     } else {
       setBarProductsData(DEFAULT_BAR_PRODUCTS.map(p => ({ ...p, stock: 10 })));
     }
@@ -1413,6 +1433,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         metodoPago: rem.Metodo_Pago || rem.metodoPago || '',
         estadia: rem.Estadia === 'Sí' || rem.estadia === 'true' || rem.estadia === true,
         servicio: rem.Servicio || rem.servicio || '',
+        productosBar: typeof rem.productosBar === 'string' && rem.productosBar !== '' ? JSON.parse(rem.productosBar) : (Array.isArray(rem.productosBar) ? rem.productosBar : []),
+        productosCosmeticos: typeof rem.productosCosmeticos === 'string' && rem.productosCosmeticos !== '' ? JSON.parse(rem.productosCosmeticos) : (Array.isArray(rem.productosCosmeticos) ? rem.productosCosmeticos : []),
         sincronizado: true
       } as any;
 

@@ -84,7 +84,9 @@ export const googleSheetsSync = {
           Estadia: venta.estadia ? 'Sí' : 'No',
           Total: venta.total || 0,
           Metodo_Pago: venta.metodoPago || '',
-          ID: venta.id || ''
+          ID: venta.id || '',
+          productosBar: JSON.stringify(venta.productosBar || []),
+          productosCosmeticos: JSON.stringify(venta.productosCosmeticos || [])
         };
         // @ts-ignore
         await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas'), data);
@@ -132,7 +134,9 @@ export const googleSheetsSync = {
           Estadia: venta.estadia ? 'Sí' : 'No',
           Total: venta.total || 0,
           Metodo_Pago: venta.metodoPago || '',
-          ID: venta.id || ''
+          ID: venta.id || '',
+          productosBar: JSON.stringify(venta.productosBar || []),
+          productosCosmeticos: JSON.stringify(venta.productosCosmeticos || [])
         };
         // @ts-ignore
         await window.electronAPI.googleSheets.updateRow(this.getSheetName('Ventas'), 'ID', venta.id, data);

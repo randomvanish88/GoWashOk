@@ -20,16 +20,59 @@ async function getAuth() {
 
 async function run() {
   try {
-    const token = await getAuth();
-    console.log("Token obtained successfully.");
+    const { GoogleSpreadsheet } = await import('google-spreadsheet');
+    const { JWT } = await import('google-auth-library');
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
-    const resp = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+    const serviceAccountAuth = new JWT({
+      email: CREDENTIALS.client_email,
+      key: CREDENTIALS.private_key,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
-    const data = await resp.json();
-    const sheetTitles = data.sheets?.map(s => s.properties?.title) || [];
-    console.log("Sheet titles in document:", sheetTitles);
+
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    console.log("Connected to spreadsheet:", doc.title);
+
+    let sheet = doc.sheetsByTitle['PRUEBA-Bar'];
+    if (sheet) {
+      await sheet.delete();
+    }
+    sheet = await doc.addSheet({ title: 'PRUEBA-Bar', headerValues: ['grupo', 'nombre', 'precio', 'stock'] });
+
+    // 1. Escribir 5 filas iniciales
+    console.log("Writing 5 initial rows...");
+    const initialData = [
+      { grupo: 'Café', nombre: 'Initial 1', precio: '1000', stock: '10' },
+      { grupo: 'Café', nombre: 'Initial 2', precio: '1000', stock: '10' },
+      { grupo: 'Café', nombre: 'Initial 3', precio: '1000', stock: '10' },
+      { grupo: 'Café', nombre: 'Initial 4', precio: '1000', stock: '10' },
+      { grupo: 'Café', nombre: 'Initial 5', precio: '1000', stock: '10' }
+    ];
+    await sheet.addRows(initialData);
+
+    let rows = await sheet.getRows();
+    console.log("Rows count after initial write:", rows.length);
+
+    // 2. Limpiar filas
+    console.log("Calling clearRows()...");
+    await sheet.clearRows();
+
+    // 3. Escribir 3 nuevas filas
+    console.log("Writing 3 new rows...");
+    const newData = [
+      { grupo: 'Café', nombre: 'New 1', precio: '2000', stock: '20' },
+      { grupo: 'Café', nombre: 'New 2', precio: '2000', stock: '20' },
+      { grupo: 'Café', nombre: 'New 3', precio: '2000', stock: '20' }
+    ];
+    await sheet.addRows(newData);
+
+    // 4. Leer filas y ver sus posiciones/valores
+    rows = await sheet.getRows();
+    console.log("Final rows count:", rows.length);
+    rows.forEach((r) => {
+      console.log(`Row number: ${r.rowNumber}, Data:`, r.toObject());
+    });
+
   } catch (error) {
     console.error("Error running test:", error);
   }
