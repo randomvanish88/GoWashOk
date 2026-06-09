@@ -138,7 +138,24 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         setImageUrl(result.imageUrl);
         toast.success('Imagen subida a Google Drive correctamente');
       } else {
-        toast.error('Error subiendo imagen: ' + (result.error || 'desconocido'));
+        console.warn('Google Drive upload failed, falling back to base64:', result.error);
+        toast.warning('No se pudo subir a Drive (límite de cuota). Guardando en base64...');
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const scaleSize = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+            setImageUrl(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.src = event.target?.result as string;
+        };
+        reader.readAsDataURL(file);
       }
     } catch (err: any) {
       toast.error('Error: ' + err.message);
@@ -175,7 +192,26 @@ export function PriceForm({ onSubmit, onCancel, editingPrice, sizes, brands }: P
         setImageUrl(result.imageUrl);
         toast.success('✅ Imagen subida a Google Drive. Disponible en web y desktop.');
       } else {
-        toast.error('Error: ' + (result.error || 'desconocido'));
+        console.warn('Google Drive upload failed, falling back to base64:', result.error);
+        toast.warning('No se pudo subir a Drive (límite de cuota). Guardando en base64...');
+        const resp = await fetch(filePath);
+        const blob = await resp.blob();
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const scaleSize = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+            setImageUrl(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.src = reader.result as string;
+        };
+        reader.readAsDataURL(blob);
       }
     } catch (err: any) {
       toast.error('Error: ' + err.message);

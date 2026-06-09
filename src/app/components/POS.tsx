@@ -1049,7 +1049,26 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           setCatalogoNuevoFoto(result.imageUrl);
           toast.success('Imagen subida a Google Drive correctamente');
         } else {
-          toast.error('Error: ' + (result.error || 'desconocido'));
+          console.warn('Google Drive upload failed, falling back to base64:', result.error);
+          toast.warning('No se pudo subir a Drive (límite de cuota). Guardando en base64...');
+          const resp = await fetch(filePath);
+          const blob = await resp.blob();
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const MAX_WIDTH = 400;
+              const scaleSize = MAX_WIDTH / img.width;
+              canvas.width = MAX_WIDTH;
+              canvas.height = img.height * scaleSize;
+              const ctx = canvas.getContext('2d');
+              ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+              setCatalogoNuevoFoto(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.src = reader.result as string;
+          };
+          reader.readAsDataURL(blob);
         }
       } catch (err: any) {
         toast.error('Error: ' + err.message);
@@ -1093,11 +1112,12 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           finalImageUrl = result.imageUrl;
           toast.success('Imagen subida a Google Drive correctamente');
         } else {
-          toast.error('Error al subir imagen a Drive: ' + (result.error || 'desconocido'));
+          console.warn('Google Drive upload failed, keeping base64:', result.error);
+          toast.warning('No se pudo subir a Drive (límite de cuota). Se guardará la imagen directamente.');
         }
       } catch (err: any) {
         console.error('Error subiendo imagen de catálogo a Drive:', err);
-        toast.error('Error al subir imagen a Drive.');
+        toast.warning('No se pudo subir a Drive. Se guardará la imagen directamente.');
       }
     }
 

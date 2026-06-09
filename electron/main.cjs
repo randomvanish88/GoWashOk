@@ -273,6 +273,7 @@ ipcMain.handle('upload-image-to-drive', async (event, { filePath, fileName, fold
 
     // Subir a Drive en la carpeta especificada
     const uploadRes = await drive.files.create({
+      supportsAllDrives: true,
       requestBody: {
         name: fileName,
         parents: [folderId],
@@ -289,6 +290,7 @@ ipcMain.handle('upload-image-to-drive', async (event, { filePath, fileName, fold
     // Hacer el archivo público
     await drive.permissions.create({
       fileId,
+      supportsAllDrives: true,
       requestBody: { role: 'reader', type: 'anyone' },
     });
 
