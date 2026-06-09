@@ -253,10 +253,23 @@ ipcMain.handle('upload-image-to-drive', async (event, { filePath, fileName, fold
 
     const drive = google.drive({ version: 'v3', auth });
 
-    // Leer el archivo
-    const fileContent = fs.readFileSync(filePath);
-    const mimeType = filePath.match(/\.(png)$/i) ? 'image/png' :
-                     filePath.match(/\.(webp)$/i) ? 'image/webp' : 'image/jpeg';
+    // Determinar origen de la imagen: archivo local o base64
+    let fileContent;
+    let mimeType = 'image/jpeg';
+
+    if (filePath.startsWith('data:image')) {
+      const matches = filePath.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.*)$/);
+      if (matches && matches.length === 3) {
+        mimeType = matches[1];
+        fileContent = Buffer.from(matches[2], 'base64');
+      } else {
+        throw new Error('Formato base64 inválido');
+      }
+    } else {
+      fileContent = fs.readFileSync(filePath);
+      mimeType = filePath.match(/\.(png)$/i) ? 'image/png' :
+                 filePath.match(/\.(webp)$/i) ? 'image/webp' : 'image/jpeg';
+    }
 
     // Subir a Drive en la carpeta especificada
     const uploadRes = await drive.files.create({

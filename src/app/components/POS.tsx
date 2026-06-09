@@ -779,6 +779,88 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [catalogoNuevoSize, setCatalogoNuevoSize] = useState('Mediano');
   const [catalogoNuevoPrice, setCatalogoNuevoPrice] = useState('0');
 
+  // Nuevos estados para cargar foto en catálogo
+  const [catalogoNuevoFoto, setCatalogoNuevoFoto] = useState<string | null>(null);
+  const [camaraActiva, setCamaraActiva] = useState(false);
+  const catalogoFileRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const iniciarCamara = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setCamaraActiva(true);
+    } catch (err) {
+      console.error("No se pudo iniciar la cámara:", err);
+      toast.error("No se pudo acceder a la cámara.");
+    }
+  };
+
+  const detenerCamara = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCamaraActiva(false);
+  };
+
+  const capturarFoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth || 640;
+      canvas.height = videoRef.current.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL('image/jpeg', 0.7);
+      setCatalogoNuevoFoto(base64);
+      detenerCamara();
+    }
+  };
+
+  const handleSelectCatalogoLocalImage = async () => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.uploadImageToDrive) {
+      toast.info('Seleccioná la imagen a subir...');
+      try {
+        const filePath = await (window as any).electronAPI.selectImage();
+        if (!filePath) return;
+
+        const realPath = filePath.replace('app-image://', '');
+        const fileName = realPath.split('/').pop() || 'vehiculo.jpg';
+        
+        toast.info('Subiendo a Google Drive...');
+        const folderId = '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk';
+
+        const result = await (window as any).electronAPI.uploadImageToDrive(realPath, fileName, folderId);
+
+        if (result.success && result.imageUrl) {
+          setCatalogoNuevoFoto(result.imageUrl);
+          toast.success('Imagen subida a Google Drive correctamente');
+        } else {
+          toast.error('Error: ' + (result.error || 'desconocido'));
+        }
+      } catch (err: any) {
+        toast.error('Error: ' + err.message);
+      }
+    } else {
+      catalogoFileRef.current?.click();
+    }
+  };
+
+  const handleCatalogoWebFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCatalogoNuevoFoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const confirmarGuardarCatalogo = async () => {
     if (!searchVehiculo || searchVehiculo.length < 2) return;
     setGuardandoCatalogo(true);
@@ -789,26 +871,52 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const size = catalogoNuevoSize;
     const price = parseInt(catalogoNuevoPrice, 10) || 0;
     
+    let finalImageUrl = catalogoNuevoFoto || '';
+
+    // Si es Electron y tenemos una imagen base64 (de la cámara o local), la subimos a Drive primero
+    if (finalImageUrl.startsWith('data:image') && typeof window !== 'undefined' && (window as any).electronAPI?.uploadImageToDrive) {
+      toast.info('Subiendo imagen a Google Drive...');
+      try {
+        const fileName = `${brand.toLowerCase()}_${model.toLowerCase()}_${Date.now()}.jpg`;
+        const folderId = '1ttmtRwdVNasvNB7II_4q-4UspNlmjEnk'; // Carpeta por defecto
+        const result = await (window as any).electronAPI.uploadImageToDrive(finalImageUrl, fileName, folderId);
+        
+        if (result.success && result.imageUrl) {
+          finalImageUrl = result.imageUrl;
+          toast.success('Imagen subida a Google Drive correctamente');
+        } else {
+          toast.error('Error al subir imagen a Drive: ' + (result.error || 'desconocido'));
+        }
+      } catch (err: any) {
+        console.error('Error subiendo imagen de catálogo a Drive:', err);
+        toast.error('Error al subir imagen a Drive.');
+      }
+    }
+
     const exito = await agregarAlCatalogo({
       Marca: brand,
       Modelo: model,
       Tamaño: size,
-      Precio: price
+      Precio: price,
+      URL_Imagen: finalImageUrl
     });
     
     if (exito) {
       toast.success('Vehículo añadido al catálogo');
       const nuevo: Price = {
         id: `nuevo-${Date.now()}`,
-        brand, model, size, price, service: 'Lavado Artesanal'
+        brand, model, size, price, service: 'Lavado Artesanal',
+        imageUrl: finalImageUrl || undefined
       };
       setVehiculoSeleccionado(nuevo);
       setServicio(nuevo.service);
       setPrecioServicioLavado(nuevo.price);
       setSearchVehiculo('');
+      setCatalogoNuevoFoto(null);
+      detenerCamara();
       setShowGuardarCatalogoDialog(false);
     } else {
-      toast.error('Error al guardar en catálogo');
+      toast.error('Error al guardar en el catálogo');
     }
     setGuardandoCatalogo(false);
   };
@@ -5215,7 +5323,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       </Dialog>
 
       {/* Dialog Guardar Catálogo */}
-      <Dialog open={showGuardarCatalogoDialog} onOpenChange={setShowGuardarCatalogoDialog}>
+      <Dialog open={showGuardarCatalogoDialog} onOpenChange={(open) => {
+        if (!open) {
+          setCatalogoNuevoFoto(null);
+          detenerCamara();
+        }
+        setShowGuardarCatalogoDialog(open);
+      }}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white">
           <DialogHeader>
             <DialogTitle>Guardar en Catálogo</DialogTitle>
@@ -5248,9 +5362,98 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 className="bg-slate-800 border-slate-600 text-white"
               />
             </div>
+
+            {/* Foto del vehículo */}
+            <div className="space-y-2 border-t border-slate-700/50 pt-4">
+              <Label className="text-slate-300">Foto del Vehículo (Opcional)</Label>
+              
+              <input 
+                type="file" 
+                ref={catalogoFileRef} 
+                onChange={handleCatalogoWebFileChange} 
+                accept="image/*" 
+                className="hidden" 
+              />
+
+              {camaraActiva ? (
+                <div className="space-y-2">
+                  <video 
+                    ref={videoRef} 
+                    className="w-full aspect-video bg-black rounded-lg border border-slate-700 object-cover" 
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      onClick={capturarFoto} 
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold"
+                    >
+                      Tomar Foto
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={detenerCamara} 
+                      className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {catalogoNuevoFoto && (
+                    <div className="flex items-center gap-3 p-2 bg-slate-800 rounded-lg border border-slate-700">
+                      <img 
+                        src={catalogoNuevoFoto} 
+                        alt="Preview" 
+                        className="w-16 h-16 object-cover rounded-md border border-slate-600" 
+                      />
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-xs font-bold text-emerald-400">✅ Imagen cargada</span>
+                        <span className="text-[9px] text-slate-400 truncate">
+                          {catalogoNuevoFoto.startsWith('https://lh3') ? 'Google Drive' : 'Vista previa local'}
+                        </span>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setCatalogoNuevoFoto(null)} 
+                        className="text-red-400 hover:bg-red-950 hover:text-red-500"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={iniciarCamara}
+                      className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 font-bold"
+                    >
+                      📷 Cámara en vivo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSelectCatalogoLocalImage}
+                      className="bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 font-bold"
+                    >
+                      📁 Buscar Archivo
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowGuardarCatalogoDialog(false)} className="border-slate-600 text-slate-300 hover:bg-slate-800">
+            <Button variant="outline" onClick={() => {
+              setCatalogoNuevoFoto(null);
+              detenerCamara();
+              setShowGuardarCatalogoDialog(false);
+            }} className="border-slate-600 text-slate-300 hover:bg-slate-800">
               Cancelar
             </Button>
             <Button onClick={confirmarGuardarCatalogo} disabled={guardandoCatalogo} className="bg-emerald-600 hover:bg-emerald-700 text-white">
