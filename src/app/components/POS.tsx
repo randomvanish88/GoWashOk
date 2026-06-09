@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles, Smartphone, Monitor, RefreshCw, Printer, CalendarDays, Calculator, ShoppingBag, ShieldAlert, Zap, LayoutDashboard, QrCode } from 'lucide-react';
+import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles, Smartphone, Monitor, RefreshCw, Printer, CalendarDays, Calculator, ShoppingBag, ShieldAlert, Zap, LayoutDashboard, QrCode, Database, Loader2 } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import QRCode from 'react-qr-code';
 import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
@@ -325,6 +325,115 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
   const [adjBarStock, setAdjBarStock] = useState('');
   const [adjCosStock, setAdjCosStock] = useState('');
 
+  const [savingServicios, setSavingServicios] = useState(false);
+  const [savingBar, setSavingBar] = useState(false);
+  const [savingCosmeticos, setSavingCosmeticos] = useState(false);
+
+  const handleSaveServicios = async () => {
+    setSavingServicios(true);
+    try {
+      const columns = ['nombre', 'precio', 'descripcion', 'tiempoEstimado'];
+      const rows = serviciosLavado
+        .filter(s => s.nombre.trim() !== '')
+        .map(s => [
+          s.nombre,
+          (s.precio || 0).toString(),
+          s.descripcion || '',
+          (s.tiempoEstimado || 30).toString()
+        ]);
+      
+      const testMode = googleSheetsSync.isTestMode();
+      const sheet = 'Servicios';
+      
+      if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+        const fullSheetName = testMode ? `PRUEBA-${sheet}` : sheet;
+        await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+      } else {
+        await fetch('/api/pos-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
+        });
+      }
+      localStorage.setItem('gowash-lavado-precios', JSON.stringify(serviciosLavado));
+      toast.success('Servicios guardados correctamente en Google Sheets');
+    } catch (e: any) {
+      toast.error('Error al guardar servicios', { description: e.message });
+    } finally {
+      setSavingServicios(false);
+    }
+  };
+
+  const handleSaveBar = async () => {
+    setSavingBar(true);
+    try {
+      const columns = ['grupo', 'nombre', 'precio', 'stock'];
+      const rows = barProductsData
+        .filter(p => p.name.trim() !== '')
+        .map(p => [
+          p.group || 'General',
+          p.name,
+          (p.value || 0).toString(),
+          (p.stock ?? 10).toString()
+        ]);
+      
+      const testMode = googleSheetsSync.isTestMode();
+      const sheet = 'Bar';
+      
+      if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+        const fullSheetName = testMode ? `PRUEBA-${sheet}` : sheet;
+        await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+      } else {
+        await fetch('/api/pos-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
+        });
+      }
+      localStorage.setItem('gowash-bar-precios', JSON.stringify(barProductsData));
+      toast.success('Productos de Bar guardados correctamente en Google Sheets');
+    } catch (e: any) {
+      toast.error('Error al guardar productos de Bar', { description: e.message });
+    } finally {
+      setSavingBar(false);
+    }
+  };
+
+  const handleSaveCosmeticos = async () => {
+    setSavingCosmeticos(true);
+    try {
+      const columns = ['nombre', 'contenido', 'pvp', 'stock'];
+      const rows = cosmeticosData
+        .filter(c => c.nombre.trim() !== '')
+        .map(c => [
+          c.nombre,
+          c.contenido || '',
+          (c.pvp || 0).toString(),
+          (c.stock ?? 10).toString()
+        ]);
+      
+      const testMode = googleSheetsSync.isTestMode();
+      const sheet = 'Cosmetica';
+      
+      if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+        const fullSheetName = testMode ? `PRUEBA-${sheet}` : sheet;
+        await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+      } else {
+        await fetch('/api/pos-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
+        });
+      }
+      localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticosData));
+      toast.success('Productos de Cosmética guardados correctamente en Google Sheets');
+    } catch (e: any) {
+      toast.error('Error al guardar productos de Cosmética', { description: e.message });
+    } finally {
+      setSavingCosmeticos(false);
+    }
+  };
+
   const applyAdj = (type: 'lavado' | 'bar' | 'cosmeticos', mode: 'pct' | 'amt') => {
     if (type === 'lavado') {
       const val = parseFloat(mode === 'pct' ? adjLavadoPct : adjLavadoAmt);
@@ -399,7 +508,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-96 overflow-y-auto">
           {serviciosLavado.map((servicio, idx) => (
             <div key={idx} className="flex gap-3 items-end bg-white p-3 rounded-lg">
               <div className="flex-1">
@@ -427,6 +536,24 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
               <Button variant="destructive" onClick={() => setServiciosLavado(serviciosLavado.filter((_, i) => i !== idx))}>Eliminar</Button>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleSaveServicios}
+            disabled={savingServicios}
+            className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-md flex items-center gap-2 transition-all"
+          >
+            {savingServicios ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+              </>
+            ) : (
+              <>
+                <Database className="w-3.5 h-3.5" /> Guardar Servicios en la Nube
+              </>
+            )}
+          </Button>
         </div>
       </Card>
 
@@ -514,6 +641,24 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
             </div>
           ))}
         </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleSaveBar}
+            disabled={savingBar}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-md flex items-center gap-2 transition-all"
+          >
+            {savingBar ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+              </>
+            ) : (
+              <>
+                <Database className="w-3.5 h-3.5" /> Guardar Bar en la Nube
+              </>
+            )}
+          </Button>
+        </div>
       </Card>
 
       {/* Editor Cosmética/Accesorios */}
@@ -599,6 +744,24 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
               <Button variant="destructive" onClick={() => setCosmeticosData(cosmeticosData.filter((_, i) => i !== idx))}>Eliminar</Button>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleSaveCosmeticos}
+            disabled={savingCosmeticos}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-md flex items-center gap-2 transition-all"
+          >
+            {savingCosmeticos ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+              </>
+            ) : (
+              <>
+                <Database className="w-3.5 h-3.5" /> Guardar Cosmética en la Nube
+              </>
+            )}
+          </Button>
         </div>
       </Card>
       
@@ -1048,8 +1211,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setBarProductsData(DEFAULT_BAR_PRODUCTS.map(p => ({ ...p, stock: 10 })));
     }
 
+    if (savedLavado) setServiciosLavado(JSON.parse(savedLavado));
+    else setServiciosLavado(DEFAULT_SERVICIOS_LAVADO);
+
+    const testMode = googleSheetsSync.isTestMode();
+
     // Cargar productos de Bar y Cosméticos desde Google Sheets
-    obtenerProductosDelSheets()
+    obtenerProductosDelSheets(testMode)
       .then(({ bar, cosmetica }) => {
         if (bar && bar.length > 0) {
           const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
@@ -1067,9 +1235,44 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       .catch(err => {
         console.warn('[POS] No se pudieron cargar productos desde Sheets:', err);
       });
-    
-    if (savedLavado) setServiciosLavado(JSON.parse(savedLavado));
-    else setServiciosLavado(DEFAULT_SERVICIOS_LAVADO);
+
+    // Cargar Servicios desde Google Sheets
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+      // Electron
+      (window as any).electronAPI.googleSheets.getRows(testMode ? 'PRUEBA-Servicios' : 'Servicios')
+        .then((res: any) => {
+          if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const mapped = res.data.map((r: any) => ({
+              nombre: r.nombre || '',
+              precio: parseFloat(r.precio) || 0,
+              descripcion: r.descripcion || '',
+              tiempoEstimado: parseInt(r.tiempoEstimado) || 30
+            }));
+            setServiciosLavado(mapped);
+            localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
+            console.log(`[POS] ✅ Servicios Lavadero sincronizados desde Sheets: ${mapped.length}`);
+          }
+        })
+        .catch((err: any) => console.warn('[POS] Error cargando servicios de Sheets (Electron):', err));
+    } else {
+      // Web
+      fetch(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
+            const mapped = json.data.map((r: any) => ({
+              nombre: r.nombre || '',
+              precio: parseFloat(r.precio) || 0,
+              descripcion: r.descripcion || '',
+              tiempoEstimado: parseInt(r.tiempoEstimado) || 30
+            }));
+            setServiciosLavado(mapped);
+            localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
+            console.log(`[POS] ✅ Servicios Lavadero sincronizados desde Web Sheets: ${mapped.length}`);
+          }
+        })
+        .catch(err => console.warn('[POS] Error cargando servicios de Sheets (Web):', err));
+    }
 
     const savedExtrasLavado = localStorage.getItem('gowash-extras-lavado');
     if (savedExtrasLavado) setExtrasLavadoOpciones(JSON.parse(savedExtrasLavado));

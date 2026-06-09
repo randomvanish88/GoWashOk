@@ -154,12 +154,13 @@ export interface ProductoCosmetica {
   stock?: number;
 }
 
-export async function obtenerProductosDelSheets(): Promise<{ bar: ProductoBar[]; cosmetica: ProductoCosmetica[] }> {
+export async function obtenerProductosDelSheets(isTest: boolean = false): Promise<{ bar: ProductoBar[]; cosmetica: ProductoCosmetica[] }> {
   try {
     if (isElectron()) {
       await initElectron();
+      const testModePrefix = isTest ? 'PRUEBA-' : '';
       // Leer hoja Bar
-      const resBar = await (window as any).electronAPI.googleSheets.getRows('Bar');
+      const resBar = await (window as any).electronAPI.googleSheets.getRows(`${testModePrefix}Bar`);
       const bar: ProductoBar[] = (resBar?.success && Array.isArray(resBar.data))
         ? resBar.data
             .filter((r: any) => r.nombre || r.name)
@@ -172,7 +173,7 @@ export async function obtenerProductosDelSheets(): Promise<{ bar: ProductoBar[];
         : [];
 
       // Leer hoja Cosmetica
-      const resCos = await (window as any).electronAPI.googleSheets.getRows('Cosmetica');
+      const resCos = await (window as any).electronAPI.googleSheets.getRows(`${testModePrefix}Cosmetica`);
       const cosmetica: ProductoCosmetica[] = (resCos?.success && Array.isArray(resCos.data))
         ? resCos.data
             .filter((r: any) => r.nombre)
@@ -187,7 +188,7 @@ export async function obtenerProductosDelSheets(): Promise<{ bar: ProductoBar[];
       return { bar, cosmetica };
     } else {
       // Web/Vercel: usar API serverless
-      const resp = await fetch('/api/productos', { signal: AbortSignal.timeout(8000) });
+      const resp = await fetch(`/api/productos?test=${isTest}`, { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       return {

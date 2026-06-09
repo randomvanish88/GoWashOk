@@ -48,7 +48,9 @@ export default async function handler(req, res) {
 
   try {
     const token = await getAuth();
-    const d = await sheetsGet(token, `${SHEET_SERVICIOS}!A:D`);
+    const isTest = req.query?.test === 'true';
+    const sheetName = isTest ? `PRUEBA-${SHEET_SERVICIOS}` : SHEET_SERVICIOS;
+    const d = await sheetsGet(token, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return res.status(200).json({ ok: true, data: [] });
     

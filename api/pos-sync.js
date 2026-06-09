@@ -240,6 +240,30 @@ export default async function handler(req, res) {
             (v.price ?? v.Precio ?? 0).toString(),
             v.imageUrl || v.URL_Imagen || ''
           ];
+        } else if (sheet === 'Bar') {
+          columns = ['grupo', 'nombre', 'precio', 'stock'];
+          rowConverter = (item) => [
+            item.group || item.grupo || 'General',
+            item.name || item.nombre || '',
+            (item.value ?? item.precio ?? item.pvp ?? 0).toString(),
+            (item.stock ?? 10).toString()
+          ];
+        } else if (sheet === 'Cosmetica') {
+          columns = ['nombre', 'contenido', 'pvp', 'stock'];
+          rowConverter = (item) => [
+            item.nombre || '',
+            item.contenido || '',
+            (item.pvp ?? item.precio ?? item.value ?? 0).toString(),
+            (item.stock ?? 10).toString()
+          ];
+        } else if (sheet === 'Servicios') {
+          columns = ['nombre', 'precio', 'descripcion', 'tiempoEstimado'];
+          rowConverter = (item) => [
+            item.nombre || '',
+            (item.precio ?? item.value ?? 0).toString(),
+            item.descripcion || '',
+            (item.tiempoEstimado ?? 30).toString()
+          ];
         } else {
           return res.status(400).json({ error: `Sheet no soportado para upsert: ${sheet}` });
         }
@@ -260,8 +284,8 @@ export default async function handler(req, res) {
           const model = item.model || item.Modelo || '';
           idx = rows.findIndex((r, i) => i > 0 && r[0] === brand && r[1] === model);
         } else {
-          const idColName = sheet === 'PWA_Extras' ? 'nombre' : 'ID';
-          const id = item.id || item.ID || item.nombre;
+          const idColName = (sheet === 'PWA_Extras' || sheet === 'Bar' || sheet === 'Cosmetica' || sheet === 'Servicios') ? 'nombre' : 'ID';
+          const id = item.id || item.ID || item.nombre || item.name;
           if (!id) return res.status(400).json({ error: `Falta identificador (${idColName}) para upsert` });
           const idColIndex = columns.indexOf(idColName);
           idx = rows.findIndex((r, i) => i > 0 && r[idColIndex] === id);
@@ -293,6 +317,15 @@ export default async function handler(req, res) {
           idColName = 'nombre';
         } else if (sheet === 'PWA_Vehiculos') {
           columns = ['Marca', 'Modelo', 'Tamaño', 'Precio', 'URL_Imagen'];
+        } else if (sheet === 'Bar') {
+          columns = ['grupo', 'nombre', 'precio', 'stock'];
+          idColName = 'nombre';
+        } else if (sheet === 'Cosmetica') {
+          columns = ['nombre', 'contenido', 'pvp', 'stock'];
+          idColName = 'nombre';
+        } else if (sheet === 'Servicios') {
+          columns = ['nombre', 'precio', 'descripcion', 'tiempoEstimado'];
+          idColName = 'nombre';
         } else {
           return res.status(400).json({ error: `Sheet no soportado para delete: ${sheet}` });
         }
@@ -306,7 +339,7 @@ export default async function handler(req, res) {
           const model = item?.model || item?.Modelo || body.model || body.Modelo || '';
           idx = rows.findIndex((r, i) => i > 0 && r[0] === brand && r[1] === model);
         } else {
-          const id = body.id || (item && (item.id || item.ID || item.nombre));
+          const id = body.id || (item && (item.id || item.ID || item.nombre || item.name));
           if (!id) return res.status(400).json({ error: 'Falta ID o nombre para delete' });
           const idColIndex = columns.indexOf(idColName);
           idx = rows.findIndex((r, i) => i > 0 && r[idColIndex] === id);
@@ -319,6 +352,28 @@ export default async function handler(req, res) {
           return res.status(200).json({ ok: true, status: 'deleted' });
         }
         return res.status(200).json({ ok: true, status: 'not_found' });
+      }
+
+      if (action === 'batch') {
+        const { columns, rows } = body;
+        if (!columns || !Array.isArray(rows)) {
+          return res.status(400).json({ error: 'Faltan campos obligatorios: columns, rows' });
+        }
+
+        const allowedSheets = ['Ventas', 'Gastos', 'Cierres Caja', 'PWA_Extras', 'PWA_Vehiculos', 'Bar', 'Cosmetica', 'Servicios'];
+        if (!allowedSheets.includes(sheet)) {
+          return res.status(400).json({ error: `Sheet no soportado para batch: ${sheet}` });
+        }
+
+        // 1. Limpiar toda la hoja
+        const rangeAll = `${fullSheetName}!A:Z`;
+        await sheetsRequest(token, 'CLEAR', rangeAll);
+
+        // 2. Escribir headers + filas
+        const values = [columns, ...rows];
+        await sheetsRequest(token, 'PUT', `${fullSheetName}!A1`, values);
+
+        return res.status(200).json({ ok: true, status: 'batched' });
       }
 
       return res.status(400).json({ error: `Accion no soportada: ${action}` });

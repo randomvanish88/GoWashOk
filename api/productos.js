@@ -46,9 +46,9 @@ async function sheetsGet(token, range) {
  * Formato esperado de la hoja:
  *   A: grupo | B: nombre | C: precio | D: stock (opcional)
  */
-async function getBarProducts(token) {
+async function getBarProducts(token, sheetName = SHEET_BAR) {
   try {
-    const d = await sheetsGet(token, `${SHEET_BAR}!A:D`);
+    const d = await sheetsGet(token, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return [];
     // Saltear encabezado (fila 1)
@@ -71,9 +71,9 @@ async function getBarProducts(token) {
  * Formato esperado de la hoja:
  *   A: nombre | B: contenido | C: pvp | D: stock (opcional)
  */
-async function getCosmeticaProducts(token) {
+async function getCosmeticaProducts(token, sheetName = SHEET_COSMETICA) {
   try {
-    const d = await sheetsGet(token, `${SHEET_COSMETICA}!A:D`);
+    const d = await sheetsGet(token, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return [];
     // Saltear encabezado (fila 1)
@@ -104,21 +104,25 @@ export default async function handler(req, res) {
   try {
     const token = await getAuth();
     const sheet = req.query?.sheet || '';
+    const isTest = req.query?.test === 'true';
+
+    const sheetBarName = isTest ? `PRUEBA-${SHEET_BAR}` : SHEET_BAR;
+    const sheetCosmeticaName = isTest ? `PRUEBA-${SHEET_COSMETICA}` : SHEET_COSMETICA;
 
     if (sheet === 'bar') {
-      const bar = await getBarProducts(token);
+      const bar = await getBarProducts(token, sheetBarName);
       return res.status(200).json({ ok: true, data: bar });
     }
 
     if (sheet === 'cosmetica') {
-      const cosmetica = await getCosmeticaProducts(token);
+      const cosmetica = await getCosmeticaProducts(token, sheetCosmeticaName);
       return res.status(200).json({ ok: true, data: cosmetica });
     }
 
     // Sin filtro: retornar ambas
     const [bar, cosmetica] = await Promise.all([
-      getBarProducts(token),
-      getCosmeticaProducts(token),
+      getBarProducts(token, sheetBarName),
+      getCosmeticaProducts(token, sheetCosmeticaName),
     ]);
 
     return res.status(200).json({ ok: true, bar, cosmetica });
