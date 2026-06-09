@@ -1587,9 +1587,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   useEffect(() => {
     const todayStr = getTodayStr();
     const datesWithSalesOrExpenses = new Set<string>();
+    const thresholdDate = '2026-06-09';
 
     ventas.forEach(v => {
-      if (v.fecha && v.fecha < todayStr) {
+      if (v.fecha && v.fecha >= thresholdDate && v.fecha < todayStr) {
         datesWithSalesOrExpenses.add(v.fecha);
       }
     });
@@ -1599,7 +1600,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       try {
         const list = JSON.parse(savedGastos);
         list.forEach((g: any) => {
-          if (g.fecha && g.fecha < todayStr) {
+          if (g.fecha && g.fecha >= thresholdDate && g.fecha < todayStr) {
             datesWithSalesOrExpenses.add(g.fecha);
           }
         });
