@@ -166,10 +166,7 @@ class GoogleSheetsHandler {
       return { success: true };
     }
 
-    const rows = await sheet.getRows();
-    for (const row of rows) {
-      await row.delete();
-    }
+    await sheet.clearRows();
     return { success: true };
   }
 
@@ -183,34 +180,35 @@ class GoogleSheetsHandler {
     if (!data || data.length === 0) return { success: false, error: 'Sin datos para escribir' };
 
     let sheet = this.doc.sheetsByTitle[sheetTitle];
+    const headers = data[0];
     
     // Si la hoja no existe, la creamos con los headers
     if (!sheet) {
       console.log(`[GoogleSheets] La hoja "${sheetTitle}" no existe. Creándola...`);
-      const headers = data[0];
       sheet = await this.doc.addSheet({ title: sheetTitle, headerValues: headers });
     } else {
-      // Si existe, limpiamos primero
-      const rows = await sheet.getRows();
-      for (const row of rows) {
-        await row.delete();
-      }
+      // Si existe, limpiamos primero todas las filas
+      console.log(`[GoogleSheets] Limpiando filas en hoja: ${sheetTitle}`);
+      await sheet.clearRows();
       // Actualizamos los headers si es necesario
-      const headers = data[0];
       await sheet.setHeaderRow(headers);
     }
 
-    // Escribimos las filas de datos (saltamos la primera que son headers)
+    // Preparamos los objetos de fila
+    const rowObjs = [];
     for (let i = 1; i < data.length; i++) {
       const rowData = data[i];
-      const headers = data[0];
       const rowObj = {};
       
       headers.forEach((header, idx) => {
         rowObj[header] = rowData[idx] || '';
       });
+      rowObjs.push(rowObj);
+    }
 
-      await sheet.addRow(rowObj);
+    if (rowObjs.length > 0) {
+      console.log(`[GoogleSheets] Escribiendo ${rowObjs.length} filas en hoja: ${sheetTitle}`);
+      await sheet.addRows(rowObjs);
     }
 
     return { success: true, rowsWritten: data.length - 1 };

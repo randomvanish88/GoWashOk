@@ -347,13 +347,24 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
       
       if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
         const fullSheetName = testMode ? `PRUEBA-${sheet}` : sheet;
-        await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+        const res = await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+        if (!res || !res.success) {
+          throw new Error(res?.error || 'Error desconocido al escribir en Google Sheets via Electron');
+        }
       } else {
-        await fetch('/api/pos-sync', {
+        const resp = await fetch('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
         });
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.error || `Error HTTP ${resp.status}`);
+        }
+        const resJson = await resp.json();
+        if (resJson.ok !== true) {
+          throw new Error(resJson.error || 'Error desconocido al guardar en la nube');
+        }
       }
       localStorage.setItem('gowash-lavado-precios', JSON.stringify(serviciosLavado));
       toast.success('Servicios guardados correctamente en Google Sheets');
@@ -382,13 +393,24 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
       
       if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
         const fullSheetName = testMode ? `PRUEBA-${sheet}` : sheet;
-        await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+        const res = await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+        if (!res || !res.success) {
+          throw new Error(res?.error || 'Error desconocido al escribir en Google Sheets via Electron');
+        }
       } else {
-        await fetch('/api/pos-sync', {
+        const resp = await fetch('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
         });
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.error || `Error HTTP ${resp.status}`);
+        }
+        const resJson = await resp.json();
+        if (resJson.ok !== true) {
+          throw new Error(resJson.error || 'Error desconocido al guardar en la nube');
+        }
       }
       localStorage.setItem('gowash-bar-precios', JSON.stringify(barProductsData));
       toast.success('Productos de Bar guardados correctamente en Google Sheets');
@@ -417,13 +439,24 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
       
       if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
         const fullSheetName = testMode ? `PRUEBA-${sheet}` : sheet;
-        await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+        const res = await (window as any).electronAPI.googleSheets.writeSheet(fullSheetName, [columns, ...rows]);
+        if (!res || !res.success) {
+          throw new Error(res?.error || 'Error desconocido al escribir en Google Sheets via Electron');
+        }
       } else {
-        await fetch('/api/pos-sync', {
+        const resp = await fetch('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
         });
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.error || `Error HTTP ${resp.status}`);
+        }
+        const resJson = await resp.json();
+        if (resJson.ok !== true) {
+          throw new Error(resJson.error || 'Error desconocido al guardar en la nube');
+        }
       }
       localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticosData));
       toast.success('Productos de Cosmética guardados correctamente en Google Sheets');

@@ -78,7 +78,47 @@ async function sheetsRequest(token, method, range, body) {
   }
 
   const resp = await fetch(url, options);
-  return resp.json();
+  const data = await resp.json();
+  if (data && data.error) {
+    throw new Error(data.error.message || JSON.stringify(data.error));
+  }
+  return data;
+}
+
+async function ensureSheetExists(token, fullSheetName) {
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
+  const metadataResp = await fetch(base, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!metadataResp.ok) {
+    throw new Error(`Error al obtener metadatos: ${metadataResp.statusText}`);
+  }
+  const metadata = await metadataResp.json();
+  const sheetTitles = metadata.sheets?.map(s => s.properties?.title) || [];
+  
+  if (!sheetTitles.includes(fullSheetName)) {
+    console.log(`[pos-sync] Creando hoja faltante: ${fullSheetName}`);
+    const createResp = await fetch(`${base}:batchUpdate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        requests: [
+          {
+            addSheet: {
+              properties: { title: fullSheetName }
+            }
+          }
+        ]
+      })
+    });
+    if (!createResp.ok) {
+      const errJson = await createResp.json().catch(() => ({}));
+      throw new Error(`Error al crear hoja "${fullSheetName}": ${errJson.error?.message || createResp.statusText}`);
+    }
+  }
 }
 
 function getSheetName(baseName, isTest) {
@@ -216,6 +256,9 @@ export default async function handler(req, res) {
       }
 
       const fullSheetName = getSheetName(sheet, isTest);
+
+      // Asegurar que la hoja existe antes de escribir
+      await ensureSheetExists(token, fullSheetName);
 
       if (action === 'upsert') {
         let columns, rowConverter;
