@@ -16,6 +16,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis
 import QRCode from 'react-qr-code';
 import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
 import { InicioCajaPanel } from './InicioCajaPanel';
+import { Gasto } from './Gastos';
 import { EditableNumberInput } from './EditableNumberInput';
 import {
   PAGO_MIXTO,
@@ -676,6 +677,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [fechaCierre, setFechaCierre] = useState(() => new Date().toISOString().split('T')[0]);
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().split('T')[0]);
 
+  // Estados para control de pestañas y alerta de cierre pendiente
+  const [activeMainTab, setActiveMainTab] = useState('ventas');
+  const [activeCierreTab, setActiveCierreTab] = useState('cierre');
+  const [fechaPendienteCierre, setFechaPendienteCierre] = useState<string | null>(null);
+
   // Monto de inicio de caja del día del cierre (leído desde localStorage)
   const [inicioCajaVersion, setInicioCajaVersion] = useState(0);
   const montoCajaInicio = useMemo(() => {
@@ -828,7 +834,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     );
   };
 
-  const agregarExtraLavadoOpcion = () => {
+  const agregarExtraLavadoOpcion = async () => {
     const nombre = nuevoExtraNombre.trim();
     const precio = parseFloat(nuevoExtraPrecio) || 0;
     if (!nombre) {
@@ -839,9 +845,27 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       toast.warning('Ese extra ya existe.');
       return;
     }
-    setExtrasLavadoOpciones([...extrasLavadoOpciones, { nombre, precio }]);
+    const nuevaOpcion = { nombre, precio };
+    setExtrasLavadoOpciones([...extrasLavadoOpciones, nuevaOpcion]);
     setNuevoExtraNombre('');
     setNuevoExtraPrecio('');
+    
+    // Sync creation to Sheets
+    try {
+      const testMode = googleSheetsSync.isTestMode();
+      await fetch('/api/pos-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sheet: 'PWA_Extras',
+          action: 'upsert',
+          test: testMode,
+          data: nuevaOpcion
+        })
+      });
+    } catch (err) {
+      console.error('Error syncing new extra:', err);
+    }
     toast.success('Extra agregado.');
   };
 
@@ -962,7 +986,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   }, []);
 
   useEffect(() => {
-    if (extrasLavadoOpciones.length > 0) {
+    if (extrasLavadoOpciones && extrasLavadoOpciones.length >= 0) {
       localStorage.setItem('gowash-extras-lavado', JSON.stringify(extrasLavadoOpciones));
     }
   }, [extrasLavadoOpciones]);
@@ -1000,6 +1024,309 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   useEffect(() => {
     localStorage.setItem('gowash-ventas-anuladas', JSON.stringify(ventasAnuladas));
   }, [ventasAnuladas]);
+
+  // Helper to format date cleanly as YYYY-MM-DD
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatearFechaDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  const mergeSales = (locales: Venta[], remotas: any[]): { merged: Venta[], changed: boolean } => {
+    let changed = false;
+    const mapLocales = new Map(locales.map(v => [v.id, v]));
+
+    remotas.forEach(rem => {
+      const id = rem.ID || rem.id;
+      if (!id) return;
+
+      const parsed: Venta = {
+        id,
+        fecha: rem.Fecha || rem.fecha || '',
+        hora: rem.Hora || rem.hora || rem.Hora_Entrada || rem.horaEntrada || '',
+        horaEntrada: rem.Hora_Entrada || rem.horaEntrada || '',
+        horaSalida: rem.Hora_Salida || rem.horaSalida || '',
+        empleado: rem.Empleado || rem.empleado || '',
+        patente: rem.Patente || rem.patente || '',
+        cliente: rem.Cliente || rem.cliente || '',
+        numeroCliente: rem.Numero_Cliente || rem.numeroCliente || '',
+        lavado: parseFloat(rem.Lavado || rem.lavado) || 0,
+        bar: parseFloat(rem.Bar || rem.bar) || 0,
+        cosmeticos: parseFloat(rem.Cosmeticos || rem.cosmeticos) || 0,
+        descuento: parseFloat(rem.Descuento || rem.descuento) || 0,
+        total: parseFloat(rem.Total || rem.total) || 0,
+        metodoPago: rem.Metodo_Pago || rem.metodoPago || '',
+        estadia: rem.Estadia === 'Sí' || rem.estadia === 'true' || rem.estadia === true,
+        servicio: rem.Servicio || rem.servicio || '',
+        sincronizado: true
+      } as any;
+
+      if (!mapLocales.has(id)) {
+        mapLocales.set(id, parsed);
+        changed = true;
+      } else {
+        const local = mapLocales.get(id)!;
+        if (
+          local.total !== parsed.total ||
+          local.patente !== parsed.patente ||
+          local.metodoPago !== parsed.metodoPago ||
+          local.empleado !== parsed.empleado ||
+          local.cliente !== parsed.cliente ||
+          local.horaSalida !== parsed.horaSalida
+        ) {
+          mapLocales.set(id, { ...local, ...parsed, sincronizado: true });
+          changed = true;
+        }
+      }
+    });
+
+    return {
+      merged: Array.from(mapLocales.values()),
+      changed
+    };
+  };
+
+  const mergeGastos = (locales: Gasto[], remotas: any[]): { merged: Gasto[], changed: boolean } => {
+    let changed = false;
+    const mapLocales = new Map(locales.map(g => [g.id, g]));
+
+    remotas.forEach(rem => {
+      const id = rem.ID || rem.id;
+      if (!id) return;
+
+      const parsed: Gasto = {
+        id,
+        fecha: rem.Fecha || rem.fecha || '',
+        sector: rem.Sector || rem.sector || 'Lavadero',
+        categoria: rem.Categoria || rem.categoria || 'Otros',
+        proveedor: rem.Proveedor || rem.proveedor || 'Particular',
+        descripcion: rem.Descripcion || rem.Concepto || rem.descripcion || '',
+        monto: parseFloat(rem.Monto || rem.monto) || 0,
+        metodoPago: rem.Metodo_Pago || rem.metodoPago || 'Efectivo',
+        empleado: rem.Empleado || rem.empleado || '',
+        sincronizado: true
+      } as any;
+
+      if (!mapLocales.has(id)) {
+        mapLocales.set(id, parsed);
+        changed = true;
+      } else {
+        const local = mapLocales.get(id)!;
+        if (
+          local.monto !== parsed.monto ||
+          local.descripcion !== parsed.descripcion ||
+          local.metodoPago !== parsed.metodoPago ||
+          local.sector !== parsed.sector ||
+          local.categoria !== parsed.categoria ||
+          local.proveedor !== parsed.proveedor ||
+          local.empleado !== parsed.empleado
+        ) {
+          mapLocales.set(id, { ...local, ...parsed, sincronizado: true });
+          changed = true;
+        }
+      }
+    });
+
+    return {
+      merged: Array.from(mapLocales.values()),
+      changed
+    };
+  };
+
+  const sincronizarTodoPOS = async () => {
+    if (typeof window === 'undefined' || !navigator.onLine) return;
+
+    try {
+      const testMode = googleSheetsSync.isTestMode();
+
+      // 1. PUSH local sales to Sheets
+      const savedVentas = localStorage.getItem('gowash-ventas');
+      let ventasLocales: any[] = savedVentas ? JSON.parse(savedVentas) : [];
+      let huboCambiosPushVentas = false;
+
+      for (let i = 0; i < ventasLocales.length; i++) {
+        const v = ventasLocales[i];
+        if (v.sincronizado === false || !v.sincronizado) {
+          try {
+            await googleSheetsSync.syncVenta(v);
+            ventasLocales[i] = { ...v, sincronizado: true };
+            huboCambiosPushVentas = true;
+          } catch (e) {
+            console.error("Error sincronizando venta:", e);
+          }
+        }
+      }
+
+      if (huboCambiosPushVentas) {
+        setVentas(ventasLocales);
+        localStorage.setItem('gowash-ventas', JSON.stringify(ventasLocales));
+      }
+
+      // 2. PULL remote sales from Sheets & Merge
+      const respVentas = await fetch(`/api/pos-sync?sheet=Ventas&test=${testMode}`);
+      if (respVentas.ok) {
+        const json = await respVentas.json();
+        const remotas = json.data || [];
+
+        const closuresHistory = JSON.parse(localStorage.getItem('gowash-cierres-caja') || '[]');
+        const closedDates = new Set(closuresHistory.map((c: any) => c.fecha));
+
+        const actualVentas = JSON.parse(localStorage.getItem('gowash-ventas') || '[]');
+        const { merged, changed } = mergeSales(actualVentas, remotas);
+        const filteredMerged = merged.filter(v => !closedDates.has(v.fecha));
+        
+        if (changed || filteredMerged.length !== actualVentas.length) {
+          setVentas(filteredMerged);
+          localStorage.setItem('gowash-ventas', JSON.stringify(filteredMerged));
+        }
+      }
+
+      // 3. PUSH local expenses to Sheets
+      const savedGastos = localStorage.getItem('gowash-gastos');
+      let gastosLocales: any[] = savedGastos ? JSON.parse(savedGastos) : [];
+      let huboCambiosPushGastos = false;
+
+      for (let i = 0; i < gastosLocales.length; i++) {
+        const g = gastosLocales[i];
+        if (g.sincronizado === false || !g.sincronizado) {
+          try {
+            await googleSheetsSync.syncGasto(g);
+            gastosLocales[i] = { ...g, sincronizado: true };
+            huboCambiosPushGastos = true;
+          } catch (e) {
+            console.error("Error sincronizando gasto:", e);
+          }
+        }
+      }
+
+      if (huboCambiosPushGastos) {
+        localStorage.setItem('gowash-gastos', JSON.stringify(gastosLocales));
+        window.dispatchEvent(new Event('gastos-updated'));
+      }
+
+      // 4. PULL remote expenses from Sheets & Merge
+      const respGastos = await fetch(`/api/pos-sync?sheet=Gastos&test=${testMode}`);
+      if (respGastos.ok) {
+        const json = await respGastos.json();
+        const remotas = json.data || [];
+
+        const closuresHistory = JSON.parse(localStorage.getItem('gowash-cierres-caja') || '[]');
+        const closedDates = new Set(closuresHistory.map((c: any) => c.fecha));
+
+        const actualGastos = JSON.parse(localStorage.getItem('gowash-gastos') || '[]');
+        const { merged, changed } = mergeGastos(actualGastos, remotas);
+        const filteredMerged = merged.filter(g => !closedDates.has(g.fecha));
+
+        if (changed || filteredMerged.length !== actualGastos.length) {
+          localStorage.setItem('gowash-gastos', JSON.stringify(filteredMerged));
+          window.dispatchEvent(new Event('gastos-updated'));
+        }
+      }
+
+      // 5. PULL cash closures from Sheets & Merge
+      const respCierres = await fetch(`/api/pos-sync?sheet=Cierres%20Caja&test=${testMode}`);
+      if (respCierres.ok) {
+        const json = await respCierres.json();
+        const remotas = json.data || [];
+        
+        const actualCierres = JSON.parse(localStorage.getItem('gowash-cierres-caja') || '[]');
+        const mapCierres = new Map(actualCierres.map((c: any) => [c.id || c.ID, c]));
+        let changed = false;
+        
+        remotas.forEach((rem: any) => {
+          const id = rem.ID || rem.id;
+          if (!id) return;
+          if (!mapCierres.has(id)) {
+            mapCierres.set(id, {
+              id,
+              fecha: rem.Fecha || rem.fecha || '',
+              horaCierre: rem.Hora_Cierre || rem.horaCierre || '',
+              totalEfectivoSistema: parseFloat(rem.Total_Efectivo_Sistema) || 0,
+              totalGeneral: parseFloat(rem.Total_General) || 0,
+              cantidadVentas: parseInt(rem.Cantidad_Ventas) || 0,
+              empleado: rem.Empleado || rem.empleado || ''
+            });
+            changed = true;
+          }
+        });
+        
+        if (changed) {
+          const nuevosCierres = Array.from(mapCierres.values());
+          localStorage.setItem('gowash-cierres-caja', JSON.stringify(nuevosCierres));
+        }
+      }
+
+    } catch (error) {
+      console.warn('[SyncPOS] Error durante la sincronización:', error);
+    }
+  };
+
+  // Escanear cierres pendientes (Opción C)
+  useEffect(() => {
+    const todayStr = getTodayStr();
+    const datesWithSalesOrExpenses = new Set<string>();
+
+    ventas.forEach(v => {
+      if (v.fecha && v.fecha < todayStr) {
+        datesWithSalesOrExpenses.add(v.fecha);
+      }
+    });
+
+    const savedGastos = localStorage.getItem('gowash-gastos');
+    if (savedGastos) {
+      try {
+        const list = JSON.parse(savedGastos);
+        list.forEach((g: any) => {
+          if (g.fecha && g.fecha < todayStr) {
+            datesWithSalesOrExpenses.add(g.fecha);
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const historialCierresRaw = localStorage.getItem('gowash-cierres-caja');
+    const cerradoDates = new Set<string>();
+    if (historialCierresRaw) {
+      try {
+        const list = JSON.parse(historialCierresRaw);
+        list.forEach((c: any) => {
+          if (c.fecha) cerradoDates.add(c.fecha);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const pendientes = Array.from(datesWithSalesOrExpenses)
+      .filter(date => !cerradoDates.has(date) && !localStorage.getItem(`gowash-cierre-enviado-${date}`))
+      .sort(); // La más antigua primero
+
+    if (pendientes.length > 0) {
+      setFechaPendienteCierre(pendientes[0]);
+    } else {
+      setFechaPendienteCierre(null);
+    }
+  }, [ventas]);
+
+  // Polling de sincronización periódica en segundo plano
+  useEffect(() => {
+    sincronizarTodoPOS();
+    const interval = setInterval(sincronizarTodoPOS, 25000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Polling de vehículos móviles desde Google Sheets (cada 20 segundos)
   const cargarVehiculosMovil = async () => {
@@ -2576,10 +2903,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       return;
     }
 
-    if (typeof window === 'undefined' || !window.electronAPI?.googleSheets) {
-      toast.error('Cierre solo disponible en la app de escritorio (Electron).');
-      return;
-    }
+
 
     setCierreEnProceso(true);
     const cierreId = `cierre-${fechaCierre}-${Date.now()}`;
@@ -2755,7 +3079,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
 
   return (
-    <Tabs defaultValue="ventas" className="space-y-6 scroll-smooth">
+    <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="space-y-6 scroll-smooth">
       <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 bg-white shadow-lg sticky top-0 z-10">
         <TabsTrigger value="ventas">Ventas</TabsTrigger>
         <TabsTrigger value="consumo">Consumo Empleados</TabsTrigger>
@@ -2763,6 +3087,31 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       </TabsList>
 
       <TabsContent value="ventas" className="space-y-6">
+        {fechaPendienteCierre && (
+          <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-3 rounded-2xl shadow-lg border border-amber-400/30 flex items-center justify-between gap-4 animate-pulse">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <p className="text-sm font-bold">
+                Cierre de caja pendiente detectado: Tenés ventas/gastos del <span className="underline font-black">{formatearFechaDisplay(fechaPendienteCierre)}</span> sin cerrar.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="bg-white text-orange-700 hover:bg-orange-50 hover:text-orange-800 font-black px-4 py-1.5 rounded-xl text-xs uppercase tracking-wider shrink-0 shadow-sm transition-all"
+              onClick={() => {
+                setFechaCierre(fechaPendienteCierre);
+                setActiveMainTab('ventas');
+                setActiveCierreTab('cierre');
+                setTimeout(() => {
+                  document.getElementById('cierre-caja-panel-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+            >
+              Cerrar Caja Pendiente
+            </Button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 space-y-6">
             {/* Datos de Venta */}
@@ -3130,11 +3479,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               <CollapsibleContent className="pt-3 space-y-3">
                 <div className="space-y-2">
                   {extrasLavadoOpciones.map((extra) => (
-                    <label
+                    <div
                       key={extra.nombre}
-                      className="flex items-center justify-between gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
+                      className="flex items-center justify-between gap-2 bg-white p-2 px-3 rounded-lg border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
                     >
-                      <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 flex-1 cursor-pointer py-1">
                         <input
                           type="checkbox"
                           checked={extrasSeleccionados.includes(extra.nombre)}
@@ -3142,9 +3491,43 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                           className="w-4 h-4 text-indigo-600 rounded border-indigo-300"
                         />
                         <span className="text-xs font-bold text-indigo-900">{extra.nombre}</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-indigo-700">{formatMoney(extra.precio)}</span>
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (confirm(`¿Eliminar extra "${extra.nombre}"?`)) {
+                              const nuevasOpciones = extrasLavadoOpciones.filter(o => o.nombre !== extra.nombre);
+                              setExtrasLavadoOpciones(nuevasOpciones);
+                              // Sync deletion to Sheets
+                              try {
+                                const testMode = googleSheetsSync.isTestMode();
+                                await fetch('/api/pos-sync', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    sheet: 'PWA_Extras',
+                                    action: 'delete',
+                                    test: testMode,
+                                    id: extra.nombre
+                                  })
+                                });
+                              } catch (err) {
+                                console.error('Error syncing extra deletion:', err);
+                              }
+                              toast.success('Extra eliminado.');
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors shrink-0"
+                          title="Eliminar extra"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <span className="text-xs font-black text-indigo-700">{formatMoney(extra.precio)}</span>
-                    </label>
+                    </div>
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2 items-end p-2 bg-indigo-50/60 rounded-lg border border-indigo-100">
@@ -4335,7 +4718,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           </Card>
         )}
 
-        <Tabs defaultValue="cierre" className="mt-4">
+        <Tabs value={activeCierreTab} onValueChange={setActiveCierreTab} className="mt-4" id="cierre-caja-panel-section">
           <TabsList className="grid w-full grid-cols-2 bg-slate-100 border border-slate-200 rounded-xl h-10">
             <TabsTrigger
               value="inicio"
