@@ -10,11 +10,10 @@ import { Card } from './components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
-import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram, Settings, Upload } from 'lucide-react';
+import { LogOut, User, Sparkles, Award, Users, Coffee, MapPin, Instagram, Settings } from 'lucide-react';
 import { LicenseLock } from './components/LicenseLock';
 import { googleSheetsSync } from './lib/googleSheetsSync';
 import { GoogleSheetsSettings } from './components/GoogleSheetsSettings';
-import { MigrarDatos } from './components/MigrarDatos';
 import { UserPermissionsPanel } from './components/UserPermissionsPanel';
 import { VirtualAssistant } from './components/VirtualAssistant';
 import { restoreFromBackupIfNeeded, startAutoBackup } from './lib/dataBackup';
@@ -39,7 +38,7 @@ const DEFAULT_BRANDS = ['Toyota', 'Honda', 'Ford', 'Chevrolet', 'Nissan', 'Mazda
 
 // ─── Panel de Configuración con sub-solapas ────────────────────────────────────
 function ConfigPanel() {
-  const [activeConfigTab, setActiveConfigTab] = useState<'sheets' | 'users' | 'migrate'>('sheets');
+  const [activeConfigTab, setActiveConfigTab] = useState<'sheets' | 'users'>('sheets');
 
   return (
     <div className="space-y-4">
@@ -55,17 +54,6 @@ function ConfigPanel() {
         >
           <Settings className="w-3.5 h-3.5" />
           Google Sheets
-        </button>
-        <button
-          onClick={() => setActiveConfigTab('migrate')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
-            activeConfigTab === 'migrate'
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/40'
-          }`}
-        >
-          <Upload className="w-3.5 h-3.5" />
-          Migrar Datos
         </button>
         <button
           onClick={() => setActiveConfigTab('users')}
@@ -84,9 +72,6 @@ function ConfigPanel() {
       <div className="transition-all duration-300">
         {activeConfigTab === 'sheets' && (
           <GoogleSheetsSettings />
-        )}
-        {activeConfigTab === 'migrate' && (
-          <MigrarDatos />
         )}
         {activeConfigTab === 'users' && (
           <div className="rounded-2xl border border-slate-700/50 bg-slate-800/40 backdrop-blur-md p-6">
