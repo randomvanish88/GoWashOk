@@ -2913,10 +2913,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   }, [prices, searchVehiculo]);
 
   const productosBarPorGrupo = productosFiltradosBar.reduce((acc, p) => {
-    if (!acc[p.group]) {
-      acc[p.group] = [];
+    const groupName = (p.group || 'General').trim();
+    if (!acc[groupName]) {
+      acc[groupName] = [];
     }
-    acc[p.group].push(p);
+    acc[groupName].push(p);
     return acc;
   }, {} as Record<string, ProductoBar[]>);
 
@@ -3947,11 +3948,11 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               className="bg-white mb-2 h-7 text-xs"
             />
 
-            <div className="max-h-32 overflow-y-auto space-y-1.5 bg-white p-2 rounded border custom-scrollbar">
+            <div className="max-h-48 overflow-y-auto space-y-1.5 bg-white p-2 rounded border custom-scrollbar">
               {Object.entries(productosBarPorGrupo).map(([grupo, productos]) => (
                 <div key={grupo}>
                   <h4 className="font-bold text-[10px] text-amber-800 uppercase tracking-widest mb-1">{grupo}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1 mb-2">
+                  <div className="grid grid-cols-2 gap-1.5 mb-2">
                     {productos.map((p, idx) => (
                       <Button
                         key={`${p.name}-${idx}`}
@@ -4014,7 +4015,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               className="bg-white mb-2 h-7 text-xs"
             />
 
-            <div className="max-h-32 overflow-y-auto space-y-1 bg-white p-2 rounded border custom-scrollbar">
+            <div className="max-h-48 overflow-y-auto space-y-1 bg-white p-2 rounded border custom-scrollbar">
               {cosmeticosFiltrados.map((c, idx) => {
                 const displayName = c.contenido ? `${c.nombre} (${c.contenido})` : c.nombre;
                 return (
