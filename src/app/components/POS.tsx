@@ -945,6 +945,85 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const key = `gowash-inicio-monto-${fechaCierre}`;
     return parseFloat(localStorage.getItem(key) || '0') || 0;
   }, [fechaCierre, inicioCajaVersion]);
+
+  const [sincronizandoPrecios, setSincronizandoPrecios] = useState(false);
+
+  const actualizarPreciosYServicios = (silent: boolean = false) => {
+    if (sincronizandoPrecios) return;
+    setSincronizandoPrecios(true);
+    const testMode = googleSheetsSync.isTestMode();
+    if (!silent) toast.info('Sincronizando precios y servicios desde Google Sheets...');
+
+    const p1 = obtenerProductosDelSheets(testMode)
+      .then(({ bar, cosmetica }) => {
+        if (bar) {
+          const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
+          setBarProductsData(barConStock);
+          localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
+        }
+        if (cosmetica) {
+          const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
+          setCosmeticosData(cosmeticaConStock);
+          localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
+        }
+      });
+
+    let p2;
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+      p2 = (window as any).electronAPI.googleSheets.getRows(testMode ? 'PRUEBA-Servicios' : 'Servicios')
+        .then((res: any) => {
+          if (res.success && Array.isArray(res.data)) {
+            const mapped = res.data.map((r: any) => ({
+              nombre: r.nombre || '',
+              precio: parseCleanPrice(r.precio),
+              descripcion: r.descripcion || '',
+              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
+            }));
+            setServiciosLavado(mapped);
+            localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
+          }
+        });
+    } else {
+      p2 = fetch(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.ok && Array.isArray(json.data)) {
+            const mapped = json.data.map((r: any) => ({
+              nombre: r.nombre || '',
+              precio: parseCleanPrice(r.precio),
+              descripcion: r.descripcion || '',
+              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
+            }));
+            setServiciosLavado(mapped);
+            localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
+          }
+        });
+    }
+
+    Promise.all([p1, p2])
+      .then(() => {
+        if (!silent) toast.success('Precios y servicios actualizados.');
+      })
+      .catch((err) => {
+        console.error('Error al actualizar precios:', err);
+        if (!silent) toast.error('Error al sincronizar precios desde Google Sheets.');
+      })
+      .finally(() => {
+        setSincronizandoPrecios(false);
+      });
+  };
+
+  // Escuchar F5 o Ctrl+R para sincronización rápida
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey && e.key.toLowerCase() === 'r') || e.key === 'F5') {
+        e.preventDefault();
+        actualizarPreciosYServicios(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sincronizandoPrecios]);
   const [denominacionesBilletes, setDenominacionesBilletes] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem('gowash-denominaciones-billetes');
@@ -1334,65 +1413,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     if (savedLavado) setServiciosLavado(JSON.parse(savedLavado));
     else setServiciosLavado(DEFAULT_SERVICIOS_LAVADO);
 
-    const testMode = googleSheetsSync.isTestMode();
-
-    // Cargar productos de Bar y Cosméticos desde Google Sheets
-    obtenerProductosDelSheets(testMode)
-      .then(({ bar, cosmetica }) => {
-        if (bar) {
-          const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
-          setBarProductsData(barConStock);
-          localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
-          console.log(`[POS] ✅ Productos Bar sincronizados desde Sheets: ${bar.length}`);
-        }
-        if (cosmetica) {
-          const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
-          setCosmeticosData(cosmeticaConStock);
-          localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
-          console.log(`[POS] ✅ Productos Cosméticos sincronizados desde Sheets: ${cosmetica.length}`);
-        }
-      })
-      .catch(err => {
-        console.warn('[POS] No se pudieron cargar productos desde Sheets:', err);
-      });
-
-    // Cargar Servicios desde Google Sheets
-    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
-      // Electron
-      (window as any).electronAPI.googleSheets.getRows(testMode ? 'PRUEBA-Servicios' : 'Servicios')
-        .then((res: any) => {
-          if (res.success && Array.isArray(res.data)) {
-            const mapped = res.data.map((r: any) => ({
-              nombre: r.nombre || '',
-              precio: parseCleanPrice(r.precio),
-              descripcion: r.descripcion || '',
-              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
-            }));
-            setServiciosLavado(mapped);
-            localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
-            console.log(`[POS] ✅ Servicios Lavadero sincronizados desde Sheets: ${mapped.length}`);
-          }
-        })
-        .catch((err: any) => console.warn('[POS] Error cargando servicios de Sheets (Electron):', err));
-    } else {
-      // Web
-      fetch(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
-        .then(res => res.json())
-        .then(json => {
-          if (json.ok && Array.isArray(json.data)) {
-            const mapped = json.data.map((r: any) => ({
-              nombre: r.nombre || '',
-              precio: parseCleanPrice(r.precio),
-              descripcion: r.descripcion || '',
-              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
-            }));
-            setServiciosLavado(mapped);
-            localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
-            console.log(`[POS] ✅ Servicios Lavadero sincronizados desde Web Sheets: ${mapped.length}`);
-          }
-        })
-        .catch(err => console.warn('[POS] Error cargando servicios de Sheets (Web):', err));
-    }
+    // Cargar productos y servicios desde Google Sheets al iniciar
+    actualizarPreciosYServicios(true);
 
     const savedExtrasLavado = localStorage.getItem('gowash-extras-lavado');
     if (savedExtrasLavado) setExtrasLavadoOpciones(JSON.parse(savedExtrasLavado));
@@ -3515,11 +3537,23 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   return (
     <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="space-y-6 scroll-smooth">
-      <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 bg-white shadow-lg sticky top-0 z-10">
-        <TabsTrigger value="ventas">Ventas</TabsTrigger>
-        <TabsTrigger value="consumo">Consumo Empleados</TabsTrigger>
-        <TabsTrigger value="precios">Ajuste de Precios y Stock</TabsTrigger>
-      </TabsList>
+      <div className="flex items-center justify-between max-w-4xl mx-auto gap-4 px-4 sticky top-0 z-10 bg-slate-50/80 backdrop-blur-md py-2 rounded-xl">
+        <TabsList className="grid grid-cols-3 bg-white shadow-lg w-full max-w-2xl h-10 border border-slate-100 rounded-xl">
+          <TabsTrigger value="ventas" className="rounded-lg text-xs font-bold data-[state=active]:bg-teal-600 data-[state=active]:text-white">Ventas</TabsTrigger>
+          <TabsTrigger value="consumo" className="rounded-lg text-xs font-bold data-[state=active]:bg-teal-600 data-[state=active]:text-white">Consumo Empleados</TabsTrigger>
+          <TabsTrigger value="precios" className="rounded-lg text-xs font-bold data-[state=active]:bg-teal-600 data-[state=active]:text-white">Ajuste de Precios y Stock</TabsTrigger>
+        </TabsList>
+        <Button
+          onClick={() => actualizarPreciosYServicios(false)}
+          disabled={sincronizandoPrecios}
+          variant="outline"
+          className="bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold px-3 py-2 rounded-xl shadow flex items-center gap-1.5 h-10 shrink-0"
+          title="Actualizar Precios desde Google Sheets (Ctrl+R / F5)"
+        >
+          <RefreshCw className={`w-4 h-4 ${sincronizandoPrecios ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline text-xs">Actualizar Precios</span>
+        </Button>
+      </div>
 
       <TabsContent value="ventas" className="space-y-6">
         {fechaPendienteCierre && (
