@@ -1024,6 +1024,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sincronizandoPrecios]);
+
+  // Polling automático de precios y servicios cada 3 minutos de forma silenciosa
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      actualizarPreciosYServicios(true);
+    }, 180000); // 180,000 ms = 3 minutos
+    return () => clearInterval(intervalId);
+  }, []);
   const [denominacionesBilletes, setDenominacionesBilletes] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem('gowash-denominaciones-billetes');
@@ -3548,10 +3556,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           disabled={sincronizandoPrecios}
           variant="outline"
           className="bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-bold px-3 py-2 rounded-xl shadow flex items-center gap-1.5 h-10 shrink-0"
-          title="Actualizar Precios desde Google Sheets (Ctrl+R / F5)"
+          title="Actualizar Precios y Catálogos desde Google Sheets (Ctrl+R / F5)"
         >
           <RefreshCw className={`w-4 h-4 ${sincronizandoPrecios ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline text-xs">Actualizar Precios</span>
+          <span className="hidden sm:inline text-xs">Actualizar</span>
         </Button>
       </div>
 
