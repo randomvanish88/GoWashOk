@@ -40,6 +40,54 @@ declare global {
   }
 }
 
+function parseCleanPrice(val: any, defaultVal: number = 0): number {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  
+  str = str.replace(/[^\d.,-]/g, '');
+  
+  const tienePunto = str.includes('.');
+  const tieneComma = str.includes(',');
+  
+  if (tienePunto && tieneComma) {
+    const ultimoPunto = str.lastIndexOf('.');
+    const ultimoComma = str.lastIndexOf(',');
+    if (ultimoPunto > ultimoComma) {
+      str = str.replace(/,/g, '');
+    } else {
+      str = str.replace(/\./g, '').replace(/,/g, '.');
+    }
+  } else if (tieneComma) {
+    const matchDecimal = str.match(/,(\d{2})$/);
+    if (matchDecimal) {
+      str = str.replace(/,/g, '.');
+    } else {
+      if (/,(\d{3})$/.test(str)) {
+        str = str.replace(/,/g, '');
+      } else {
+        str = str.replace(/,/g, '.');
+      }
+    }
+  } else if (tienePunto) {
+    if (/\.(\d{3})$/.test(str)) {
+      str = str.replace(/\./g, '');
+    }
+  }
+  
+  const num = parseFloat(str);
+  return isNaN(num) ? defaultVal : num;
+}
+
+function parseCleanStock(val: any, defaultVal: number = 10): number {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  str = str.replace(/[^\d-]/g, '');
+  const num = parseInt(str, 10);
+  return isNaN(num) ? defaultVal : num;
+}
+
 // Interfaces
 interface Venta {
   id: string;
@@ -1316,9 +1364,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           if (res.success && Array.isArray(res.data)) {
             const mapped = res.data.map((r: any) => ({
               nombre: r.nombre || '',
-              precio: parseFloat(r.precio) || 0,
+              precio: parseCleanPrice(r.precio),
               descripcion: r.descripcion || '',
-              tiempoEstimado: parseInt(r.tiempoEstimado) || 30
+              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
             }));
             setServiciosLavado(mapped);
             localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
@@ -1334,9 +1382,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           if (json.ok && Array.isArray(json.data)) {
             const mapped = json.data.map((r: any) => ({
               nombre: r.nombre || '',
-              precio: parseFloat(r.precio) || 0,
+              precio: parseCleanPrice(r.precio),
               descripcion: r.descripcion || '',
-              tiempoEstimado: parseInt(r.tiempoEstimado) || 30
+              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
             }));
             setServiciosLavado(mapped);
             localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));

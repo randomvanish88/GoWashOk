@@ -14,6 +14,54 @@ const HEADERS = [
   'productosBar','productosCosmeticos','descuento','fotos','tiempoEstimado'
 ];
 
+function parseCleanPrice(val: any, defaultVal: number = 0): number {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  
+  str = str.replace(/[^\d.,-]/g, '');
+  
+  const tienePunto = str.includes('.');
+  const tieneComma = str.includes(',');
+  
+  if (tienePunto && tieneComma) {
+    const ultimoPunto = str.lastIndexOf('.');
+    const ultimoComma = str.lastIndexOf(',');
+    if (ultimoPunto > ultimoComma) {
+      str = str.replace(/,/g, '');
+    } else {
+      str = str.replace(/\./g, '').replace(/,/g, '.');
+    }
+  } else if (tieneComma) {
+    const matchDecimal = str.match(/,(\d{2})$/);
+    if (matchDecimal) {
+      str = str.replace(/,/g, '.');
+    } else {
+      if (/,(\d{3})$/.test(str)) {
+        str = str.replace(/,/g, '');
+      } else {
+        str = str.replace(/,/g, '.');
+      }
+    }
+  } else if (tienePunto) {
+    if (/\.(\d{3})$/.test(str)) {
+      str = str.replace(/\./g, '');
+    }
+  }
+  
+  const num = parseFloat(str);
+  return isNaN(num) ? defaultVal : num;
+}
+
+function parseCleanStock(val: any, defaultVal: number = 10): number {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  str = str.replace(/[^\d-]/g, '');
+  const num = parseInt(str, 10);
+  return isNaN(num) ? defaultVal : num;
+}
+
 function isElectron(): boolean {
   return typeof window !== 'undefined' &&
     'electronAPI' in window &&
@@ -173,8 +221,8 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
             .map((r: any) => ({
               group: r.grupo ?? r.Grupo ?? r.group ?? r.Group ?? 'General',
               name: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
-              value: parseFloat(r.precio ?? r.Precio ?? r.value ?? r.Value ?? r.pvp ?? r.Pvp ?? r.PVP) || 0,
-              stock: parseInt(r.stock ?? r.Stock) || 10,
+              value: parseCleanPrice(r.precio ?? r.Precio ?? r.value ?? r.Value ?? r.pvp ?? r.Pvp ?? r.PVP),
+              stock: parseCleanStock(r.stock ?? r.Stock, 10),
             }))
         : [];
 
@@ -192,8 +240,8 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
             .map((r: any) => ({
               nombre: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
               contenido: r.contenido ?? r.Contenido ?? '',
-              pvp: parseFloat(r.pvp ?? r.Pvp ?? r.PVP ?? r.precio ?? r.Precio ?? r.value ?? r.Value) || 0,
-              stock: parseInt(r.stock ?? r.Stock) || 10,
+              pvp: parseCleanPrice(r.pvp ?? r.Pvp ?? r.PVP ?? r.precio ?? r.Precio ?? r.value ?? r.Value),
+              stock: parseCleanStock(r.stock ?? r.Stock, 10),
             }))
         : [];
 

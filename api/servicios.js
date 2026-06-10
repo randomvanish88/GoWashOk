@@ -17,6 +17,54 @@ const CREDENTIALS = {
   token_uri: 'https://oauth2.googleapis.com/token',
 };
 
+function parseCleanPrice(val, defaultVal = 0) {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  
+  str = str.replace(/[^\d.,-]/g, '');
+  
+  const tienePunto = str.includes('.');
+  const tieneComma = str.includes(',');
+  
+  if (tienePunto && tieneComma) {
+    const ultimoPunto = str.lastIndexOf('.');
+    const ultimoComma = str.lastIndexOf(',');
+    if (ultimoPunto > ultimoComma) {
+      str = str.replace(/,/g, '');
+    } else {
+      str = str.replace(/\./g, '').replace(/,/g, '.');
+    }
+  } else if (tieneComma) {
+    const matchDecimal = str.match(/,(\d{2})$/);
+    if (matchDecimal) {
+      str = str.replace(/,/g, '.');
+    } else {
+      if (/,(\d{3})$/.test(str)) {
+        str = str.replace(/,/g, '');
+      } else {
+        str = str.replace(/,/g, '.');
+      }
+    }
+  } else if (tienePunto) {
+    if (/\.(\d{3})$/.test(str)) {
+      str = str.replace(/\./g, '');
+    }
+  }
+  
+  const num = parseFloat(str);
+  return isNaN(num) ? defaultVal : num;
+}
+
+function parseCleanStock(val, defaultVal = 10) {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  str = str.replace(/[^\d-]/g, '');
+  const num = parseInt(str, 10);
+  return isNaN(num) ? defaultVal : num;
+}
+
 async function getAuth() {
   const { JWT } = await import('google-auth-library');
   const auth = new JWT({
@@ -67,9 +115,9 @@ export default async function handler(req, res) {
       .filter(r => r[0]) // debe tener nombre
       .map(r => ({
         nombre: r[0] || '',
-        precio: parseFloat(r[1]) || 0,
+        precio: parseCleanPrice(r[1]),
         descripcion: r[2] || '',
-        tiempoEstimado: parseInt(r[3]) || 30,
+        tiempoEstimado: parseCleanStock(r[3], 30),
       }));
 
     return res.status(200).json({ ok: true, data });

@@ -22,6 +22,55 @@ const CREDENTIALS = {
   token_uri: 'https://oauth2.googleapis.com/token',
 };
 
+function parseCleanPrice(val, defaultVal = 0) {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  
+  // Limpiar caracteres no numéricos excepto signos decimales y miles (dígitos, puntos, comas, menos)
+  str = str.replace(/[^\d.,-]/g, '');
+  
+  const tienePunto = str.includes('.');
+  const tieneComma = str.includes(',');
+  
+  if (tienePunto && tieneComma) {
+    const ultimoPunto = str.lastIndexOf('.');
+    const ultimoComma = str.lastIndexOf(',');
+    if (ultimoPunto > ultimoComma) {
+      str = str.replace(/,/g, '');
+    } else {
+      str = str.replace(/\./g, '').replace(/,/g, '.');
+    }
+  } else if (tieneComma) {
+    const matchDecimal = str.match(/,(\d{2})$/);
+    if (matchDecimal) {
+      str = str.replace(/,/g, '.');
+    } else {
+      if (/,(\d{3})$/.test(str)) {
+        str = str.replace(/,/g, '');
+      } else {
+        str = str.replace(/,/g, '.');
+      }
+    }
+  } else if (tienePunto) {
+    if (/\.(\d{3})$/.test(str)) {
+      str = str.replace(/\./g, '');
+    }
+  }
+  
+  const num = parseFloat(str);
+  return isNaN(num) ? defaultVal : num;
+}
+
+function parseCleanStock(val, defaultVal = 10) {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  str = str.replace(/[^\d-]/g, '');
+  const num = parseInt(str, 10);
+  return isNaN(num) ? defaultVal : num;
+}
+
 async function getAuth() {
   const { JWT } = await import('google-auth-library');
   const auth = new JWT({
@@ -70,8 +119,8 @@ async function getBarProducts(token, sheetName = SHEET_BAR) {
     .map(r => ({
       group: (groupIdx !== -1 && r[groupIdx]) || 'General',
       name: (nameIdx !== -1 && r[nameIdx]) || '',
-      value: parseFloat(valueIdx !== -1 && r[valueIdx]) || 0,
-      stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
+      value: parseCleanPrice(valueIdx !== -1 && r[valueIdx]),
+      stock: parseCleanStock(stockIdx !== -1 && r[stockIdx], 10),
     }));
 }
 
@@ -96,8 +145,8 @@ async function getCosmeticaProducts(token, sheetName = SHEET_COSMETICA) {
     .map(r => ({
       nombre: (nombreIdx !== -1 && r[nombreIdx]) || '',
       contenido: (contenidoIdx !== -1 && r[contenidoIdx]) || '',
-      pvp: parseFloat(pvpIdx !== -1 && r[pvpIdx]) || 0,
-      stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
+      pvp: parseCleanPrice(pvpIdx !== -1 && r[pvpIdx]),
+      stock: parseCleanStock(stockIdx !== -1 && r[stockIdx], 10),
     }));
 }
 

@@ -5,6 +5,45 @@
 
 import { Price } from '../app/App';
 
+function parseCleanPrice(val: any, defaultVal: number = 0): number {
+  if (val === undefined || val === null) return defaultVal;
+  let str = val.toString().trim();
+  if (!str) return defaultVal;
+  
+  str = str.replace(/[^\d.,-]/g, '');
+  
+  const tienePunto = str.includes('.');
+  const tieneComma = str.includes(',');
+  
+  if (tienePunto && tieneComma) {
+    const ultimoPunto = str.lastIndexOf('.');
+    const ultimoComma = str.lastIndexOf(',');
+    if (ultimoPunto > ultimoComma) {
+      str = str.replace(/,/g, '');
+    } else {
+      str = str.replace(/\./g, '').replace(/,/g, '.');
+    }
+  } else if (tieneComma) {
+    const matchDecimal = str.match(/,(\d{2})$/);
+    if (matchDecimal) {
+      str = str.replace(/,/g, '.');
+    } else {
+      if (/,(\d{3})$/.test(str)) {
+        str = str.replace(/,/g, '');
+      } else {
+        str = str.replace(/,/g, '.');
+      }
+    }
+  } else if (tienePunto) {
+    if (/\.(\d{3})$/.test(str)) {
+      str = str.replace(/\./g, '');
+    }
+  }
+  
+  const num = parseFloat(str);
+  return isNaN(num) ? defaultVal : num;
+}
+
 /**
  * Transforma datos de Google Sheets en objetos Price
  */
@@ -30,7 +69,7 @@ export function transformarDatosDeSheets(datosSheet: any[]): Price[] {
       row.Tamaño?.trim() || row['Tamaño']?.trim() || row.tamaño?.trim() || 'Mediano';
       
     const precio = 
-      parseInt(row.Precio || row['Precio'] || row.precio || '0') || 0;
+      parseCleanPrice(row.Precio || row['Precio'] || row.precio || '0');
       
     let urlImagen = 
       row.URL_Imagen?.trim() || row['URL_Imagen']?.trim() || row.url_imagen?.trim() || '';
