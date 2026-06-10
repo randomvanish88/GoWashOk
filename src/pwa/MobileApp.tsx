@@ -344,11 +344,11 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setCargandoProductos(true);
     obtenerProductosDelSheets()
       .then(({ bar, cosmetica }) => {
-        if (bar.length > 0) {
+        if (bar) {
           setProductosBar(bar.map(p => ({ group: p.group, nombre: p.name, precio: p.value })));
           console.log(`[MobileApp] Productos Bar cargados: ${bar.length}`);
         }
-        if (cosmetica.length > 0) {
+        if (cosmetica) {
           setProductosCosmeticos(cosmetica.map(p => ({ nombre: p.nombre, contenido: p.contenido, precio: p.pvp })));
           console.log(`[MobileApp] Productos Cosméticos cargados: ${cosmetica.length}`);
         }

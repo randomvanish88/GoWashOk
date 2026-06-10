@@ -38,7 +38,15 @@ async function sheetsGet(token, range) {
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  return resp.json();
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Google Sheets API error: ${resp.status} - ${errText}`);
+  }
+  const data = await resp.json();
+  if (data.error) {
+    throw new Error(`Google Sheets API error: ${data.error.message}`);
+  }
+  return data;
 }
 
 /**
@@ -47,29 +55,24 @@ async function sheetsGet(token, range) {
  *   A: grupo | B: nombre | C: precio | D: stock (opcional)
  */
 async function getBarProducts(token, sheetName = SHEET_BAR) {
-  try {
-    const d = await sheetsGet(token, `${sheetName}!A:D`);
-    const rows = d.values || [];
-    if (rows.length <= 1) return [];
+  const d = await sheetsGet(token, `${sheetName}!A:D`);
+  const rows = d.values || [];
+  if (rows.length <= 1) return [];
 
-    const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
-    const groupIdx = headers.indexOf('grupo');
-    const nameIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
-    const valueIdx = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : (headers.indexOf('value') !== -1 ? headers.indexOf('value') : headers.indexOf('pvp'));
-    const stockIdx = headers.indexOf('stock');
+  const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
+  const groupIdx = headers.indexOf('grupo');
+  const nameIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+  const valueIdx = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : (headers.indexOf('value') !== -1 ? headers.indexOf('value') : headers.indexOf('pvp'));
+  const stockIdx = headers.indexOf('stock');
 
-    return rows.slice(1)
-      .filter(r => nameIdx !== -1 && r[nameIdx]) // debe tener nombre
-      .map(r => ({
-        group: (groupIdx !== -1 && r[groupIdx]) || 'General',
-        name: (nameIdx !== -1 && r[nameIdx]) || '',
-        value: parseFloat(valueIdx !== -1 && r[valueIdx]) || 0,
-        stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
-      }));
-  } catch (e) {
-    console.error('[api/productos] Error leyendo Bar:', e.message);
-    return [];
-  }
+  return rows.slice(1)
+    .filter(r => nameIdx !== -1 && r[nameIdx]) // debe tener nombre
+    .map(r => ({
+      group: (groupIdx !== -1 && r[groupIdx]) || 'General',
+      name: (nameIdx !== -1 && r[nameIdx]) || '',
+      value: parseFloat(valueIdx !== -1 && r[valueIdx]) || 0,
+      stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
+    }));
 }
 
 /**
@@ -78,29 +81,24 @@ async function getBarProducts(token, sheetName = SHEET_BAR) {
  *   A: nombre | B: contenido | C: pvp | D: stock (opcional)
  */
 async function getCosmeticaProducts(token, sheetName = SHEET_COSMETICA) {
-  try {
-    const d = await sheetsGet(token, `${sheetName}!A:D`);
-    const rows = d.values || [];
-    if (rows.length <= 1) return [];
+  const d = await sheetsGet(token, `${sheetName}!A:D`);
+  const rows = d.values || [];
+  if (rows.length <= 1) return [];
 
-    const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
-    const nombreIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
-    const contenidoIdx = headers.indexOf('contenido');
-    const pvpIdx = headers.indexOf('pvp') !== -1 ? headers.indexOf('pvp') : (headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('value'));
-    const stockIdx = headers.indexOf('stock');
+  const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
+  const nombreIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+  const contenidoIdx = headers.indexOf('contenido');
+  const pvpIdx = headers.indexOf('pvp') !== -1 ? headers.indexOf('pvp') : (headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('value'));
+  const stockIdx = headers.indexOf('stock');
 
-    return rows.slice(1)
-      .filter(r => nombreIdx !== -1 && r[nombreIdx]) // debe tener nombre
-      .map(r => ({
-        nombre: (nombreIdx !== -1 && r[nombreIdx]) || '',
-        contenido: (contenidoIdx !== -1 && r[contenidoIdx]) || '',
-        pvp: parseFloat(pvpIdx !== -1 && r[pvpIdx]) || 0,
-        stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
-      }));
-  } catch (e) {
-    console.error('[api/productos] Error leyendo Cosmetica:', e.message);
-    return [];
-  }
+  return rows.slice(1)
+    .filter(r => nombreIdx !== -1 && r[nombreIdx]) // debe tener nombre
+    .map(r => ({
+      nombre: (nombreIdx !== -1 && r[nombreIdx]) || '',
+      contenido: (contenidoIdx !== -1 && r[contenidoIdx]) || '',
+      pvp: parseFloat(pvpIdx !== -1 && r[pvpIdx]) || 0,
+      stock: (stockIdx !== -1 && r[stockIdx] !== undefined) ? parseInt(r[stockIdx]) : 10,
+    }));
 }
 
 export default async function handler(req, res) {

@@ -1291,13 +1291,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     // Cargar productos de Bar y Cosméticos desde Google Sheets
     obtenerProductosDelSheets(testMode)
       .then(({ bar, cosmetica }) => {
-        if (bar && bar.length > 0) {
+        if (bar) {
           const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
           setBarProductsData(barConStock);
           localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
           console.log(`[POS] ✅ Productos Bar sincronizados desde Sheets: ${bar.length}`);
         }
-        if (cosmetica && cosmetica.length > 0) {
+        if (cosmetica) {
           const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
           setCosmeticosData(cosmeticaConStock);
           localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
@@ -1313,7 +1313,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       // Electron
       (window as any).electronAPI.googleSheets.getRows(testMode ? 'PRUEBA-Servicios' : 'Servicios')
         .then((res: any) => {
-          if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          if (res.success && Array.isArray(res.data)) {
             const mapped = res.data.map((r: any) => ({
               nombre: r.nombre || '',
               precio: parseFloat(r.precio) || 0,
@@ -1331,7 +1331,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       fetch(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
         .then(res => res.json())
         .then(json => {
-          if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
+          if (json.ok && Array.isArray(json.data)) {
             const mapped = json.data.map((r: any) => ({
               nombre: r.nombre || '',
               precio: parseFloat(r.precio) || 0,

@@ -33,7 +33,15 @@ async function sheetsGet(token, range) {
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  return resp.json();
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Google Sheets API error: ${resp.status} - ${errText}`);
+  }
+  const data = await resp.json();
+  if (data.error) {
+    throw new Error(`Google Sheets API error: ${data.error.message}`);
+  }
+  return data;
 }
 
 export default async function handler(req, res) {

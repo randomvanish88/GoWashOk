@@ -126,13 +126,13 @@ export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
       const result = await (window as any).electronAPI.googleSheets.getRows('PWA_Vehiculos');
       console.log('[VehiculosSync] 📊 getRows respuesta - success:', result?.success, '| filas:', result?.data?.length);
 
-      if (result?.success && Array.isArray(result.data) && result.data.length > 0) {
+      if (result?.success && Array.isArray(result.data)) {
         const vehiculos = transformarDatosDeSheets(result.data);
         guardarVehiculos(vehiculos);
         console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos sincronizados desde Google Sheets`);
         return vehiculos;
       } else {
-        console.warn('[VehiculosSync] ⚠️ Google Sheets no devolvió datos:', result);
+        console.warn('[VehiculosSync] ⚠️ Google Sheets no devolvió datos exitosamente:', result);
         return obtenerVehiculos();
       }
 
@@ -142,14 +142,14 @@ export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
       const response = await fetch('/api/vehiculos');
       if (response.ok) {
         const data = await response.json();
-        if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+        if (data.data && Array.isArray(data.data)) {
           const vehiculos = transformarDatosDeSheets(data.data);
           guardarVehiculos(vehiculos);
           console.log(`[VehiculosSync] ✅ ${vehiculos.length} vehículos cargados desde API`);
           return vehiculos;
         }
       }
-      console.warn('[VehiculosSync] ⚠️ No se pudo cargar el JSON, usando cache');
+      console.warn('[VehiculosSync] ⚠️ No se pudo cargar el JSON o la respuesta fue incorrecta, usando cache');
       return obtenerVehiculos();
     }
 

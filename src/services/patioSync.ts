@@ -161,6 +161,9 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
       const testModePrefix = isTest ? 'PRUEBA-' : '';
       // Leer hoja Bar
       const resBar = await (window as any).electronAPI.googleSheets.getRows(`${testModePrefix}Bar`);
+      if (resBar && resBar.success === false) {
+        throw new Error(resBar.error || 'Error leyendo hoja Bar');
+      }
       const bar: ProductoBar[] = (resBar?.success && Array.isArray(resBar.data))
         ? resBar.data
             .filter((r: any) => {
@@ -177,6 +180,9 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
 
       // Leer hoja Cosmetica
       const resCos = await (window as any).electronAPI.googleSheets.getRows(`${testModePrefix}Cosmetica`);
+      if (resCos && resCos.success === false) {
+        throw new Error(resCos.error || 'Error leyendo hoja Cosmetica');
+      }
       const cosmetica: ProductoCosmetica[] = (resCos?.success && Array.isArray(resCos.data))
         ? resCos.data
             .filter((r: any) => {
@@ -195,7 +201,14 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
     } else {
       // Web/Vercel: usar API serverless
       const resp = await fetch(`/api/productos?test=${isTest}`, { signal: AbortSignal.timeout(8000) });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) {
+        let errMsg = `HTTP ${resp.status}`;
+        try {
+          const errData = await resp.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
       const data = await resp.json();
       return {
         bar: data.bar || [],
@@ -204,7 +217,7 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
     }
   } catch (error: any) {
     console.warn('[PatioSync] Error obteniendo productos:', error.message);
-    return { bar: [], cosmetica: [] };
+    throw error;
   }
 }
 
