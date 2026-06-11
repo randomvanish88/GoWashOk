@@ -1013,9 +1013,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       .then(() => {
         if (!silent) toast.success('Precios y servicios actualizados.');
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('Error al actualizar precios:', err);
-        if (!silent) toast.error('Error al sincronizar precios desde Google Sheets.');
+        if (!silent) toast.error(`Error al sincronizar precios desde Google Sheets: ${err.message || err}`);
       })
       .finally(() => {
         setSincronizandoPrecios(false);
