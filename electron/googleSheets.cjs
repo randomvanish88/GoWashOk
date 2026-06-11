@@ -32,10 +32,38 @@ class GoogleSheetsHandler {
     ];
   }
 
+  /**
+   * Obtiene una hoja por su título de forma insensible a mayúsculas/minúsculas
+   * @param {string} sheetTitle Nombre de la pestaña
+   */
+  getSheet(sheetTitle) {
+    if (!sheetTitle || !this.doc) return null;
+    // 1. Intentar coincidencia exacta
+    let sheet = this.doc.sheetsByTitle[sheetTitle];
+    if (sheet) return sheet;
+    // 2. Intentar coincidencia case-insensitive
+    const lowerTitle = sheetTitle.toLowerCase();
+    sheet = this.doc.sheetsByIndex.find(s => s.title.toLowerCase() === lowerTitle);
+    return sheet || null;
+  }
+
   async ensureDoc() {
     if (!this.doc) {
-      console.log('[GoogleSheets] Documento no inicializado. Inicializando automáticamente...');
-      await this.initialize('1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8');
+      console.log('[GoogleSheets] Documento no inicializado. Inicializando automáticamente desde config...');
+      let spreadsheetId = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+      try {
+        const configPath = path.join(app.getPath('userData'), 'gowash-config.json');
+        if (fs.existsSync(configPath)) {
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          if (config && config.spreadsheetId) {
+            spreadsheetId = config.spreadsheetId;
+            console.log(`[GoogleSheets] ID de spreadsheet recuperado de config: ${spreadsheetId}`);
+          }
+        }
+      } catch (e) {
+        console.warn('[GoogleSheets] No se pudo leer gowash-config.json:', e.message);
+      }
+      await this.initialize(spreadsheetId);
     }
   }
 
@@ -72,6 +100,15 @@ class GoogleSheetsHandler {
     this.doc = new GoogleSpreadsheet(spreadsheetId, serviceAccountAuth);
     await this.doc.loadInfo();
     console.log(`[GoogleSheets] Conectado a: ${this.doc.title}`);
+
+    // Guardar ID en la configuración para auto-inicializaciones futuras
+    try {
+      const configPath = path.join(app.getPath('userData'), 'gowash-config.json');
+      fs.writeFileSync(configPath, JSON.stringify({ spreadsheetId }), 'utf8');
+      console.log('[GoogleSheets] ID de spreadsheet guardado en gowash-config.json');
+    } catch (e) {
+      console.warn('[GoogleSheets] Error al guardar config:', e.message);
+    }
   }
 
   /**
@@ -82,7 +119,7 @@ class GoogleSheetsHandler {
   async addRow(sheetTitle, data) {
     await this.ensureDoc();
     
-    let sheet = this.doc.sheetsByTitle[sheetTitle];
+    let sheet = this.getSheet(sheetTitle);
     
     // Si la hoja no existe, intentamos crearla o usamos la primera
     if (!sheet) {
@@ -100,7 +137,7 @@ class GoogleSheetsHandler {
    */
   async getRows(sheetTitle) {
     await this.ensureDoc();
-    const sheet = this.doc.sheetsByTitle[sheetTitle];
+    const sheet = this.getSheet(sheetTitle);
     if (!sheet) return [];
     
     const rows = await sheet.getRows();
@@ -112,15 +149,24 @@ class GoogleSheetsHandler {
    */
   async deleteRow(sheetTitle, searchColumn, searchValue, extraOptions = null) {
     await this.ensureDoc();
-    const sheet = this.doc.sheetsByTitle[sheetTitle];
+    const sheet = this.getSheet(sheetTitle);
     if (!sheet) return { success: false, error: 'Hoja no encontrada' };
 
     const rows = await sheet.getRows();
     let rowToDelete;
-    if (sheetTitle === 'PWA_Vehiculos' && extraOptions && extraOptions.model) {
-      rowToDelete = rows.find(row => row.get('Marca') == searchValue && row.get('Modelo') == extraOptions.model);
+    if (sheet.title.toLowerCase() === 'pwa_vehiculos' && extraOptions && extraOptions.model) {
+      rowToDelete = rows.find(row => {
+        const keys = Object.keys(row.toObject());
+        const brandKey = keys.find(k => k.toLowerCase() === 'marca') || 'Marca';
+        const modelKey = keys.find(k => k.toLowerCase() === 'modelo') || 'Modelo';
+        return row.get(brandKey) == searchValue && row.get(modelKey) == extraOptions.model;
+      });
     } else {
-      rowToDelete = rows.find(row => row.get(searchColumn) == searchValue);
+      rowToDelete = rows.find(row => {
+        const keys = Object.keys(row.toObject());
+        const colKey = keys.find(k => k.toLowerCase() === searchColumn.toLowerCase()) || searchColumn;
+        return row.get(colKey) == searchValue;
+      });
     }
 
     if (rowToDelete) {
@@ -135,23 +181,37 @@ class GoogleSheetsHandler {
    */
   async updateRow(sheetTitle, searchColumn, searchValue, newData) {
     await this.ensureDoc();
-    const sheet = this.doc.sheetsByTitle[sheetTitle];
+    const sheet = this.getSheet(sheetTitle);
     if (!sheet) return { success: false, error: 'Hoja no encontrada' };
 
     const rows = await sheet.getRows();
     let rowToUpdate;
-    if (sheetTitle === 'PWA_Vehiculos') {
-      const brand = newData.Marca || newData.brand || searchValue;
-      const model = newData.Modelo || newData.model;
-      rowToUpdate = rows.find(row => row.get('Marca') == brand && row.get('Modelo') == model);
+    if (sheet.title.toLowerCase() === 'pwa_vehiculos') {
+      const keys = Object.keys(newData);
+      const brandKey = keys.find(k => k.toLowerCase() === 'marca') || 'Marca';
+      const modelKey = keys.find(k => k.toLowerCase() === 'modelo') || 'Modelo';
+      const brand = newData[brandKey] || newData.brand || searchValue;
+      const model = newData[modelKey] || newData.model;
+      
+      rowToUpdate = rows.find(row => {
+        const rKeys = Object.keys(row.toObject());
+        const rBrandKey = rKeys.find(k => k.toLowerCase() === 'marca') || 'Marca';
+        const rModelKey = rKeys.find(k => k.toLowerCase() === 'modelo') || 'Modelo';
+        return row.get(rBrandKey) == brand && row.get(rModelKey) == model;
+      });
     } else {
-      rowToUpdate = rows.find(row => row.get(searchColumn) == searchValue);
+      rowToUpdate = rows.find(row => {
+        const rKeys = Object.keys(row.toObject());
+        const rColKey = rKeys.find(k => k.toLowerCase() === searchColumn.toLowerCase()) || searchColumn;
+        return row.get(rColKey) == searchValue;
+      });
     }
 
     if (rowToUpdate) {
-      // Actualizamos los valores usando rowToUpdate.set() para compatibilidad con google-spreadsheet v5
+      const existingKeys = Object.keys(rowToUpdate.toObject());
       for (const [key, value] of Object.entries(newData)) {
-        rowToUpdate.set(key, value);
+        const matchingKey = existingKeys.find(k => k.toLowerCase() === key.toLowerCase()) || key;
+        rowToUpdate.set(matchingKey, value);
       }
       await rowToUpdate.save();
       return { success: true };
@@ -166,7 +226,7 @@ class GoogleSheetsHandler {
   async clearSheet(sheetTitle) {
     await this.ensureDoc();
     
-    let sheet = this.doc.sheetsByTitle[sheetTitle];
+    let sheet = this.getSheet(sheetTitle);
     if (!sheet) {
       console.log(`[GoogleSheets] La hoja "${sheetTitle}" no existe. Creándola...`);
       sheet = await this.doc.addSheet({ title: sheetTitle });
@@ -186,7 +246,7 @@ class GoogleSheetsHandler {
     await this.ensureDoc();
     if (!data || data.length === 0) return { success: false, error: 'Sin datos para escribir' };
 
-    let sheet = this.doc.sheetsByTitle[sheetTitle];
+    let sheet = this.getSheet(sheetTitle);
     const headers = data[0];
     
     // Si la hoja no existe, la creamos con los headers

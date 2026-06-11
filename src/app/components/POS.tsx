@@ -981,11 +981,18 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
             }));
             setServiciosLavado(mapped);
             localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
+          } else {
+            throw new Error(res.error || 'Error al obtener filas de Servicios en Electron');
           }
         });
     } else {
       p2 = fetch(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            return res.json().then(err => { throw new Error(err.error || `HTTP ${res.status}`); });
+          }
+          return res.json();
+        })
         .then(json => {
           if (json.ok && Array.isArray(json.data)) {
             const mapped = json.data.map((r: any) => ({
@@ -996,6 +1003,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
             }));
             setServiciosLavado(mapped);
             localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
+          } else {
+            throw new Error(json.error || 'Error al obtener filas de Servicios');
           }
         });
     }
