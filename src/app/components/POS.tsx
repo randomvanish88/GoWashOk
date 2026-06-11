@@ -974,10 +974,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         .then((res: any) => {
           if (res.success && Array.isArray(res.data)) {
             const mapped = res.data.map((r: any) => ({
-              nombre: r.nombre || '',
-              precio: parseCleanPrice(r.precio),
-              descripcion: r.descripcion || '',
-              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
+              nombre: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
+              precio: parseCleanPrice(r.precio ?? r.Precio ?? r.price ?? r.Price ?? r.value ?? r.Value),
+              descripcion: r.descripcion ?? r.Descripcion ?? r.descripción ?? r.Descripción ?? r.description ?? r.Description ?? '',
+              tiempoEstimado: parseCleanStock(r.tiempoEstimado ?? r.TiempoEstimado ?? r.tiempo_estimado ?? r['tiempo estimado'] ?? r['Tiempo Estimado'] ?? r.tiempoEstimadoMinutos, 30)
             }));
             setServiciosLavado(mapped);
             localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
@@ -989,10 +989,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         .then(json => {
           if (json.ok && Array.isArray(json.data)) {
             const mapped = json.data.map((r: any) => ({
-              nombre: r.nombre || '',
-              precio: parseCleanPrice(r.precio),
-              descripcion: r.descripcion || '',
-              tiempoEstimado: parseCleanStock(r.tiempoEstimado, 30)
+              nombre: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
+              precio: parseCleanPrice(r.precio ?? r.Precio ?? r.price ?? r.Price ?? r.value ?? r.Value),
+              descripcion: r.descripcion ?? r.Descripcion ?? r.descripción ?? r.Descripción ?? r.description ?? r.Description ?? '',
+              tiempoEstimado: parseCleanStock(r.tiempoEstimado ?? r.TiempoEstimado ?? r.tiempo_estimado ?? r['tiempo estimado'] ?? r['Tiempo Estimado'] ?? r.tiempoEstimadoMinutos, 30)
             }));
             setServiciosLavado(mapped);
             localStorage.setItem('gowash-lavado-precios', JSON.stringify(mapped));
