@@ -228,7 +228,7 @@ function App() {
     // Sincronizar con Google Sheets
     const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets;
     if (isElectron) {
-      const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+      const SPREADSHEET_ID = googleSheetsSync.getSpreadsheetId();
       (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
         return (window as any).electronAPI.googleSheets.addRow('PWA_Vehiculos', {
           Marca: newPrice.brand,
@@ -273,7 +273,7 @@ function App() {
     // Sincronizar actualización con Google Sheets
     const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets;
     if (isElectron) {
-      const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+      const SPREADSHEET_ID = googleSheetsSync.getSpreadsheetId();
       (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
         return (window as any).electronAPI.googleSheets.updateRow(
           'PWA_Vehiculos', 'Marca', updatedPrice.brand,
@@ -321,7 +321,7 @@ function App() {
     if (priceToDelete) {
       const isElectron = typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets;
       if (isElectron) {
-        const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+        const SPREADSHEET_ID = googleSheetsSync.getSpreadsheetId();
         (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID).then(() => {
           return (window as any).electronAPI.googleSheets.deleteRow(
             'PWA_Vehiculos', 'Marca', priceToDelete.brand, { model: priceToDelete.model }

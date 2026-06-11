@@ -71,7 +71,8 @@ function isElectron(): boolean {
 /** Inicializa Google Sheets en Electron si no está inicializado */
 async function initElectron(): Promise<boolean> {
   try {
-    const result = await (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID);
+    const activeId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+    const result = await (window as any).electronAPI.googleSheets.init(activeId);
     return result?.success === true;
   } catch {
     return false;

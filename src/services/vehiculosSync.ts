@@ -154,7 +154,8 @@ export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
       console.log('[VehiculosSync] 🔌 Electron: inicializando Google Sheets...');
       
       // Paso 1: inicializar conexión con el spreadsheet ID
-      const initResult = await (window as any).electronAPI.googleSheets.init(SPREADSHEET_ID);
+      const activeId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+      const initResult = await (window as any).electronAPI.googleSheets.init(activeId);
       if (!initResult?.success) {
         console.error('[VehiculosSync] ❌ No se pudo inicializar Google Sheets:', initResult?.error);
         return obtenerVehiculos();
