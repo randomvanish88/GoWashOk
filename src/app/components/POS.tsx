@@ -3926,30 +3926,45 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               )}
             </div>
 
-            {/* Selector de Servicio */}
-            <div className="pt-2 border-t border-indigo-200/50">
-              <Label htmlFor="servicioSelect" className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Tipo de Lavado / Servicio</Label>
-              <Select
-                value={servicio}
-                onValueChange={(val) => {
-                  setServicio(val);
-                  const servicioEncontrado = serviciosLavado.find(s => s.nombre === val);
-                  if (servicioEncontrado) {
-                    setPrecioServicioLavado(servicioEncontrado.precio);
-                  }
-                }}
-              >
-                <SelectTrigger className="bg-white h-8 text-xs font-bold border-indigo-200">
-                  <SelectValue placeholder="Seleccionar servicio..." />
-                </SelectTrigger>
-                <SelectContent>
+            {/* Selector de Servicio y Precio */}
+            <div className="pt-2 border-t border-indigo-200/50 grid grid-cols-3 gap-2">
+              <div className="col-span-2">
+                <Label htmlFor="servicioSelect" className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Tipo de Lavado / Servicio</Label>
+                <Input
+                  id="servicioSelect"
+                  list="servicios-options"
+                  value={servicio}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setServicio(val);
+                    const servicioEncontrado = serviciosLavado.find(s => s.nombre.toLowerCase() === val.toLowerCase());
+                    if (servicioEncontrado) {
+                      setPrecioServicioLavado(servicioEncontrado.precio);
+                    }
+                  }}
+                  placeholder="Escribe o selecciona..."
+                  className="bg-white h-8 text-xs font-bold border-indigo-200"
+                />
+                <datalist id="servicios-options">
                   {serviciosLavado.filter(s => s.nombre && s.nombre.trim() !== '').map((s, idx) => (
-                    <SelectItem key={idx} value={s.nombre} className="text-xs font-bold text-slate-800">
-                      {s.nombre} <span className="font-black text-indigo-700 ml-1">({formatMoney(s.precio)})</span>
-                    </SelectItem>
+                    <option key={idx} value={s.nombre}>
+                      {formatMoney(s.precio)}
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
+                </datalist>
+              </div>
+              <div>
+                <Label htmlFor="precioServicioInput" className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Precio</Label>
+                <Input
+                  id="precioServicioInput"
+                  type="number"
+                  min="0"
+                  value={precioServicioLavado || ''}
+                  onChange={(e) => setPrecioServicioLavado(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  className="bg-white h-8 text-xs font-bold border-indigo-200"
+                />
+              </div>
             </div>
 
             <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen} className="pt-2 border-t border-indigo-200/50">
