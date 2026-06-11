@@ -231,7 +231,17 @@ export default async function handler(req, res) {
       if (!sheet) return res.status(400).json({ error: 'Falta parametro sheet' });
 
       const fullSheetName = getSheetName(sheet, isTest);
-      const d = await sheetsRequest(token, 'GET', `${fullSheetName}!A:Z`);
+      let d;
+      try {
+        d = await sheetsRequest(token, 'GET', `${fullSheetName}!A:Z`);
+      } catch (err) {
+        // Si la hoja no existe o no se puede leer, retornamos array vacío
+        if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('404') || err.message.includes('400')) {
+          console.log(`[pos-sync] Hoja no encontrada: ${fullSheetName}. Retornando lista vacía.`);
+          return res.status(200).json({ ok: true, data: [] });
+        }
+        throw err;
+      }
       const rows = d.values || [];
       if (rows.length <= 1) {
         return res.status(200).json({ ok: true, data: [] });

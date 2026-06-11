@@ -104,24 +104,32 @@ async function sheetsGet(token, range) {
  *   A: grupo | B: nombre | C: precio | D: stock (opcional)
  */
 async function getBarProducts(token, sheetName = SHEET_BAR) {
-  const d = await sheetsGet(token, `${sheetName}!A:D`);
-  const rows = d.values || [];
-  if (rows.length <= 1) return [];
+  try {
+    const d = await sheetsGet(token, `${sheetName}!A:D`);
+    const rows = d.values || [];
+    if (rows.length <= 1) return [];
 
-  const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
-  const groupIdx = headers.indexOf('grupo');
-  const nameIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
-  const valueIdx = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : (headers.indexOf('value') !== -1 ? headers.indexOf('value') : headers.indexOf('pvp'));
-  const stockIdx = headers.indexOf('stock');
+    const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
+    const groupIdx = headers.indexOf('grupo');
+    const nameIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+    const valueIdx = headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : (headers.indexOf('value') !== -1 ? headers.indexOf('value') : headers.indexOf('pvp'));
+    const stockIdx = headers.indexOf('stock');
 
-  return rows.slice(1)
-    .filter(r => nameIdx !== -1 && r[nameIdx]) // debe tener nombre
-    .map(r => ({
-      group: (groupIdx !== -1 && r[groupIdx]) || 'General',
-      name: (nameIdx !== -1 && r[nameIdx]) || '',
-      value: parseCleanPrice(valueIdx !== -1 && r[valueIdx]),
-      stock: parseCleanStock(stockIdx !== -1 && r[stockIdx], 10),
-    }));
+    return rows.slice(1)
+      .filter(r => nameIdx !== -1 && r[nameIdx]) // debe tener nombre
+      .map(r => ({
+        group: (groupIdx !== -1 && r[groupIdx]) || 'General',
+        name: (nameIdx !== -1 && r[nameIdx]) || '',
+        value: parseCleanPrice(valueIdx !== -1 && r[valueIdx]),
+        stock: parseCleanStock(stockIdx !== -1 && r[stockIdx], 10),
+      }));
+  } catch (err) {
+    if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('400') || err.message.includes('404')) {
+      console.log(`[api/productos] Hoja Bar no encontrada: ${sheetName}. Retornando lista vacía.`);
+      return [];
+    }
+    throw err;
+  }
 }
 
 /**
@@ -130,24 +138,32 @@ async function getBarProducts(token, sheetName = SHEET_BAR) {
  *   A: nombre | B: contenido | C: pvp | D: stock (opcional)
  */
 async function getCosmeticaProducts(token, sheetName = SHEET_COSMETICA) {
-  const d = await sheetsGet(token, `${sheetName}!A:D`);
-  const rows = d.values || [];
-  if (rows.length <= 1) return [];
+  try {
+    const d = await sheetsGet(token, `${sheetName}!A:D`);
+    const rows = d.values || [];
+    if (rows.length <= 1) return [];
 
-  const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
-  const nombreIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
-  const contenidoIdx = headers.indexOf('contenido');
-  const pvpIdx = headers.indexOf('pvp') !== -1 ? headers.indexOf('pvp') : (headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('value'));
-  const stockIdx = headers.indexOf('stock');
+    const headers = (rows[0] || []).map(h => h.toString().toLowerCase().trim());
+    const nombreIdx = headers.indexOf('nombre') !== -1 ? headers.indexOf('nombre') : headers.indexOf('name');
+    const contenidoIdx = headers.indexOf('contenido');
+    const pvpIdx = headers.indexOf('pvp') !== -1 ? headers.indexOf('pvp') : (headers.indexOf('precio') !== -1 ? headers.indexOf('precio') : headers.indexOf('value'));
+    const stockIdx = headers.indexOf('stock');
 
-  return rows.slice(1)
-    .filter(r => nombreIdx !== -1 && r[nombreIdx]) // debe tener nombre
-    .map(r => ({
-      nombre: (nombreIdx !== -1 && r[nombreIdx]) || '',
-      contenido: (contenidoIdx !== -1 && r[contenidoIdx]) || '',
-      pvp: parseCleanPrice(pvpIdx !== -1 && r[pvpIdx]),
-      stock: parseCleanStock(stockIdx !== -1 && r[stockIdx], 10),
-    }));
+    return rows.slice(1)
+      .filter(r => nombreIdx !== -1 && r[nombreIdx]) // debe tener nombre
+      .map(r => ({
+        nombre: (nombreIdx !== -1 && r[nombreIdx]) || '',
+        contenido: (contenidoIdx !== -1 && r[contenidoIdx]) || '',
+        pvp: parseCleanPrice(pvpIdx !== -1 && r[pvpIdx]),
+        stock: parseCleanStock(stockIdx !== -1 && r[stockIdx], 10),
+      }));
+  } catch (err) {
+    if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('400') || err.message.includes('404')) {
+      console.log(`[api/productos] Hoja Cosmetica no encontrada: ${sheetName}. Retornando lista vacía.`);
+      return [];
+    }
+    throw err;
+  }
 }
 
 export default async function handler(req, res) {

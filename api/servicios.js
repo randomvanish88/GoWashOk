@@ -106,7 +106,18 @@ export default async function handler(req, res) {
     const token = await getAuth();
     const isTest = req.query?.test === 'true';
     const sheetName = isTest ? `PRUEBA-${SHEET_SERVICIOS}` : SHEET_SERVICIOS;
-    const d = await sheetsGet(token, `${sheetName}!A:D`);
+    
+    let d;
+    try {
+      d = await sheetsGet(token, `${sheetName}!A:D`);
+    } catch (err) {
+      if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('400') || err.message.includes('404')) {
+        console.log(`[api/servicios] Hoja Servicios no encontrada: ${sheetName}. Retornando lista vacía.`);
+        return res.status(200).json({ ok: true, data: [] });
+      }
+      throw err;
+    }
+
     const rows = d.values || [];
     if (rows.length <= 1) return res.status(200).json({ ok: true, data: [] });
     
