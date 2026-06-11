@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles, Smartphone, Monitor, RefreshCw, Printer, CalendarDays, Calculator, ShoppingBag, ShieldAlert, Zap, LayoutDashboard, QrCode, Database, Loader2 } from 'lucide-react';
+import { Car, Check, Trash2, ShieldCheck, RotateCcw, ChevronDown, Plus, Pencil, Sparkles, Smartphone, Monitor, RefreshCw, Printer, CalendarDays, Calculator, ShoppingBag, ShieldAlert, Zap, LayoutDashboard, QrCode, Database, Loader2, CheckCircle2 } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts';
 import QRCode from 'react-qr-code';
 import { CierreCajaPanel, DEFAULT_DENOMINACIONES_ARS } from './CierreCajaPanel';
@@ -4605,20 +4605,171 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         <Check className="w-3 h-3 mr-1" /> Cobrar
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>¿Cerrar Venta?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Se registrará la venta y el vehículo quedará pendiente de retiro. Podrás marcarlo como retirado desde el panel de vehículos en lavadero.
+                    <AlertDialogContent className="max-w-md bg-white border border-slate-100 shadow-2xl rounded-2xl p-5">
+                      <AlertDialogHeader className="space-y-1">
+                        <AlertDialogTitle className="text-lg font-black text-slate-800 flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-600 animate-bounce" /> Confirmar Cobro de Venta
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs text-slate-500">
+                          Revisa el detalle del consumo antes de registrar la venta.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
+
+                      {/* Resumen de Consumo */}
+                      <div className="my-4 bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                        {/* Identificación */}
+                        {(patente || cliente || vehiculoSeleccionado) && (
+                          <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
+                            <div>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase block">Vehículo / Identificación</span>
+                              <span className="text-xs font-bold text-slate-800">
+                                {patente ? `Patente: ${patente.toUpperCase()}` : ''}
+                                {patente && cliente ? ' — ' : ''}
+                                {cliente ? `Cliente: ${cliente}` : ''}
+                                {(patente || cliente) && vehiculoSeleccionado ? ' | ' : ''}
+                                {vehiculoSeleccionado ? `${vehiculoSeleccionado.brand} ${vehiculoSeleccionado.model}` : ''}
+                              </span>
+                            </div>
+                            {empleado && (
+                              <div className="text-right">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase block">Atendido por</span>
+                                <span className="text-xs font-bold text-slate-700">{empleado}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Lavadero */}
+                        {(servicio || getExtrasSeleccionadosItems().length > 0 || (estadia && precioEstadia)) && (
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-black text-indigo-700 uppercase tracking-wider block">Servicios de Lavadero</span>
+                            <div className="pl-2 space-y-1">
+                              {servicio && (
+                                <div className="flex justify-between text-xs text-slate-700">
+                                  <span>🚿 {servicio}</span>
+                                  <span className="font-bold">{formatMoney(precioServicioLavado)}</span>
+                                </div>
+                              )}
+                              {getExtrasSeleccionadosItems().map((extra, idx) => (
+                                <div key={idx} className="flex justify-between text-xs text-slate-600 pl-2">
+                                  <span className="flex items-center gap-1"><Plus className="w-2.5 h-2.5 text-indigo-400" /> Extra: {extra.nombre}</span>
+                                  <span className="font-medium">{formatMoney(extra.precio)}</span>
+                                </div>
+                              ))}
+                              {estadia && precioEstadia > 0 && (
+                                <div className="flex justify-between text-xs text-slate-600 pl-2">
+                                  <span className="flex items-center gap-1"><Plus className="w-2.5 h-2.5 text-indigo-400" /> Estadía ({horasEstadia} hs)</span>
+                                  <span className="font-medium">{formatMoney(precioEstadia)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bar */}
+                        {productosBar.length > 0 && (
+                          <div className="space-y-1 pt-1.5 border-t border-slate-200/40">
+                            <span className="text-[9px] font-black text-amber-700 uppercase tracking-wider block">Bar & Cafetería</span>
+                            <div className="pl-2 space-y-1">
+                              {(() => {
+                                const map = new Map();
+                                productosBar.forEach((p) => {
+                                  if (map.has(p.nombre)) {
+                                    const ext = map.get(p.nombre);
+                                    ext.cantidad += 1;
+                                    ext.total += p.precio;
+                                  } else {
+                                    map.set(p.nombre, { nombre: p.nombre, precio: p.precio, cantidad: 1, total: p.precio });
+                                  }
+                                });
+                                return Array.from(map.values()).map((p: any, idx) => (
+                                  <div key={idx} className="flex justify-between text-xs text-slate-700">
+                                    <span>☕ {p.nombre} <span className="text-slate-400 text-[10px] font-bold">x{p.cantidad}</span></span>
+                                    <span className="font-medium">{formatMoney(p.total)}</span>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Cosmética */}
+                        {productosCosmeticos.length > 0 && (
+                          <div className="space-y-1 pt-1.5 border-t border-slate-200/40">
+                            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Cosmética & Accesorios</span>
+                            <div className="pl-2 space-y-1">
+                              {(() => {
+                                const map = new Map();
+                                productosCosmeticos.forEach((p) => {
+                                  if (map.has(p.nombre)) {
+                                    const ext = map.get(p.nombre);
+                                    ext.cantidad += 1;
+                                    ext.total += p.precio;
+                                  } else {
+                                    map.set(p.nombre, { nombre: p.nombre, precio: p.precio, cantidad: 1, total: p.precio });
+                                  }
+                                });
+                                return Array.from(map.values()).map((p: any, idx) => (
+                                  <div key={idx} className="flex justify-between text-xs text-slate-700">
+                                    <span>✨ {p.nombre} <span className="text-slate-400 text-[10px] font-bold">x{p.cantidad}</span></span>
+                                    <span className="font-medium">{formatMoney(p.total)}</span>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Descuentos / Recargos */}
+                        {(descuento > 0 || recargo > 0) && (
+                          <div className="space-y-0.5 pt-2 border-t border-slate-200/60">
+                            {descuentoLavadero > 0 && (
+                              <div className="flex justify-between text-xs text-red-600 font-medium">
+                                <span>Desc. Lavadero ({descSectors.lavadero.tipo === 'porcentaje' ? `${descSectors.lavadero.valor}%` : 'monto'})</span>
+                                <span>-{formatMoney(descuentoLavadero)}</span>
+                              </div>
+                            )}
+                            {descuentoBar > 0 && (
+                              <div className="flex justify-between text-xs text-red-600 font-medium">
+                                <span>Desc. Bar ({descSectors.bar.tipo === 'porcentaje' ? `${descSectors.bar.valor}%` : 'monto'})</span>
+                                <span>-{formatMoney(descuentoBar)}</span>
+                              </div>
+                            )}
+                            {descuentoCosmetica > 0 && (
+                              <div className="flex justify-between text-xs text-red-600 font-medium">
+                                <span>Desc. Cosmética ({descSectors.cosmetica.tipo === 'porcentaje' ? `${descSectors.cosmetica.valor}%` : 'monto'})</span>
+                                <span>-{formatMoney(descuentoCosmetica)}</span>
+                              </div>
+                            )}
+                            {recargo > 0 && (
+                              <div className="flex justify-between text-xs text-amber-700 font-medium">
+                                <span>Recargo ({recargoPorcentaje}%)</span>
+                                <span>+{formatMoney(recargo)}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Total y Método de Pago */}
+                        <div className="pt-2 border-t border-slate-200/60 flex justify-between items-end">
+                          <div>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase block">Método de Pago</span>
+                            <span className="text-xs font-black text-indigo-700 uppercase">{formatMetodoPagoDisplay(metodoPago)}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[9px] font-bold text-slate-500 uppercase block leading-none mb-0.5">Total a Cobrar</span>
+                            <span className="text-xl font-black text-green-800 leading-none">{formatMoney(calcularTotal())}</span>
+                          </div>
+                        </div>
+                      </div>
+
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel className="h-8 text-xs font-bold border-slate-200">Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => registrarVenta()}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs font-bold uppercase tracking-tight px-4"
                         >
-                          <Check className="w-3 h-3 mr-1" /> Confirmar Cobro
+                          <Check className="w-3.5 h-3.5 mr-1" /> Confirmar Cobro
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
