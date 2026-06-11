@@ -7,7 +7,7 @@
  *   GET /api/productos                  → ambas listas combinadas { bar: [], cosmetica: [] }
  */
 
-const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+const SPREADSHEET_ID_DEFAULT = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
 const SHEET_BAR = 'Bar';
 const SHEET_COSMETICA = 'Cosmetica';
 
@@ -27,7 +27,6 @@ function parseCleanPrice(val, defaultVal = 0) {
   let str = val.toString().trim();
   if (!str) return defaultVal;
   
-  // Limpiar caracteres no numéricos excepto signos decimales y miles (dígitos, puntos, comas, menos)
   str = str.replace(/[^\d.,-]/g, '');
   
   const tienePunto = str.includes('.');
@@ -82,8 +81,8 @@ async function getAuth() {
   return token.token;
 }
 
-async function sheetsGet(token, range) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`;
+async function sheetsGet(token, spreadsheetId, range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -103,9 +102,9 @@ async function sheetsGet(token, range) {
  * Formato esperado de la hoja:
  *   A: grupo | B: nombre | C: precio | D: stock (opcional)
  */
-async function getBarProducts(token, sheetName = SHEET_BAR) {
+async function getBarProducts(token, spreadsheetId, sheetName = SHEET_BAR) {
   try {
-    const d = await sheetsGet(token, `${sheetName}!A:D`);
+    const d = await sheetsGet(token, spreadsheetId, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return [];
 
@@ -137,9 +136,9 @@ async function getBarProducts(token, sheetName = SHEET_BAR) {
  * Formato esperado de la hoja:
  *   A: nombre | B: contenido | C: pvp | D: stock (opcional)
  */
-async function getCosmeticaProducts(token, sheetName = SHEET_COSMETICA) {
+async function getCosmeticaProducts(token, spreadsheetId, sheetName = SHEET_COSMETICA) {
   try {
-    const d = await sheetsGet(token, `${sheetName}!A:D`);
+    const d = await sheetsGet(token, spreadsheetId, `${sheetName}!A:D`);
     const rows = d.values || [];
     if (rows.length <= 1) return [];
 
@@ -180,24 +179,25 @@ export default async function handler(req, res) {
     const token = await getAuth();
     const sheet = req.query?.sheet || '';
     const isTest = req.query?.test === 'true';
+    const spreadsheetId = req.query?.spreadsheetId || req.query?.spreadsheetID || req.body?.spreadsheetId || SPREADSHEET_ID_DEFAULT;
 
     const sheetBarName = isTest ? `PRUEBA-${SHEET_BAR}` : SHEET_BAR;
     const sheetCosmeticaName = isTest ? `PRUEBA-${SHEET_COSMETICA}` : SHEET_COSMETICA;
 
     if (sheet === 'bar') {
-      const bar = await getBarProducts(token, sheetBarName);
+      const bar = await getBarProducts(token, spreadsheetId, sheetBarName);
       return res.status(200).json({ ok: true, data: bar });
     }
 
     if (sheet === 'cosmetica') {
-      const cosmetica = await getCosmeticaProducts(token, sheetCosmeticaName);
+      const cosmetica = await getCosmeticaProducts(token, spreadsheetId, sheetCosmeticaName);
       return res.status(200).json({ ok: true, data: cosmetica });
     }
 
     // Sin filtro: retornar ambas
     const [bar, cosmetica] = await Promise.all([
-      getBarProducts(token, sheetBarName),
-      getCosmeticaProducts(token, sheetCosmeticaName),
+      getBarProducts(token, spreadsheetId, sheetBarName),
+      getCosmeticaProducts(token, spreadsheetId, sheetCosmeticaName),
     ]);
 
     return res.status(200).json({ ok: true, bar, cosmetica });

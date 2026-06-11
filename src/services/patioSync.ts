@@ -248,7 +248,8 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
       return { bar, cosmetica };
     } else {
       // Web/Vercel: usar API serverless
-      const resp = await fetch(`/api/productos?test=${isTest}`, { signal: AbortSignal.timeout(8000) });
+      const spreadsheetId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || '';
+      const resp = await fetch(`/api/productos?test=${isTest}&spreadsheetId=${spreadsheetId}`, { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) {
         let errMsg = `HTTP ${resp.status}`;
         try {

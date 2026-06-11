@@ -400,7 +400,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
           throw new Error(res?.error || 'Error desconocido al escribir en Google Sheets via Electron');
         }
       } else {
-        const resp = await fetch('/api/pos-sync', {
+        const resp = await googleSheetsSync.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
@@ -452,7 +452,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
           throw new Error(res?.error || 'Error desconocido al escribir en Google Sheets via Electron');
         }
       } else {
-        const resp = await fetch('/api/pos-sync', {
+        const resp = await googleSheetsSync.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
@@ -504,7 +504,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
           throw new Error(res?.error || 'Error desconocido al escribir en Google Sheets via Electron');
         }
       } else {
-        const resp = await fetch('/api/pos-sync', {
+        const resp = await googleSheetsSync.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sheet, action: 'batch', test: testMode, columns, rows })
@@ -986,7 +986,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           }
         });
     } else {
-      p2 = fetch(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
+      p2 = googleSheetsSync.fetchWithSheetId(`/api/pos-sync?sheet=Servicios&test=${testMode}`)
         .then(res => {
           if (!res.ok) {
             return res.json().then(err => { throw new Error(err.error || `HTTP ${res.status}`); });
@@ -1068,6 +1068,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [cliente, setCliente] = useState('');
   const [lavado, setLavado] = useState(0);
   const [servicio, setServicio] = useState('');
+  const [showServicioSuggestions, setShowServicioSuggestions] = useState(false);
   const [recargo, setRecargo] = useState(0);
   const [recargoPorcentaje, setRecargoPorcentaje] = useState(0);
   const [metodoPago, setMetodoPago] = useState('Efectivo');
@@ -1332,7 +1333,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     // Sync creation to Sheets
     try {
       const testMode = googleSheetsSync.isTestMode();
-      await fetch('/api/pos-sync', {
+      await googleSheetsSync.fetchWithSheetId('/api/pos-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1646,7 +1647,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       }
 
       // 2. PULL remote sales from Sheets & Merge
-      const respVentas = await fetch(`/api/pos-sync?sheet=Ventas&test=${testMode}`);
+      const respVentas = await googleSheetsSync.fetchWithSheetId(`/api/pos-sync?sheet=Ventas&test=${testMode}`);
       if (respVentas.ok) {
         const json = await respVentas.json();
         const remotas = json.data || [];
@@ -1688,7 +1689,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       }
 
       // 4. PULL remote expenses from Sheets & Merge
-      const respGastos = await fetch(`/api/pos-sync?sheet=Gastos&test=${testMode}`);
+      const respGastos = await googleSheetsSync.fetchWithSheetId(`/api/pos-sync?sheet=Gastos&test=${testMode}`);
       if (respGastos.ok) {
         const json = await respGastos.json();
         const remotas = json.data || [];
@@ -1707,7 +1708,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       }
 
       // 5. PULL cash closures from Sheets & Merge
-      const respCierres = await fetch(`/api/pos-sync?sheet=Cierres%20Caja&test=${testMode}`);
+      const respCierres = await googleSheetsSync.fetchWithSheetId(`/api/pos-sync?sheet=Cierres%20Caja&test=${testMode}`);
       if (respCierres.ok) {
         const json = await respCierres.json();
         const remotas = json.data || [];
@@ -3928,30 +3929,75 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
             {/* Selector de Servicio y Precio */}
             <div className="pt-2 border-t border-indigo-200/50 grid grid-cols-3 gap-2">
-              <div className="col-span-2">
+              <div className="col-span-2 relative">
                 <Label htmlFor="servicioSelect" className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Tipo de Lavado / Servicio</Label>
-                <Input
-                  id="servicioSelect"
-                  list="servicios-options"
-                  value={servicio}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setServicio(val);
-                    const servicioEncontrado = serviciosLavado.find(s => s.nombre.toLowerCase() === val.toLowerCase());
-                    if (servicioEncontrado) {
-                      setPrecioServicioLavado(servicioEncontrado.precio);
-                    }
-                  }}
-                  placeholder="Escribe o selecciona..."
-                  className="bg-white h-8 text-xs font-bold border-indigo-200"
-                />
-                <datalist id="servicios-options">
-                  {serviciosLavado.filter(s => s.nombre && s.nombre.trim() !== '').map((s, idx) => (
-                    <option key={idx} value={s.nombre}>
-                      {formatMoney(s.precio)}
-                    </option>
-                  ))}
-                </datalist>
+                <div className="relative">
+                  <Input
+                    id="servicioSelect"
+                    value={servicio}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setServicio(val);
+                      const servicioEncontrado = serviciosLavado.find(s => s.nombre.toLowerCase() === val.toLowerCase());
+                      if (servicioEncontrado) {
+                        setPrecioServicioLavado(servicioEncontrado.precio);
+                      }
+                      setShowServicioSuggestions(true);
+                    }}
+                    onFocus={() => setShowServicioSuggestions(true)}
+                    onBlur={() => {
+                      // Pequeño retardo para permitir que el onMouseDown de la sugerencia se dispare
+                      setTimeout(() => setShowServicioSuggestions(false), 200);
+                    }}
+                    placeholder="Escribe o selecciona..."
+                    className="bg-white h-8 pr-8 text-xs font-bold border-indigo-200 w-full"
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Previene perder el foco y que se cierre el dropdown
+                      setShowServicioSuggestions(!showServicioSuggestions);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition-colors"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showServicioSuggestions ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {showServicioSuggestions && (
+                  <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto border border-indigo-100 rounded-lg bg-white shadow-lg p-1 space-y-0.5 custom-scrollbar">
+                    {(() => {
+                      const filtrados = serviciosLavado.filter(s => 
+                        s.nombre && 
+                        s.nombre.trim() !== '' &&
+                        s.nombre.toLowerCase().includes(servicio.toLowerCase())
+                      );
+                      
+                      const listaAMostrar = filtrados.length > 0 ? filtrados : serviciosLavado.filter(s => s.nombre && s.nombre.trim() !== '');
+
+                      if (listaAMostrar.length === 0) {
+                        return <div className="text-[10px] text-slate-400 p-2 text-center">No hay servicios sugeridos</div>;
+                      }
+
+                      return listaAMostrar.map((s, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault(); // Evita el blur antes de seleccionar
+                            setServicio(s.nombre);
+                            setPrecioServicioLavado(s.precio);
+                            setShowServicioSuggestions(false);
+                          }}
+                          className="w-full text-left hover:bg-indigo-50 active:bg-indigo-100 px-2.5 py-1.5 rounded text-xs font-bold text-slate-800 transition-colors flex justify-between items-center"
+                        >
+                          <span className="truncate">{s.nombre}</span>
+                          <span className="font-black text-indigo-700 shrink-0 ml-2">{formatMoney(s.precio)}</span>
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                )}
               </div>
               <div>
                 <Label htmlFor="precioServicioInput" className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Precio</Label>
@@ -4006,7 +4052,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                               // Sync deletion to Sheets
                               try {
                                 const testMode = googleSheetsSync.isTestMode();
-                                await fetch('/api/pos-sync', {
+                                await googleSheetsSync.fetchWithSheetId('/api/pos-sync', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({

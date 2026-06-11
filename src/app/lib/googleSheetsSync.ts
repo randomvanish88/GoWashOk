@@ -92,7 +92,7 @@ export const googleSheetsSync = {
         await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas'), data);
       } else {
         // En Web / Vercel
-        await fetch('/api/pos-sync', {
+        await this.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -141,7 +141,7 @@ export const googleSheetsSync = {
         // @ts-ignore
         await window.electronAPI.googleSheets.updateRow(this.getSheetName('Ventas'), 'ID', venta.id, data);
       } else {
-        await fetch('/api/pos-sync', {
+        await this.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -224,7 +224,7 @@ export const googleSheetsSync = {
         );
         return result;
       } else {
-        const resp = await fetch('/api/pos-sync', {
+        const resp = await this.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -266,7 +266,7 @@ export const googleSheetsSync = {
         // @ts-ignore
         await window.electronAPI.googleSheets.addRow(this.getSheetName('Gastos'), data);
       } else {
-        await fetch('/api/pos-sync', {
+        await this.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -308,7 +308,7 @@ export const googleSheetsSync = {
         // @ts-ignore
         await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas Anuladas'), data);
       } else {
-        await fetch('/api/pos-sync', {
+        await this.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -319,7 +319,7 @@ export const googleSheetsSync = {
           })
         });
 
-        await fetch('/api/pos-sync', {
+        await this.fetchWithSheetId('/api/pos-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -395,5 +395,25 @@ export const googleSheetsSync = {
     } catch (error: any) {
       return { success: false, error: error.message };
     }
+  },
+
+  async fetchWithSheetId(url: string, options: any = {}) {
+    const spreadsheetId = this.getSpreadsheetId();
+    let targetUrl = url;
+    if (targetUrl.includes('?')) {
+      targetUrl += `&spreadsheetId=${spreadsheetId}`;
+    } else {
+      targetUrl += `?spreadsheetId=${spreadsheetId}`;
+    }
+    
+    let targetOptions = { ...options };
+    if (targetOptions.body && typeof targetOptions.body === 'string') {
+      try {
+        const bodyObj = JSON.parse(targetOptions.body);
+        bodyObj.spreadsheetId = spreadsheetId;
+        targetOptions.body = JSON.stringify(bodyObj);
+      } catch (_) {}
+    }
+    return fetch(targetUrl, targetOptions);
   }
 };
