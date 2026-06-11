@@ -32,6 +32,13 @@ class GoogleSheetsHandler {
     ];
   }
 
+  async ensureDoc() {
+    if (!this.doc) {
+      console.log('[GoogleSheets] Documento no inicializado. Inicializando automáticamente...');
+      await this.initialize('1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8');
+    }
+  }
+
   /**
    * Inicializa la conexión con el spreadsheet
    * @param {string} spreadsheetId ID del documento de Google Sheets
@@ -73,7 +80,7 @@ class GoogleSheetsHandler {
    * @param {object} data Objeto con los datos de la fila
    */
   async addRow(sheetTitle, data) {
-    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    await this.ensureDoc();
     
     let sheet = this.doc.sheetsByTitle[sheetTitle];
     
@@ -92,7 +99,7 @@ class GoogleSheetsHandler {
    * @param {string} sheetTitle Nombre de la pestaña
    */
   async getRows(sheetTitle) {
-    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    await this.ensureDoc();
     const sheet = this.doc.sheetsByTitle[sheetTitle];
     if (!sheet) return [];
     
@@ -104,7 +111,7 @@ class GoogleSheetsHandler {
    * Borra una fila buscando por una columna y valor específico
    */
   async deleteRow(sheetTitle, searchColumn, searchValue, extraOptions = null) {
-    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    await this.ensureDoc();
     const sheet = this.doc.sheetsByTitle[sheetTitle];
     if (!sheet) return { success: false, error: 'Hoja no encontrada' };
 
@@ -127,7 +134,7 @@ class GoogleSheetsHandler {
    * Actualiza una fila buscando por una columna y valor específico
    */
   async updateRow(sheetTitle, searchColumn, searchValue, newData) {
-    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    await this.ensureDoc();
     const sheet = this.doc.sheetsByTitle[sheetTitle];
     if (!sheet) return { success: false, error: 'Hoja no encontrada' };
 
@@ -157,7 +164,7 @@ class GoogleSheetsHandler {
    * @param {string} sheetTitle Nombre de la pestaña
    */
   async clearSheet(sheetTitle) {
-    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    await this.ensureDoc();
     
     let sheet = this.doc.sheetsByTitle[sheetTitle];
     if (!sheet) {
@@ -176,7 +183,7 @@ class GoogleSheetsHandler {
    * @param {array} data Array de arrays: primera fila son headers, resto son datos
    */
   async writeSheet(sheetTitle, data) {
-    if (!this.doc) throw new Error('Google Sheets no inicializado.');
+    await this.ensureDoc();
     if (!data || data.length === 0) return { success: false, error: 'Sin datos para escribir' };
 
     let sheet = this.doc.sheetsByTitle[sheetTitle];
