@@ -23,6 +23,8 @@ const EMBEDDED_CREDENTIALS = {
 class GoogleSheetsHandler {
   constructor() {
     this.doc = null;
+    this.initPromise = null;
+    this.currentSpreadsheetId = null;
     // Rutas de fallback por si el usuario sube un archivo externo (opcional)
     this.possiblePaths = [
       path.join(app.getPath('userData'), 'google-credentials.json'),
@@ -48,23 +50,28 @@ class GoogleSheetsHandler {
   }
 
   async ensureDoc() {
-    if (!this.doc) {
-      console.log('[GoogleSheets] Documento no inicializado. Inicializando automáticamente desde config...');
-      let spreadsheetId = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
-      try {
-        const configPath = path.join(app.getPath('userData'), 'gowash-config.json');
-        if (fs.existsSync(configPath)) {
-          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-          if (config && config.spreadsheetId) {
-            spreadsheetId = config.spreadsheetId;
-            console.log(`[GoogleSheets] ID de spreadsheet recuperado de config: ${spreadsheetId}`);
-          }
-        }
-      } catch (e) {
-        console.warn('[GoogleSheets] No se pudo leer gowash-config.json:', e.message);
-      }
-      await this.initialize(spreadsheetId);
+    if (this.initPromise) {
+      await this.initPromise;
+      return;
     }
+
+    if (this.doc) return;
+
+    console.log('[GoogleSheets] Documento no inicializado. Inicializando automáticamente desde config...');
+    let spreadsheetId = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
+    try {
+      const configPath = path.join(app.getPath('userData'), 'gowash-config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (config && config.spreadsheetId) {
+          spreadsheetId = config.spreadsheetId;
+          console.log(`[GoogleSheets] ID de spreadsheet recuperado de config: ${spreadsheetId}`);
+        }
+      }
+    } catch (e) {
+      console.warn('[GoogleSheets] No se pudo leer gowash-config.json:', e.message);
+    }
+    await this.initialize(spreadsheetId);
   }
 
   /**
@@ -72,6 +79,29 @@ class GoogleSheetsHandler {
    * @param {string} spreadsheetId ID del documento de Google Sheets
    */
   async initialize(spreadsheetId) {
+    if (this.doc && this.currentSpreadsheetId === spreadsheetId) {
+      return;
+    }
+
+    if (this.currentSpreadsheetId === spreadsheetId && this.initPromise) {
+      await this.initPromise;
+      return;
+    }
+
+    this.currentSpreadsheetId = spreadsheetId;
+    this.doc = null; // Resetear doc anterior
+
+    this.initPromise = this._doInitialize(spreadsheetId);
+    try {
+      await this.initPromise;
+    } catch (e) {
+      this.initPromise = null;
+      this.currentSpreadsheetId = null;
+      throw e;
+    }
+  }
+
+  async _doInitialize(spreadsheetId) {
     const { GoogleSpreadsheet } = await import('google-spreadsheet');
     const { JWT } = await import('google-auth-library');
 
@@ -97,9 +127,11 @@ class GoogleSheetsHandler {
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    this.doc = new GoogleSpreadsheet(spreadsheetId, serviceAccountAuth);
-    await this.doc.loadInfo();
-    console.log(`[GoogleSheets] Conectado a: ${this.doc.title}`);
+    const doc = new GoogleSpreadsheet(spreadsheetId, serviceAccountAuth);
+    await doc.loadInfo();
+    console.log(`[GoogleSheets] Conectado a: ${doc.title}`);
+
+    this.doc = doc;
 
     // Guardar ID en la configuración para auto-inicializaciones futuras
     try {
