@@ -9,6 +9,7 @@ import { Database, CheckCircle2, AlertCircle, Beaker, ShieldCheck, HelpCircle } 
 export function GoogleSheetsSettings() {
   const [sheetId, setSheetId] = useState(googleSheetsSync.getSpreadsheetId() || '');
   const [testSheetId, setTestSheetId] = useState(googleSheetsSync.getTestSpreadsheetId() || '');
+  const [driveFolderId, setDriveFolderId] = useState(googleSheetsSync.getDriveFolderId() || '');
   const [isTestMode, setIsTestMode] = useState(googleSheetsSync.isTestMode());
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -20,6 +21,7 @@ export function GoogleSheetsSettings() {
     try {
       await googleSheetsSync.setSpreadsheetId(sheetId);
       await googleSheetsSync.setTestSpreadsheetId(testSheetId);
+      googleSheetsSync.setDriveFolderId(driveFolderId);
       const result = await googleSheetsSync.setTestMode(isTestMode);
       
       if (result.success) {
@@ -126,6 +128,23 @@ export function GoogleSheetsSettings() {
                 placeholder="Deja vacío para usar el mismo archivo en pestañas diferentes"
                 className="bg-white border-slate-200 focus:ring-amber-500"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="driveFolderId" className="text-slate-700 font-semibold flex items-center gap-2">
+                ID de la Carpeta de Google Drive (para fotos)
+              </Label>
+              <Input
+                id="driveFolderId"
+                value={driveFolderId}
+                onChange={(e) => setDriveFolderId(e.target.value)}
+                placeholder="ej: 1F5a3wG36Dmg4rJm70F9kRswyC3XlHj9q"
+                className="bg-white border-slate-200 focus:ring-green-500"
+              />
+              <p className="text-[10px] text-slate-400 leading-normal">
+                ⚠️ Recordá compartir tu carpeta de Drive como <b>Editor</b> con la cuenta de servicio de Google: <br />
+                <span className="font-mono text-[9px] bg-slate-100 px-1 py-0.5 rounded select-all font-bold text-slate-700">gowash-sync@gowash-db-496413.iam.gserviceaccount.com</span>
+              </p>
             </div>
           </div>
         </div>

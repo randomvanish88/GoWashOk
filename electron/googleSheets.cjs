@@ -169,8 +169,16 @@ class GoogleSheetsHandler {
    */
   async getRows(sheetTitle) {
     await this.ensureDoc();
-    const sheet = this.getSheet(sheetTitle);
-    if (!sheet) return [];
+    let sheet = this.getSheet(sheetTitle);
+    if (!sheet && sheetTitle.startsWith('PRUEBA-')) {
+      const fallbackTitle = sheetTitle.substring(7); // remove 'PRUEBA-'
+      console.log(`[GoogleSheets] Hoja "${sheetTitle}" no encontrada, intentando fallback a "${fallbackTitle}"...`);
+      sheet = this.getSheet(fallbackTitle);
+    }
+    if (!sheet) {
+      console.warn(`[GoogleSheets] Hoja "${sheetTitle}" no encontrada en el spreadsheet.`);
+      return [];
+    }
     
     const rows = await sheet.getRows();
     return rows.map(row => row.toObject());

@@ -527,11 +527,19 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     
     // Si está editando, guardar cambios
     if (vehiculoEditando) {
-      guardarEdicion();
+      await guardarEdicion();
       return;
     }
     
     let patenteFinal = patente.trim().toUpperCase();
+    
+    // Validar patente obligatoria si ingresa al lavadero
+    const esLavadero = servicioSeleccionado && servicioSeleccionado.nombre !== 'Ninguno';
+    if (esLavadero && !patenteFinal) {
+      toast.error('La patente es obligatoria para registrar un vehículo en el lavadero.');
+      return;
+    }
+
     if (!patenteFinal) {
       const tieneConsumos = productosBarSeleccionados.length > 0 || productosCosmeticosSeleccionados.length > 0;
       if (tieneConsumos) {
@@ -540,6 +548,17 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         toast.error('La patente es obligatoria para registrar un vehículo.');
         return;
       }
+    }
+
+    // Subir fotos a Google Drive
+    let urlsFotos = [];
+    try {
+      if (fotos.length > 0) {
+        urlsFotos = await procesarYSubirFotos(patenteFinal, fechaIngreso, fotos);
+      }
+    } catch (uploadErr: any) {
+      toast.error('Error al guardar fotos', { description: uploadErr.message || 'Error al subir a Google Drive.' });
+      return;
     }
 
     const totalFinal = calcularTotal();
@@ -562,7 +581,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       productosBar: productosBarSeleccionados,
       productosCosmeticos: productosCosmeticosSeleccionados,
       descuento: 0,
-      fotos: fotos,
+      fotos: urlsFotos,
       tiempoEstimado: servicioSeleccionado ? servicioSeleccionado.tiempoEstimado : 0
     };
 
@@ -587,6 +606,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       productosBar: nuevoVehiculo.productosBar,
       productosCosmeticos: nuevoVehiculo.productosCosmeticos,
       descuento: nuevoVehiculo.descuento,
+      fotos: nuevoVehiculo.fotos,
       tiempoEstimado: nuevoVehiculo.tiempoEstimado,
     }).then(r => {
       if (r.success) toast.success('✅ Ingreso sincronizado con Google Sheets');
@@ -679,10 +699,18 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
     setPantalla('ingreso');
   };
 
-  const guardarEdicion = () => {
+  const guardarEdicion = async () => {
     if (!vehiculoEditando) return;
     
     let patenteFinal = patente.trim().toUpperCase();
+    
+    // Validar patente obligatoria si ingresa al lavadero
+    const esLavadero = servicioSeleccionado && servicioSeleccionado.nombre !== 'Ninguno';
+    if (esLavadero && !patenteFinal) {
+      toast.error('La patente es obligatoria para registrar un vehículo en el lavadero.');
+      return;
+    }
+
     if (!patenteFinal) {
       const tieneConsumos = productosBarSeleccionados.length > 0 || productosCosmeticosSeleccionados.length > 0;
       if (tieneConsumos) {
@@ -691,6 +719,15 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
         toast.error('La patente es obligatoria para registrar un vehículo.');
         return;
       }
+    }
+
+    // Subir fotos a Google Drive
+    let urlsFotos = [];
+    try {
+      urlsFotos = await procesarYSubirFotos(patenteFinal, fechaIngreso, fotos);
+    } catch (uploadErr: any) {
+      toast.error('Error al guardar fotos', { description: uploadErr.message || 'Error al subir a Google Drive.' });
+      return;
     }
     
     const totalFinal = calcularTotal();
@@ -714,7 +751,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       productosBar: productosBarSeleccionados,
       productosCosmeticos: productosCosmeticosSeleccionados,
       descuento: calcularMontoDescuento(),
-      fotos: fotos,
+      fotos: urlsFotos,
       tiempoEstimado: servicioSeleccionado ? servicioSeleccionado.tiempoEstimado : 0
     };
 
@@ -747,6 +784,7 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       productosBar: vehiculoActualizado.productosBar,
       productosCosmeticos: vehiculoActualizado.productosCosmeticos,
       descuento: vehiculoActualizado.descuento,
+      fotos: vehiculoActualizado.fotos,
       tiempoEstimado: vehiculoActualizado.tiempoEstimado,
     }).catch(err => console.error('[MobileApp] Error actualizando edición en Sheets:', err));
     
@@ -786,8 +824,8 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setFotos(prev => {
-          if (prev.length >= 5) {
-            toast.error('Límite de fotos', { description: 'Solo puedes subir hasta 5 fotos por vehículo.' });
+          if (prev.length >= 4) {
+            toast.error('Límite de fotos', { description: 'Solo puedes subir hasta 4 fotos por vehículo.' });
             return prev;
           }
           return [...prev, reader.result as string];
@@ -799,6 +837,99 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
 
   const eliminarFoto = (index: number) => {
     setFotos(fotos.filter((_, i) => i !== index));
+  };
+
+  // Comprimir imagen usando Canvas y subir a Google Drive
+  const procesarYSubirFotos = async (patenteFinal: string, fechaFinal: string, fotosBase64: string[]): Promise<string[]> => {
+    if (!fotosBase64 || fotosBase64.length === 0) return [];
+
+    // Filtrar fotos que ya son URLs para no volver a subirlas
+    const fotosYaSubidas = fotosBase64.filter(f => f.startsWith('http'));
+    const fotosNuevas = fotosBase64.filter(f => !f.startsWith('http'));
+
+    if (fotosNuevas.length === 0) return fotosYaSubidas;
+
+    toast.info('Subiendo fotos a Google Drive...');
+    
+    // Función para comprimir una imagen Base64 usando Canvas
+    const comprimirBase64 = (base64Str: string, maxWidth = 1200, maxHeight = 1200, quality = 0.75): Promise<string> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          // Calcular nuevas dimensiones manteniendo relación de aspecto
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Exportar como JPEG comprimido
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } else {
+            resolve(base64Str); // Fallback sin compresión si falla getContext
+          }
+        };
+        img.onerror = () => {
+          resolve(base64Str); // Fallback si falla la carga
+        };
+      });
+    };
+
+    // Comprimir todas las fotos nuevas en paralelo
+    const fotosComprimidas = await Promise.all(fotosNuevas.map(foto => comprimirBase64(foto)));
+
+    // Subir a la API de Vercel de a una para evitar error 413 Payload Too Large
+    const driveFolderId = localStorage.getItem('gowash-google-drive-folder-id') || '';
+    
+    const urlsNuevas: string[] = [];
+    for (let i = 0; i < fotosComprimidas.length; i++) {
+      try {
+        const response = await fetch('/api/upload-fotos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            patente: patenteFinal,
+            fecha: fechaFinal,
+            fotos: [fotosComprimidas[i]],
+            folderId: driveFolderId,
+            startIndex: i
+          }),
+        });
+
+        const resData = await response.json();
+        if (!resData.ok) {
+          throw new Error(resData.error || 'Error al subir imagen');
+        }
+        
+        if (resData.urls && resData.urls.length > 0) {
+          urlsNuevas.push(resData.urls[0]);
+        }
+      } catch (err: any) {
+        console.error(`Fallo al subir foto ${i+1}:`, err);
+        throw new Error(`Error al subir foto ${i+1}: ${err.message}`);
+      }
+    }
+
+    return [...fotosYaSubidas, ...urlsNuevas];
   };
 
   // Entregar vehículo
@@ -1419,14 +1550,14 @@ export function MobileApp({ user, onLogout, onLogin }: MobileAppProps) {
                   className="hidden"
                 />
                 
-                {fotos.length < 5 && (
+                {fotos.length < 4 && (
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
                   >
                     <Camera className="w-5 h-5" />
-                    Tomar/Seleccionar Fotos (Max 5)
+                    Tomar/Seleccionar Fotos (Max 4)
                   </button>
                 )}
 

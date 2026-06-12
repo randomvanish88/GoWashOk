@@ -3,6 +3,8 @@
  * URL: /api/servicios
  */
 
+import { getAccessToken, SCOPE_SHEETS } from './_lib/auth.js';
+
 const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
 const SHEET_SERVICIOS = 'Servicios';
 
@@ -66,18 +68,12 @@ function parseCleanStock(val, defaultVal = 10) {
 }
 
 async function getAuth() {
-  const { JWT } = await import('google-auth-library');
-  const auth = new JWT({
-    email: CREDENTIALS.client_email,
-    key: CREDENTIALS.private_key,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  const token = await auth.getAccessToken();
-  return token.token;
+  return getAccessToken(SCOPE_SHEETS);
 }
 
-async function sheetsGet(token, range) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`;
+async function sheetsGet(token, range, spreadsheetId) {
+  const activeId = spreadsheetId || SPREADSHEET_ID;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${activeId}/values/${encodeURIComponent(range)}`;
   const resp = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -105,17 +101,26 @@ export default async function handler(req, res) {
   try {
     const token = await getAuth();
     const isTest = req.query?.test === 'true';
+    const spreadsheetId = req.query?.spreadsheetId || req.query?.spreadsheetID || req.body?.spreadsheetId || SPREADSHEET_ID;
     const sheetName = isTest ? `PRUEBA-${SHEET_SERVICIOS}` : SHEET_SERVICIOS;
     
     let d;
     try {
-      d = await sheetsGet(token, `${sheetName}!A:D`);
+      d = await sheetsGet(token, `${sheetName}!A:D`, spreadsheetId);
     } catch (err) {
-      if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('400') || err.message.includes('404')) {
+      if (isTest && (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('404') || err.message.includes('400'))) {
+        try {
+          console.log(`[api/servicios] Hoja ${sheetName} no encontrada, intentando fallback a ${SHEET_SERVICIOS}...`);
+          d = await sheetsGet(token, `${SHEET_SERVICIOS}!A:D`, spreadsheetId);
+        } catch (fallbackErr) {
+          return res.status(200).json({ ok: true, data: [] });
+        }
+      } else if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('400') || err.message.includes('404')) {
         console.log(`[api/servicios] Hoja Servicios no encontrada: ${sheetName}. Retornando lista vacía.`);
         return res.status(200).json({ ok: true, data: [] });
+      } else {
+        throw err;
       }
-      throw err;
     }
 
     const rows = d.values || [];

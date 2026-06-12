@@ -68,10 +68,21 @@ function isElectron(): boolean {
     'googleSheets' in (window as any).electronAPI;
 }
 
+function getActiveSpreadsheetId(): string {
+  const isTest = localStorage.getItem('gowash-test-mode') === 'true';
+  const prodId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+  const testId = localStorage.getItem('gowash-google-sheet-id-test');
+  return isTest ? (testId || prodId) : prodId;
+}
+
+function getActiveDriveFolderId(): string {
+  return localStorage.getItem('gowash-google-drive-folder-id') || '';
+}
+
 /** Inicializa Google Sheets en Electron si no está inicializado */
 async function initElectron(): Promise<boolean> {
   try {
-    const activeId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+    const activeId = getActiveSpreadsheetId();
     const result = await (window as any).electronAPI.googleSheets.init(activeId);
     return result?.success === true;
   } catch {
@@ -122,8 +133,9 @@ export async function obtenerVehiculosDelPatio(): Promise<any[]> {
         .map(rowToVehiculo)
         .filter((v: any) => v && v.id);
     } else {
-      // Web/Vercel: usar API serverless
-      const resp = await fetch('/api/patio', { signal: AbortSignal.timeout(8000) });
+      // Web/Vercel: usar API serverless con spreadsheetId dinámico
+      const spreadsheetId = getActiveSpreadsheetId();
+      const resp = await fetch(`/api/patio?spreadsheetId=${spreadsheetId}&driveFolderId=${getActiveDriveFolderId()}`, { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       return (data.data || []);
@@ -165,16 +177,17 @@ export async function agregarVehiculoAlPatio(vehiculo: {
         productosBar: JSON.stringify(vehiculo.productosBar || []),
         productosCosmeticos: JSON.stringify(vehiculo.productosCosmeticos || []),
         descuento: (vehiculo.descuento || 0).toString(),
-        fotos: '[]',
+        fotos: JSON.stringify(vehiculo.fotos || []),
         tiempoEstimado: (vehiculo.tiempoEstimado || 0).toString(),
       };
       const result = await (window as any).electronAPI.googleSheets.addRow(SHEET, data);
       return { success: result?.success === true };
     } else {
-      const resp = await fetch('/api/patio', {
+      const spreadsheetId = getActiveSpreadsheetId();
+      const resp = await fetch(`/api/patio?spreadsheetId=${spreadsheetId}&driveFolderId=${getActiveDriveFolderId()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(vehiculo),
+        body: JSON.stringify({ ...vehiculo, spreadsheetId, driveFolderId: getActiveDriveFolderId() }),
         signal: AbortSignal.timeout(10000),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -249,8 +262,8 @@ export async function obtenerProductosDelSheets(isTest: boolean = false): Promis
       return { bar, cosmetica };
     } else {
       // Web/Vercel: usar API serverless
-      const spreadsheetId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || '';
-      const resp = await fetch(`/api/productos?test=${isTest}&spreadsheetId=${spreadsheetId}`, { signal: AbortSignal.timeout(8000) });
+      const spreadsheetId = getActiveSpreadsheetId();
+      const resp = await fetch(`/api/productos?test=${isTest}&spreadsheetId=${spreadsheetId}&driveFolderId=${getActiveDriveFolderId()}`, { signal: AbortSignal.timeout(8000) });
       if (!resp.ok) {
         let errMsg = `HTTP ${resp.status}`;
         try {
@@ -285,10 +298,11 @@ export async function actualizarVehiculoEnPatio(
       );
       return { success: result?.success === true };
     } else {
-      const resp = await fetch(`/api/patio?id=${encodeURIComponent(id)}`, {
+      const spreadsheetId = getActiveSpreadsheetId();
+      const resp = await fetch(`/api/patio?id=${encodeURIComponent(id)}&spreadsheetId=${spreadsheetId}&driveFolderId=${getActiveDriveFolderId()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({ ...updates, spreadsheetId, driveFolderId: getActiveDriveFolderId() }),
         signal: AbortSignal.timeout(10000),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -310,7 +324,8 @@ export async function vaciarPatio(): Promise<{ success: boolean; error?: string 
       const result = await (window as any).electronAPI.googleSheets.clearSheet(SHEET);
       return { success: result?.success === true };
     } else {
-      const resp = await fetch('/api/patio', {
+      const spreadsheetId = getActiveSpreadsheetId();
+      const resp = await fetch(`/api/patio?spreadsheetId=${spreadsheetId}&driveFolderId=${getActiveDriveFolderId()}`, {
         method: 'DELETE',
         signal: AbortSignal.timeout(10000),
       });

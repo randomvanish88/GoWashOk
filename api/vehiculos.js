@@ -18,15 +18,16 @@ export default async function handler(req, res) {
 
   try {
     const token = await getAuth();
+    const spreadsheetId = req.query?.spreadsheetId || req.query?.spreadsheetID || req.body?.spreadsheetId || '';
 
     if (req.method === 'GET') {
-      const data = await getCatalog(token);
+      const data = await getCatalog(token, spreadsheetId);
       return res.status(200).json({ ok: true, data });
     }
 
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      await appendToCatalog(token, body);
+      await appendToCatalog(token, body, spreadsheetId);
       return res.status(200).json({ ok: true });
     }
 
@@ -37,9 +38,9 @@ export default async function handler(req, res) {
   }
 }
 
-async function getCatalog(token) {
+async function getCatalog(token, spreadsheetId) {
   // The header is at row 1, data starts at row 2
-  const data = await sheetsRequest(token, 'GET', `${SHEET_VEHICULOS}!A:E`);
+  const data = await sheetsRequest(token, 'GET', `${SHEET_VEHICULOS}!A:E`, null, spreadsheetId);
   const rows = data.values || [];
   const headers = rows[0] || [];
   
@@ -59,7 +60,7 @@ async function getCatalog(token) {
   return vehiculos;
 }
 
-async function appendToCatalog(token, vehiculo) {
+async function appendToCatalog(token, vehiculo, spreadsheetId) {
   // Columns: Marca, Modelo, Tamaño, Precio, URL_Imagen
   const fila = [
     vehiculo.Marca || '',
@@ -69,5 +70,5 @@ async function appendToCatalog(token, vehiculo) {
     vehiculo.URL_Imagen || ''
   ];
   
-  await sheetsRequest(token, 'APPEND', `${SHEET_VEHICULOS}!A:E`, [fila]);
+  await sheetsRequest(token, 'APPEND', `${SHEET_VEHICULOS}!A:E`, [fila], spreadsheetId);
 }

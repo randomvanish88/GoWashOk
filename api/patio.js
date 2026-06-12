@@ -1,8 +1,10 @@
 /**
  * Vercel Serverless Function - Proxy para Google Sheets (Patio Lavadero)
  * URL: /api/patio
- * Usa google-auth-library (ya instalado en el proyecto)
+ * Usa crypto nativo de Node.js para autenticación JWT
  */
+
+import { getAccessToken, SCOPE_SHEETS } from './_lib/auth.js';
 
 const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
 const SHEET_PATIO = 'PWA_Lavadero';
@@ -26,18 +28,12 @@ const CREDENTIALS = {
 };
 
 export async function getAuth() {
-  const { JWT } = await import('google-auth-library');
-  const auth = new JWT({
-    email: CREDENTIALS.client_email,
-    key: CREDENTIALS.private_key,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  const token = await auth.getAccessToken();
-  return token.token;
+  return getAccessToken(SCOPE_SHEETS);
 }
 
-export async function sheetsRequest(token, method, range, body) {
-  const base = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
+export async function sheetsRequest(token, method, range, body, spreadsheetId) {
+  const activeId = spreadsheetId || SPREADSHEET_ID;
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${activeId}`;
   let url, options;
 
   if (method === 'GET') {
@@ -69,15 +65,15 @@ export async function sheetsRequest(token, method, range, body) {
   return resp.json();
 }
 
-async function ensureHeaders(token) {
-  const d = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A1:A1`);
+async function ensureHeaders(token, spreadsheetId) {
+  const d = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A1:A1`, null, spreadsheetId);
   if (!d.values || d.values[0]?.[0] !== 'id') {
-    await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!A1`, [HEADERS_PATIO]);
+    await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!A1`, [HEADERS_PATIO], spreadsheetId);
   }
 }
 
-async function getRows(token) {
-  const d = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A:T`);
+async function getRows(token, spreadsheetId) {
+  const d = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A:T`, null, spreadsheetId);
   const rows = d.values || [];
   if (rows.length <= 1) return [];
   return rows.slice(1).filter(r => r[0]).map(row => ({
@@ -95,8 +91,8 @@ async function getRows(token) {
   }));
 }
 
-async function appendRow(token, v) {
-  await ensureHeaders(token);
+async function appendRow(token, v, spreadsheetId) {
+  await ensureHeaders(token, spreadsheetId);
   const fila = [
     v.id, v.patente, v.marcaModelo||'', v.color||'',
     v.cliente||'', v.telefono||'', v.servicio||'', v.precio||0,
@@ -105,20 +101,20 @@ async function appendRow(token, v) {
     JSON.stringify(v.productosBar || []),
     JSON.stringify(v.productosCosmeticos || []),
     (v.descuento || 0).toString(),
-    '[]',
+    JSON.stringify(v.fotos || []),
     (v.tiempoEstimado || 0).toString()
   ];
-  await sheetsRequest(token, 'APPEND', null, [fila]);
+  await sheetsRequest(token, 'APPEND', null, [fila], spreadsheetId);
 }
 
-async function updateRow(token, id, updates) {
-  const d = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A:A`);
+async function updateRow(token, id, updates, spreadsheetId) {
+  const d = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A:A`, null, spreadsheetId);
   const rows = d.values || [];
   const idx = rows.findIndex((r, i) => i > 0 && r[0] === id);
   if (idx < 0) return;
   const n = idx + 1;
   
-  const rowData = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A${n}:T${n}`);
+  const rowData = await sheetsRequest(token, 'GET', `${SHEET_PATIO}!A${n}:T${n}`, null, spreadsheetId);
   let row = rowData.values ? rowData.values[0] : [];
   // Asegurar que tenga 20 columnas
   while (row.length < 20) row.push('');
@@ -140,9 +136,10 @@ async function updateRow(token, id, updates) {
   if (updates.productosBar !== undefined) row[15] = JSON.stringify(updates.productosBar);
   if (updates.productosCosmeticos !== undefined) row[16] = JSON.stringify(updates.productosCosmeticos);
   if (updates.descuento !== undefined) row[17] = updates.descuento.toString();
+  if (updates.fotos !== undefined) row[18] = JSON.stringify(updates.fotos);
   if (updates.tiempoEstimado !== undefined) row[19] = updates.tiempoEstimado.toString();
 
-  await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!A${n}:T${n}`, [row]);
+  await sheetsRequest(token, 'PUT', `${SHEET_PATIO}!A${n}:T${n}`, [row], spreadsheetId);
 }
 
 export default async function handler(req, res) {
@@ -153,15 +150,16 @@ export default async function handler(req, res) {
 
   try {
     const token = await getAuth();
+    const spreadsheetId = req.query?.spreadsheetId || req.query?.spreadsheetID || req.body?.spreadsheetId || SPREADSHEET_ID;
 
     if (req.method === 'GET') {
-      const data = await getRows(token);
+      const data = await getRows(token, spreadsheetId);
       return res.status(200).json({ ok: true, data });
     }
 
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      await appendRow(token, body);
+      await appendRow(token, body, spreadsheetId);
       return res.status(200).json({ ok: true });
     }
 
@@ -169,12 +167,12 @@ export default async function handler(req, res) {
       const id = req.query?.id || req.url?.split('id=')[1];
       if (!id) return res.status(400).json({ error: 'Falta id' });
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      await updateRow(token, decodeURIComponent(id), body);
+      await updateRow(token, decodeURIComponent(id), body, spreadsheetId);
       return res.status(200).json({ ok: true });
     }
 
     if (req.method === 'DELETE') {
-      await sheetsRequest(token, 'CLEAR', `${SHEET_PATIO}!A2:T1000`);
+      await sheetsRequest(token, 'CLEAR', `${SHEET_PATIO}!A2:T1000`, null, spreadsheetId);
       return res.status(200).json({ ok: true });
     }
 

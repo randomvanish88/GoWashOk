@@ -3,6 +3,8 @@
  * URL: /api/metodospago
  */
 
+import { getAccessToken, SCOPE_SHEETS } from './_lib/auth.js';
+
 const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
 const SHEET_METODOS = 'PWA_MetodosPago';
 
@@ -18,18 +20,12 @@ const CREDENTIALS = {
 };
 
 async function getAuth() {
-  const { JWT } = await import('google-auth-library');
-  const auth = new JWT({
-    email: CREDENTIALS.client_email,
-    key: CREDENTIALS.private_key,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  const token = await auth.getAccessToken();
-  return token.token;
+  return getAccessToken(SCOPE_SHEETS);
 }
 
-async function sheetsRequest(token, method, range, body) {
-  const base = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
+async function sheetsRequest(token, method, range, body, spreadsheetId) {
+  const activeId = spreadsheetId || SPREADSHEET_ID;
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${activeId}`;
   let url, options;
 
   if (method === 'GET') {
@@ -62,9 +58,10 @@ export default async function handler(req, res) {
 
   try {
     const token = await getAuth();
+    const spreadsheetId = req.query?.spreadsheetId || req.query?.spreadsheetID || req.body?.spreadsheetId || SPREADSHEET_ID;
 
     if (req.method === 'GET') {
-      const d = await sheetsRequest(token, 'GET', `${SHEET_METODOS}!A:A`);
+      const d = await sheetsRequest(token, 'GET', `${SHEET_METODOS}!A:A`, null, spreadsheetId);
       const rows = d.values || [];
       if (rows.length <= 1) return res.status(200).json({ ok: true, data: [] });
       // Saltear header
@@ -77,11 +74,11 @@ export default async function handler(req, res) {
       const methods = Array.isArray(body.methods) ? body.methods : [];
       
       // Limpiar primero
-      await sheetsRequest(token, 'CLEAR', `${SHEET_METODOS}!A1:A200`);
+      await sheetsRequest(token, 'CLEAR', `${SHEET_METODOS}!A1:A200`, null, spreadsheetId);
       
       // Escribir nuevos
       const rows = [['Metodo'], ...methods.map(m => [m])];
-      await sheetsRequest(token, 'PUT', `${SHEET_METODOS}!A1:A${rows.length}`, rows);
+      await sheetsRequest(token, 'PUT', `${SHEET_METODOS}!A1:A${rows.length}`, rows, spreadsheetId);
       return res.status(200).json({ ok: true });
     }
 

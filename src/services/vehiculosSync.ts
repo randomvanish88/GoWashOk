@@ -153,8 +153,12 @@ export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
     if (isElectron) {
       console.log('[VehiculosSync] 🔌 Electron: inicializando Google Sheets...');
       
-      // Paso 1: inicializar conexión con el spreadsheet ID
-      const activeId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+      // Paso 1: inicializar conexión con el spreadsheet ID dinámico (prueba/prod)
+      const isTest = localStorage.getItem('gowash-test-mode') === 'true';
+      const prodId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+      const testId = localStorage.getItem('gowash-google-sheet-id-test');
+      const activeId = isTest ? (testId || prodId) : prodId;
+
       const initResult = await (window as any).electronAPI.googleSheets.init(activeId);
       if (!initResult?.success) {
         console.error('[VehiculosSync] ❌ No se pudo inicializar Google Sheets:', initResult?.error);
@@ -178,8 +182,13 @@ export async function sincronizarDesdeGoogleSheets(): Promise<Price[]> {
 
     } else {
       // Web/PWA: fetch normal funciona bien
-      console.log('[VehiculosSync] 🌐 Web: cargando catálogo desde API...');
-      const response = await fetch('/api/vehiculos');
+      console.log('[VehiculosSync] 🌐 Web: cargando catálogo desde API con spreadsheetId...');
+      const isTest = localStorage.getItem('gowash-test-mode') === 'true';
+      const prodId = localStorage.getItem('gowash-google-sheet-id') || localStorage.getItem('gowash-spreadsheet-id') || SPREADSHEET_ID;
+      const testId = localStorage.getItem('gowash-google-sheet-id-test');
+      const spreadsheetId = isTest ? (testId || prodId) : prodId;
+
+      const response = await fetch(`/api/vehiculos?spreadsheetId=${spreadsheetId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.data && Array.isArray(data.data)) {

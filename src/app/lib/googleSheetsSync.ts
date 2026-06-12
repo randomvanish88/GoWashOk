@@ -6,6 +6,7 @@
 const SPREADSHEET_ID_KEY = 'gowash-google-sheet-id';
 const TEST_SPREADSHEET_ID_KEY = 'gowash-google-sheet-id-test';
 const TEST_MODE_KEY = 'gowash-test-mode';
+const DRIVE_FOLDER_ID_KEY = 'gowash-google-drive-folder-id';
 
 // ID por defecto embebido
 const DEFAULT_SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
@@ -355,7 +356,10 @@ export const googleSheetsSync = {
   },
 
   getSpreadsheetId() {
-    return localStorage.getItem(SPREADSHEET_ID_KEY) || DEFAULT_SPREADSHEET_ID;
+    const isTest = this.isTestMode();
+    const prodId = localStorage.getItem(SPREADSHEET_ID_KEY) || DEFAULT_SPREADSHEET_ID;
+    const testId = localStorage.getItem(TEST_SPREADSHEET_ID_KEY);
+    return isTest ? (testId || prodId) : prodId;
   },
 
   setTestSpreadsheetId(id: string) {
@@ -378,10 +382,21 @@ export const googleSheetsSync = {
     return this.init();
   },
 
+  getDriveFolderId() {
+    return localStorage.getItem(DRIVE_FOLDER_ID_KEY) || '';
+  },
+
+  setDriveFolderId(id: string) {
+    localStorage.setItem(DRIVE_FOLDER_ID_KEY, id.trim());
+  },
+
   cleanId(id: string) {
     let clean = id.trim();
     if (clean.includes('/d/')) {
       const match = clean.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) clean = match[1];
+    } else if (clean.includes('folders/')) {
+      const match = clean.match(/folders\/([a-zA-Z0-9-_]+)/);
       if (match && match[1]) clean = match[1];
     }
     return clean;
@@ -399,18 +414,17 @@ export const googleSheetsSync = {
 
   async fetchWithSheetId(url: string, options: any = {}) {
     const spreadsheetId = this.getSpreadsheetId();
+    const driveFolderId = this.getDriveFolderId();
     let targetUrl = url;
-    if (targetUrl.includes('?')) {
-      targetUrl += `&spreadsheetId=${spreadsheetId}`;
-    } else {
-      targetUrl += `?spreadsheetId=${spreadsheetId}`;
-    }
+    const connector = targetUrl.includes('?') ? '&' : '?';
+    targetUrl += `${connector}spreadsheetId=${spreadsheetId}&driveFolderId=${driveFolderId}`;
     
     let targetOptions = { ...options };
     if (targetOptions.body && typeof targetOptions.body === 'string') {
       try {
         const bodyObj = JSON.parse(targetOptions.body);
         bodyObj.spreadsheetId = spreadsheetId;
+        bodyObj.driveFolderId = driveFolderId;
         targetOptions.body = JSON.stringify(bodyObj);
       } catch (_) {}
     }

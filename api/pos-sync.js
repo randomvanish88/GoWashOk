@@ -3,6 +3,8 @@
  * URL: /api/pos-sync
  */
 
+import { getAccessToken, SCOPE_SHEETS } from './_lib/auth.js';
+
 const SPREADSHEET_ID = '1V6EmrQQIExA3UtAUeJsdAZESa1S5WiGQRAOsfHsQ6E8';
 
 const CREDENTIALS = {
@@ -39,14 +41,7 @@ const HEADERS_EXTRAS = [
 ];
 
 async function getAuth() {
-  const { JWT } = await import('google-auth-library');
-  const auth = new JWT({
-    email: CREDENTIALS.client_email,
-    key: CREDENTIALS.private_key,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  const token = await auth.getAccessToken();
-  return token.token;
+  return getAccessToken(SCOPE_SHEETS);
 }
 
 async function sheetsRequest(token, method, range, body) {
@@ -311,12 +306,20 @@ export default async function handler(req, res) {
       try {
         d = await sheetsRequest(token, 'GET', `${fullSheetName}!A:Z`);
       } catch (err) {
-        // Si la hoja no existe o no se puede leer, retornamos array vacío
-        if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('404') || err.message.includes('400')) {
+        if (isTest && (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('404') || err.message.includes('400'))) {
+          try {
+            console.log(`[pos-sync] Hoja ${fullSheetName} no encontrada, intentando fallback a ${sheet}...`);
+            d = await sheetsRequest(token, 'GET', `${sheet}!A:Z`);
+          } catch (fallbackErr) {
+            console.log(`[pos-sync] Hoja de fallback ${sheet} tampoco encontrada. Retornando vacío.`);
+            return res.status(200).json({ ok: true, data: [] });
+          }
+        } else if (err.message.includes('not found') || err.message.includes('Unable to parse range') || err.message.includes('404') || err.message.includes('400')) {
           console.log(`[pos-sync] Hoja no encontrada: ${fullSheetName}. Retornando lista vacía.`);
           return res.status(200).json({ ok: true, data: [] });
+        } else {
+          throw err;
         }
-        throw err;
       }
       const rows = d.values || [];
       if (rows.length <= 1) {

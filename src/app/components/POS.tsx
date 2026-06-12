@@ -105,6 +105,7 @@ interface Venta {
   metodoPago: string;
   pagosMixtos?: PagoParcial[];
   numeroCliente?: string;
+  contadorNumero?: number;
   estadia?: boolean;
   horasEstadia?: number;
   precioEstadia?: number;
@@ -354,6 +355,28 @@ const esLavaderoVenta = (v: any): boolean => {
   return tieneLavado || tieneServicio || tieneVehiculo;
 };
 
+const normalizarFecha = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  // Formato DD/MM/YYYY
+  const partsDMY = trimmed.split('/');
+  if (partsDMY.length === 3) {
+    const day = partsDMY[0].padStart(2, '0');
+    const month = partsDMY[1].padStart(2, '0');
+    const year = partsDMY[2];
+    return `${year}-${month}-${day}`;
+  }
+  // Formato YYYY-MM-DD
+  const partsYMD = trimmed.split('-');
+  if (partsYMD.length === 3) {
+    const year = partsYMD[0];
+    const month = partsYMD[1].padStart(2, '0');
+    const day = partsYMD[2].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return trimmed;
+};
+
 interface EditorPreciosProps {
   serviciosLavado: ServicioLavado[];
   setServiciosLavado: (s: ServicioLavado[]) => void;
@@ -597,7 +620,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
           </div>
           <div></div>
           <div className="flex items-end">
-            <Button onClick={() => setServiciosLavado([...serviciosLavado, { nombre: '', precio: 0 }])} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm py-2">+ Agregar Servicio</Button>
+            <Button onClick={() => setServiciosLavado([{ nombre: '', precio: 0 }, ...serviciosLavado])} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm py-2">+ Agregar Servicio</Button>
           </div>
         </div>
 
@@ -679,7 +702,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
             </div>
           </div>
           <div className="flex items-end">
-            <Button onClick={() => setBarProductsData([...barProductsData, { group: '', name: '', value: 0, stock: 0 }])} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-2">+ Agregar Producto</Button>
+            <Button onClick={() => setBarProductsData([{ group: '', name: '', value: 0, stock: 0 }, ...barProductsData])} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-2">+ Agregar Producto</Button>
           </div>
         </div>
 
@@ -783,7 +806,7 @@ function EditorPrecios({ serviciosLavado, setServiciosLavado, barProductsData, s
             </div>
           </div>
           <div className="flex items-end">
-            <Button onClick={() => setCosmeticosData([...cosmeticosData, { nombre: '', contenido: '', pvp: 0, stock: 0 }])} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm py-2">+ Agregar Cosmetico</Button>
+            <Button onClick={() => setCosmeticosData([{ nombre: '', contenido: '', pvp: 0, stock: 0 }, ...cosmeticosData])} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm py-2">+ Agregar Cosmetico</Button>
           </div>
         </div>
 
@@ -954,19 +977,63 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const testMode = googleSheetsSync.isTestMode();
     if (!silent) toast.info('Sincronizando precios y servicios desde Google Sheets...');
 
-    const p1 = obtenerProductosDelSheets(testMode)
-      .then(({ bar, cosmetica }) => {
-        if (bar) {
-          const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
-          setBarProductsData(barConStock);
-          localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
+    // ── Bar y Cosméticos ────────────────────────────────────────────────
+    const sheetBar = testMode ? 'PRUEBA-Bar' : 'Bar';
+    const sheetCosmetica = testMode ? 'PRUEBA-Cosmetica' : 'Cosmetica';
+
+    let p1: Promise<void>;
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
+      // Electron: IPC directo (mismo patrón que Servicios)
+      p1 = Promise.all([
+        (window as any).electronAPI.googleSheets.getRows(sheetBar),
+        (window as any).electronAPI.googleSheets.getRows(sheetCosmetica),
+      ]).then(([resBar, resCos]: [any, any]) => {
+        if (resBar.success && Array.isArray(resBar.data)) {
+          const barConStock = resBar.data
+            .filter((r: any) => !!(r.nombre ?? r.Nombre ?? r.name ?? r.Name))
+            .map((r: any) => ({
+              group: r.grupo ?? r.Grupo ?? r.group ?? r.Group ?? 'General',
+              name: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
+              value: parseCleanPrice(r.precio ?? r.Precio ?? r.value ?? r.Value ?? r.pvp ?? r.PVP),
+              stock: parseCleanStock(r.stock ?? r.Stock, 10),
+            }));
+          if (barConStock.length > 0) {
+            setBarProductsData(barConStock);
+            localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
+          }
         }
-        if (cosmetica) {
-          const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
-          setCosmeticosData(cosmeticaConStock);
-          localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
+
+        if (resCos.success && Array.isArray(resCos.data)) {
+          const cosConStock = resCos.data
+            .filter((r: any) => !!(r.nombre ?? r.Nombre ?? r.name ?? r.Name))
+            .map((r: any) => ({
+              nombre: r.nombre ?? r.Nombre ?? r.name ?? r.Name ?? '',
+              contenido: r.contenido ?? r.Contenido ?? '',
+              pvp: parseCleanPrice(r.pvp ?? r.Pvp ?? r.PVP ?? r.precio ?? r.Precio ?? r.value ?? r.Value),
+              stock: parseCleanStock(r.stock ?? r.Stock, 10),
+            }));
+          if (cosConStock.length > 0) {
+            setCosmeticosData(cosConStock);
+            localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosConStock));
+          }
         }
       });
+    } else {
+      // Web/Vercel
+      p1 = obtenerProductosDelSheets(testMode)
+        .then(({ bar, cosmetica }) => {
+          if (bar && bar.length > 0) {
+            const barConStock = bar.map(p => ({ ...p, stock: p.stock ?? 10 }));
+            setBarProductsData(barConStock);
+            localStorage.setItem('gowash-bar-precios', JSON.stringify(barConStock));
+          }
+          if (cosmetica && cosmetica.length > 0) {
+            const cosmeticaConStock = cosmetica.map(c => ({ ...c, stock: c.stock ?? 10 }));
+            setCosmeticosData(cosmeticaConStock);
+            localStorage.setItem('gowash-cosmeticos-precios', JSON.stringify(cosmeticaConStock));
+          }
+        });
+    }
 
     let p2;
     if (typeof window !== 'undefined' && (window as any).electronAPI?.googleSheets) {
@@ -1524,7 +1591,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
       const parsed: Venta = {
         id,
-        fecha: rem.Fecha || rem.fecha || '',
+        fecha: normalizarFecha(rem.Fecha || rem.fecha || ''),
         hora: rem.Hora || rem.hora || rem.Hora_Entrada || rem.horaEntrada || '',
         horaEntrada: rem.Hora_Entrada || rem.horaEntrada || '',
         horaSalida: rem.Hora_Salida || rem.horaSalida || '',
@@ -1808,7 +1875,82 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     try {
       const data = await obtenerVehiculosDelPatio();
       // Filtrar los que no tienen hora de salida y su estado no es Entregado (siguen en patio)
-      setVehiculosMovil(data.filter(v => !v.horaSalida && v.estado !== 'Entregado'));
+      const activos = data.filter(v => !v.horaSalida && v.estado !== 'Entregado');
+      setVehiculosMovil(activos);
+
+      // Sincronizar en tiempo real las órdenes móviles abiertas en el POS con los datos más recientes de Sheets
+      setOrdenesAbiertas(prev => {
+        return prev.map(o => {
+          if (o.id.startsWith('movil-')) {
+            const patioId = o.id.replace('movil-', '');
+            const matching = data.find(v => v.id === patioId);
+            if (matching) {
+              const prodsBar = Array.isArray(matching.productosBar) ? matching.productosBar : [];
+              const prodsCosmeticos = Array.isArray(matching.productosCosmeticos) ? matching.productosCosmeticos : [];
+              const totalBar = prodsBar.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
+              const totalCosmeticos = prodsCosmeticos.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
+              const desc = matching.descuento || 0;
+              const baseLavado = matching.precio > 0 ? (matching.precio - totalBar - totalCosmeticos + desc) : 0;
+
+              return {
+                ...o,
+                fecha: normalizarFecha(matching.fecha) || o.fecha,
+                empleado: matching.empleado || o.empleado,
+                patente: matching.patente || o.patente,
+                cliente: matching.cliente || o.cliente,
+                lavado: baseLavado > 0 ? baseLavado : 0,
+                bar: totalBar,
+                cosmeticos: totalCosmeticos,
+                total: matching.precio || 0,
+                descuento: desc,
+                productosBar: prodsBar,
+                productosCosmeticos: prodsCosmeticos,
+                servicio: matching.servicio || o.servicio,
+                marca: matching.marcaModelo?.split(' ')[0] || o.marca,
+                modelo: matching.marcaModelo?.split(' ').slice(1).join(' ') || o.modelo,
+              };
+            }
+          }
+          return o;
+        });
+      });
+
+      // Si el cajero tiene un formulario de cobro abierto para esta orden móvil, actualizarlo en vivo
+      if (activeOrderId && activeOrderId.startsWith('movil-')) {
+        const activePatioId = activeOrderId.replace('movil-', '');
+        const matchingVehicle = data.find(v => v.id === activePatioId);
+        if (matchingVehicle) {
+          const prodsBar = Array.isArray(matchingVehicle.productosBar) ? matchingVehicle.productosBar : [];
+          const prodsCosmeticos = Array.isArray(matchingVehicle.productosCosmeticos) ? matchingVehicle.productosCosmeticos : [];
+          const totalBar = prodsBar.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
+          const totalCosmeticos = prodsCosmeticos.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
+          const desc = matchingVehicle.descuento || 0;
+          const baseLavado = matchingVehicle.precio > 0 ? (matchingVehicle.precio - totalBar - totalCosmeticos + desc) : 0;
+
+          setProductosBar(prodsBar);
+          setProductosCosmeticos(prodsCosmeticos);
+          setPrecioServicioLavado(baseLavado > 0 ? baseLavado : 0);
+          setLavado(baseLavado > 0 ? baseLavado : 0);
+          if (matchingVehicle.servicio) {
+            setServicio(matchingVehicle.servicio);
+          }
+          if (matchingVehicle.patente) {
+            setPatente(matchingVehicle.patente);
+          }
+          if (matchingVehicle.cliente) {
+            setCliente(matchingVehicle.cliente);
+          }
+          if (matchingVehicle.empleado) {
+            setEmpleado(matchingVehicle.empleado);
+          }
+          if (desc > 0) {
+            setDescSectors((prev: any) => ({
+              ...prev,
+              lavadero: { activo: true, tipo: 'monto', valor: desc }
+            }));
+          }
+        }
+      }
 
       // Procesar los vehículos marcados como 'Entregado' (cobradas desde el celular)
       const cobrados = data.filter(v => v.estado === 'Entregado');
@@ -1841,7 +1983,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
             const nuevaVenta: Venta = {
               id: v.id,
-              fecha: v.fecha || new Date().toISOString().split('T')[0],
+              fecha: normalizarFecha(v.fecha) || new Date().toISOString().split('T')[0],
               hora: v.horaSalida || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               horaEntrada: v.horaIngreso || '',
               horaSalida: v.horaSalida || '',
@@ -2144,10 +2286,14 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       const nowTime = getCurrentTimeString();
 
     // Si viene una ordenDirecta, usamos sus datos, pero actualizamos la hora de salida a la hora actual real.
+    const cleanId = (activeOrderId && activeOrderId.startsWith('movil-'))
+      ? activeOrderId.replace('movil-', '')
+      : activeOrderId;
+
     const vBase = ordenDirecta
       ? { ...ordenDirecta, horaSalida: nowTime }
       : {
-          id: editingVentaId || Date.now().toString(),
+          id: editingVentaId || cleanId || Date.now().toString(),
           fecha,
           hora: horaEntrada,
           horaEntrada,
@@ -2216,12 +2362,23 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     const currentCount = vBase.numeroCliente ? (washCounts[vBase.numeroCliente] || 0) : 0;
     const esGratis = vBase.numeroCliente && currentCount % 6 === 5;
 
+    // Asignar número de contador al momento del cierre de venta (sólo para ventas de lavado)
+    let contadorNumero: number | undefined = vBase.contadorNumero;
+    if (!editingVentaId && vBase.lavado > 0) {
+      const fechaVenta = vBase.fecha;
+      const maxContador = ventas
+        .filter(v => v.fecha === fechaVenta && v.lavado > 0 && v.contadorNumero != null)
+        .reduce((max, v) => Math.max(max, v.contadorNumero!), 0);
+      contadorNumero = maxContador + 1;
+    }
+
     const nuevaVenta: Venta = {
       ...vBase,
       lavado: esGratis ? 0 : vBase.lavado,
       total: esGratis ? (vBase.bar + vBase.cosmeticos) : vBase.total,
       servicio: esGratis ? `GRATIS - ${vBase.servicio}` : vBase.servicio,
-      descuento: esGratis ? 0 : vBase.descuento
+      descuento: esGratis ? 0 : vBase.descuento,
+      contadorNumero
     };
 
     // Actualizar stock
@@ -2455,7 +2612,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       // Agregar como orden abierta temporalmente para que quede en el panel
       const ordenMovil: Venta = {
         id: `movil-${v.id}`,
-        fecha: v.fecha || now.toISOString().split('T')[0],
+        fecha: normalizarFecha(v.fecha) || now.toISOString().split('T')[0],
         hora: hora,
         horaEntrada: v.horaIngreso || hora,
         horaSalida: hora,
@@ -4651,173 +4808,221 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                         <Check className="w-3 h-3 mr-1" /> Cobrar
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="max-w-md bg-white border border-slate-100 shadow-2xl rounded-2xl p-5">
-                      <AlertDialogHeader className="space-y-1">
-                        <AlertDialogTitle className="text-lg font-black text-slate-800 flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-green-600 animate-bounce" /> Confirmar Cobro de Venta
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="text-xs text-slate-500">
-                          Revisa el detalle del consumo antes de registrar la venta.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-
-                      {/* Resumen de Consumo */}
-                      <div className="my-4 bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
-                        {/* Identificación */}
-                        {(patente || cliente || vehiculoSeleccionado) && (
-                          <div className="flex justify-between items-center pb-2 border-b border-slate-200/60">
-                            <div>
-                              <span className="text-[9px] font-bold text-slate-400 uppercase block">Vehículo / Identificación</span>
-                              <span className="text-xs font-bold text-slate-800">
-                                {patente ? `Patente: ${patente.toUpperCase()}` : ''}
-                                {patente && cliente ? ' — ' : ''}
-                                {cliente ? `Cliente: ${cliente}` : ''}
-                                {(patente || cliente) && vehiculoSeleccionado ? ' | ' : ''}
-                                {vehiculoSeleccionado ? `${vehiculoSeleccionado.brand} ${vehiculoSeleccionado.model}` : ''}
-                              </span>
-                            </div>
-                            {empleado && (
-                              <div className="text-right">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase block">Atendido por</span>
-                                <span className="text-xs font-bold text-slate-700">{empleado}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Lavadero */}
-                        {(servicio || getExtrasSeleccionadosItems().length > 0 || (estadia && precioEstadia)) && (
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-black text-indigo-700 uppercase tracking-wider block">Servicios de Lavadero</span>
-                            <div className="pl-2 space-y-1">
-                              {servicio && (
-                                <div className="flex justify-between text-xs text-slate-700">
-                                  <span>🚿 {servicio}</span>
-                                  <span className="font-bold">{formatMoney(precioServicioLavado)}</span>
-                                </div>
-                              )}
-                              {getExtrasSeleccionadosItems().map((extra, idx) => (
-                                <div key={idx} className="flex justify-between text-xs text-slate-600 pl-2">
-                                  <span className="flex items-center gap-1"><Plus className="w-2.5 h-2.5 text-indigo-400" /> Extra: {extra.nombre}</span>
-                                  <span className="font-medium">{formatMoney(extra.precio)}</span>
-                                </div>
-                              ))}
-                              {estadia && precioEstadia > 0 && (
-                                <div className="flex justify-between text-xs text-slate-600 pl-2">
-                                  <span className="flex items-center gap-1"><Plus className="w-2.5 h-2.5 text-indigo-400" /> Estadía ({horasEstadia} hs)</span>
-                                  <span className="font-medium">{formatMoney(precioEstadia)}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Bar */}
-                        {productosBar.length > 0 && (
-                          <div className="space-y-1 pt-1.5 border-t border-slate-200/40">
-                            <span className="text-[9px] font-black text-amber-700 uppercase tracking-wider block">Bar & Cafetería</span>
-                            <div className="pl-2 space-y-1">
-                              {(() => {
-                                const map = new Map();
-                                productosBar.forEach((p) => {
-                                  if (map.has(p.nombre)) {
-                                    const ext = map.get(p.nombre);
-                                    ext.cantidad += 1;
-                                    ext.total += p.precio;
-                                  } else {
-                                    map.set(p.nombre, { nombre: p.nombre, precio: p.precio, cantidad: 1, total: p.precio });
-                                  }
-                                });
-                                return Array.from(map.values()).map((p: any, idx) => (
-                                  <div key={idx} className="flex justify-between text-xs text-slate-700">
-                                    <span>☕ {p.nombre} <span className="text-slate-400 text-[10px] font-bold">x{p.cantidad}</span></span>
-                                    <span className="font-medium">{formatMoney(p.total)}</span>
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Cosmética */}
-                        {productosCosmeticos.length > 0 && (
-                          <div className="space-y-1 pt-1.5 border-t border-slate-200/40">
-                            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Cosmética & Accesorios</span>
-                            <div className="pl-2 space-y-1">
-                              {(() => {
-                                const map = new Map();
-                                productosCosmeticos.forEach((p) => {
-                                  if (map.has(p.nombre)) {
-                                    const ext = map.get(p.nombre);
-                                    ext.cantidad += 1;
-                                    ext.total += p.precio;
-                                  } else {
-                                    map.set(p.nombre, { nombre: p.nombre, precio: p.precio, cantidad: 1, total: p.precio });
-                                  }
-                                });
-                                return Array.from(map.values()).map((p: any, idx) => (
-                                  <div key={idx} className="flex justify-between text-xs text-slate-700">
-                                    <span>✨ {p.nombre} <span className="text-slate-400 text-[10px] font-bold">x{p.cantidad}</span></span>
-                                    <span className="font-medium">{formatMoney(p.total)}</span>
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Descuentos / Recargos */}
-                        {(descuento > 0 || recargo > 0) && (
-                          <div className="space-y-0.5 pt-2 border-t border-slate-200/60">
-                            {descuentoLavadero > 0 && (
-                              <div className="flex justify-between text-xs text-red-600 font-medium">
-                                <span>Desc. Lavadero ({descSectors.lavadero.tipo === 'porcentaje' ? `${descSectors.lavadero.valor}%` : 'monto'})</span>
-                                <span>-{formatMoney(descuentoLavadero)}</span>
-                              </div>
-                            )}
-                            {descuentoBar > 0 && (
-                              <div className="flex justify-between text-xs text-red-600 font-medium">
-                                <span>Desc. Bar ({descSectors.bar.tipo === 'porcentaje' ? `${descSectors.bar.valor}%` : 'monto'})</span>
-                                <span>-{formatMoney(descuentoBar)}</span>
-                              </div>
-                            )}
-                            {descuentoCosmetica > 0 && (
-                              <div className="flex justify-between text-xs text-red-600 font-medium">
-                                <span>Desc. Cosmética ({descSectors.cosmetica.tipo === 'porcentaje' ? `${descSectors.cosmetica.valor}%` : 'monto'})</span>
-                                <span>-{formatMoney(descuentoCosmetica)}</span>
-                              </div>
-                            )}
-                            {recargo > 0 && (
-                              <div className="flex justify-between text-xs text-amber-700 font-medium">
-                                <span>Recargo ({recargoPorcentaje}%)</span>
-                                <span>+{formatMoney(recargo)}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Total y Método de Pago */}
-                        <div className="pt-2 border-t border-slate-200/60 flex justify-between items-end">
-                          <div>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase block">Método de Pago</span>
-                            <span className="text-xs font-black text-indigo-700 uppercase">{formatMetodoPagoDisplay(metodoPago)}</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-[9px] font-bold text-slate-500 uppercase block leading-none mb-0.5">Total a Cobrar</span>
-                            <span className="text-xl font-black text-green-800 leading-none">{formatMoney(calcularTotal())}</span>
-                          </div>
-                        </div>
+                    <AlertDialogContent className="max-w-md bg-white border border-slate-100 shadow-2xl rounded-3xl p-0 overflow-hidden">
+                      <div className="bg-gradient-to-tr from-teal-600 via-emerald-600 to-green-500 text-white px-6 py-5 relative">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-5 -mt-5"></div>
+                        <AlertDialogHeader className="space-y-1 relative z-10">
+                          <AlertDialogTitle className="text-xl font-extrabold text-white flex items-center gap-2">
+                            <CheckCircle2 className="w-6 h-6 text-teal-100 animate-bounce" /> Confirmar Cobro de Venta
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-xs text-teal-50/90 font-medium">
+                            Verifica detalladamente el consumo de la orden antes de registrar el pago.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
                       </div>
 
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="h-8 text-xs font-bold border-slate-200">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => registrarVenta()}
-                          className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs font-bold uppercase tracking-tight px-4"
-                        >
-                          <Check className="w-3.5 h-3.5 mr-1" /> Confirmar Cobro
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
+                      <div className="p-6 space-y-4">
+                        {/* Resumen de Consumo */}
+                        <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                          {/* Identificación */}
+                          {(patente || cliente || vehiculoSeleccionado) && (
+                            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center gap-3">
+                              <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Vehículo / Cliente</span>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {patente && (
+                                    <span className="bg-slate-800 text-white font-mono text-xs px-2 py-0.5 rounded-md shadow-sm uppercase font-bold">
+                                      {patente.toUpperCase()}
+                                    </span>
+                                  )}
+                                  {cliente && (
+                                    <span className="bg-teal-50 text-teal-800 text-xs px-2.5 py-0.5 rounded-full font-bold border border-teal-100">
+                                      👤 {cliente}
+                                    </span>
+                                  )}
+                                </div>
+                                {vehiculoSeleccionado && (
+                                  <span className="text-xs font-bold text-slate-700 mt-1 block">
+                                    🚘 {vehiculoSeleccionado.brand} {vehiculoSeleccionado.model}
+                                  </span>
+                                )}
+                              </div>
+                              {empleado && (
+                                <div className="text-right border-l border-slate-200/80 pl-3.5">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Atendido por</span>
+                                  <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md inline-block">
+                                    {empleado}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Separator style ticket */}
+                          <div className="relative flex py-1 items-center">
+                            <div className="flex-grow border-t border-dashed border-slate-200"></div>
+                            <span className="flex-shrink mx-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Detalle</span>
+                            <div className="flex-grow border-t border-dashed border-slate-200"></div>
+                          </div>
+
+                          {/* Lavadero */}
+                          {(servicio || getExtrasSeleccionadosItems().length > 0 || (estadia && precioEstadia)) && (
+                            <div className="bg-indigo-50/40 border border-indigo-100/60 rounded-2xl p-3.5 space-y-2.5">
+                              <span className="bg-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md inline-block shadow-sm">🚿 Lavadero</span>
+                              <div className="space-y-1.5 pl-0.5">
+                                {servicio && (
+                                  <div className="flex justify-between text-xs font-bold text-slate-800">
+                                    <span className="flex items-center gap-1.5 text-slate-700">🔹 {servicio}</span>
+                                    <span>{formatMoney(precioServicioLavado)}</span>
+                                  </div>
+                                )}
+                                {getExtrasSeleccionadosItems().map((extra, idx) => (
+                                  <div key={idx} className="flex justify-between text-xs text-slate-600 pl-3">
+                                    <span className="flex items-center gap-1"><Plus className="w-2.5 h-2.5 text-indigo-400" /> Extra: {extra.nombre}</span>
+                                    <span className="font-medium text-slate-700">{formatMoney(extra.precio)}</span>
+                                  </div>
+                                ))}
+                                {estadia && precioEstadia > 0 && (
+                                  <div className="flex justify-between text-xs text-slate-600 pl-3">
+                                    <span className="flex items-center gap-1"><Plus className="w-2.5 h-2.5 text-indigo-400" /> Estadía ({horasEstadia} hs)</span>
+                                    <span className="font-medium text-slate-700">{formatMoney(precioEstadia)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Bar */}
+                          {productosBar.length > 0 && (
+                            <div className="bg-amber-50/40 border border-amber-100/60 rounded-2xl p-3.5 space-y-2.5">
+                              <span className="bg-amber-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md inline-block shadow-sm">☕ Bar & Cafetería</span>
+                              <div className="space-y-1.5 pl-0.5">
+                                {(() => {
+                                  const map = new Map();
+                                  productosBar.forEach((p) => {
+                                    if (map.has(p.nombre)) {
+                                      const ext = map.get(p.nombre);
+                                      ext.cantidad += 1;
+                                      ext.total += p.precio;
+                                    } else {
+                                      map.set(p.nombre, { nombre: p.nombre, precio: p.precio, cantidad: 1, total: p.precio });
+                                    }
+                                  });
+                                  return Array.from(map.values()).map((p: any, idx) => (
+                                    <div key={idx} className="flex justify-between text-xs text-slate-700 font-bold">
+                                      <span className="flex items-center gap-1 text-slate-600">🔹 {p.nombre} <span className="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-1">x{p.cantidad}</span></span>
+                                      <span className="font-bold text-slate-800">{formatMoney(p.total)}</span>
+                                    </div>
+                                  ));
+                                })()}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Cosmética */}
+                          {productosCosmeticos.length > 0 && (
+                            <div className="bg-emerald-50/40 border border-emerald-100/60 rounded-2xl p-3.5 space-y-2.5">
+                              <span className="bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md inline-block shadow-sm">✨ Cosmética & Accesorios</span>
+                              <div className="space-y-1.5 pl-0.5">
+                                {(() => {
+                                  const map = new Map();
+                                  productosCosmeticos.forEach((p) => {
+                                    if (map.has(p.nombre)) {
+                                      const ext = map.get(p.nombre);
+                                      ext.cantidad += 1;
+                                      ext.total += p.precio;
+                                    } else {
+                                      map.set(p.nombre, { nombre: p.nombre, precio: p.precio, cantidad: 1, total: p.precio });
+                                    }
+                                  });
+                                  return Array.from(map.values()).map((p: any, idx) => (
+                                    <div key={idx} className="flex justify-between text-xs text-slate-700 font-bold">
+                                      <span className="flex items-center gap-1 text-slate-600">🔹 {p.nombre} <span className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-1">x{p.cantidad}</span></span>
+                                      <span className="font-bold text-slate-800">{formatMoney(p.total)}</span>
+                                    </div>
+                                  ));
+                                })()}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Descuentos / Recargos */}
+                          {(descuento > 0 || recargo > 0) && (
+                            <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-3.5 space-y-1.5">
+                              <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md inline-block shadow-sm">🏷️ Descuentos & Recargos</span>
+                              <div className="space-y-1 pl-0.5">
+                                {descuentoLavadero > 0 && (
+                                  <div className="flex justify-between text-xs text-red-600 font-bold pl-1">
+                                    <span>Desc. Lavadero ({descSectors.lavadero.tipo === 'porcentaje' ? `${descSectors.lavadero.valor}%` : 'monto'})</span>
+                                    <span>-{formatMoney(descuentoLavadero)}</span>
+                                  </div>
+                                )}
+                                {descuentoBar > 0 && (
+                                  <div className="flex justify-between text-xs text-red-600 font-bold pl-1">
+                                    <span>Desc. Bar ({descSectors.bar.tipo === 'porcentaje' ? `${descSectors.bar.valor}%` : 'monto'})</span>
+                                    <span>-{formatMoney(descuentoBar)}</span>
+                                  </div>
+                                )}
+                                {descuentoCosmetica > 0 && (
+                                  <div className="flex justify-between text-xs text-red-600 font-bold pl-1">
+                                    <span>Desc. Cosmética ({descSectors.cosmetica.tipo === 'porcentaje' ? `${descSectors.cosmetica.valor}%` : 'monto'})</span>
+                                    <span>-{formatMoney(descuentoCosmetica)}</span>
+                                  </div>
+                                )}
+                                {recargo > 0 && (
+                                  <div className="flex justify-between text-xs text-amber-700 font-bold pl-1">
+                                    <span>Recargo ({recargoPorcentaje}%)</span>
+                                    <span>+{formatMoney(recargo)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Ticket Total and Payment Box */}
+                        <div className="bg-teal-50 border border-teal-100 rounded-2xl p-4 flex justify-between items-center shadow-inner">
+                          <div>
+                            <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider block mb-1">Método de Pago</span>
+                            {metodoPago === PAGO_MIXTO ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="bg-teal-700 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-sm">
+                                  {PAGO_MIXTO}
+                                </span>
+                                {pagosMixtos
+                                  .filter((p) => p.monto > 0)
+                                  .map((p, idx) => (
+                                    <span key={idx} className="text-teal-900 text-[11px] font-bold pl-1">
+                                      • {p.metodo}: <span className="font-extrabold">{formatMoney(p.monto)}</span>
+                                    </span>
+                                  ))}
+                              </div>
+                            ) : (
+                              <span className="bg-teal-600 text-white text-xs font-black uppercase px-2.5 py-1 rounded-md inline-block shadow-sm">
+                                {metodoPago}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider block mb-0.5">Total a Cobrar</span>
+                            <span className="text-2xl font-black text-teal-900 tracking-tight block">
+                              {formatMoney(calcularTotal())}
+                            </span>
+                          </div>
+                        </div>
+
+                        <AlertDialogFooter className="pt-2">
+                          <AlertDialogCancel className="h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 rounded-xl transition-all">
+                            Cancelar
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => registrarVenta()}
+                            className="bg-teal-600 hover:bg-teal-700 text-white h-9 text-xs font-bold uppercase tracking-wider px-5 rounded-xl shadow-md transition-all active:scale-[0.98]"
+                          >
+                            <Check className="w-4 h-4 mr-1.5" /> Confirmar Cobro
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </div>
                     </AlertDialogContent>
                   </AlertDialog>
                   <Button
@@ -5131,6 +5336,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                   <tr className="bg-blue-600 text-white">
                     <th className="border p-2">Contador</th>
                     <th className="border p-2">Nº Cliente</th>
+                    <th className="border p-2">Cliente</th>
                     <th className="border p-2">Entrada</th>
                     <th className="border p-2">Salida</th>
                     <th className="border p-2">Patente</th>
@@ -5146,7 +5352,10 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                 </thead>
                 <tbody>
                   {ventasFiltradas.map((venta) => {
-                    const ordenLlegada = esLavaderoVenta(venta) ? (mapeoOrdenLlegadaLavadero[venta.id] || '-') : '-';
+                    // Usar contadorNumero guardado; si no existe, calcular dinámicamente
+                    const contadorGuardado = venta.contadorNumero;
+                    const contadorDinamico = esLavaderoVenta(venta) ? (mapeoOrdenLlegadaLavadero[venta.id] || null) : null;
+                    const ordenLlegada = contadorGuardado ?? contadorDinamico ?? '-';
                     return (
                     <tr key={venta.id} className="hover:bg-gray-50">
                       <td className="border p-2 text-center">
@@ -5159,6 +5368,13 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                       <td className="border p-2 text-center">
                         {venta.numeroCliente ? (
                           <span className="font-bold text-blue-600">{venta.numeroCliente}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="border p-2 text-center">
+                        {venta.cliente ? (
+                          <span className="text-sm font-medium text-slate-700">{venta.cliente}</span>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
