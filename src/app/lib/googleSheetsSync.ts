@@ -87,10 +87,17 @@ export const googleSheetsSync = {
           Metodo_Pago: venta.metodoPago || '',
           ID: venta.id || '',
           productosBar: JSON.stringify(venta.productosBar || []),
-          productosCosmeticos: JSON.stringify(venta.productosCosmeticos || [])
+          productosCosmeticos: JSON.stringify(venta.productosCosmeticos || []),
+          Contador_Numero: venta.contadorNumero || ''
         };
+        // Intentar actualizar primero por ID para evitar duplicaciones (upsert local)
         // @ts-ignore
-        await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas'), data);
+        const resUpdate = await window.electronAPI.googleSheets.updateRow(this.getSheetName('Ventas'), 'ID', venta.id, data);
+        if (!resUpdate || !resUpdate.success) {
+          // Si no se encontró o falló la actualización, se agrega como nueva
+          // @ts-ignore
+          await window.electronAPI.googleSheets.addRow(this.getSheetName('Ventas'), data);
+        }
       } else {
         // En Web / Vercel
         await this.fetchWithSheetId('/api/pos-sync', {

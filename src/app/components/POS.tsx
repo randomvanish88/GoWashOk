@@ -895,6 +895,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
   const [vehiculosMovil, setVehiculosMovil] = useState<any[]>([]);
   const [cargandoMovil, setCargandoMovil] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const syncInProgressRef = useRef(false);
   const [productosBar, setProductosBar] = useState<ProductoVenta[]>([]);
   const [productosCosmeticos, setProductosCosmeticos] = useState<ProductoVenta[]>([]);
   const [ventasAnuladas, setVentasAnuladas] = useState<VentaAnulada[]>([]);
@@ -922,9 +923,20 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     return sectorMatch && pagoMatch;
   }).sort((a, b) => {
-    const timeA = parseInt(a.id) || 0;
-    const timeB = parseInt(b.id) || 0;
-    return ordenVentas === 'desc' ? timeB - timeA : timeA - timeB;
+    const timeA = a.horaSalida || a.hora || '';
+    const timeB = b.horaSalida || b.hora || '';
+    if (timeA && timeB) {
+      const cmp = timeA.localeCompare(timeB);
+      if (cmp !== 0) {
+        return ordenVentas === 'desc' ? -cmp : cmp;
+      }
+    }
+    const idA = parseInt(a.id) || 0;
+    const idB = parseInt(b.id) || 0;
+    if (idA !== idB) {
+      return ordenVentas === 'desc' ? idB - idA : idA - idB;
+    }
+    return ordenVentas === 'desc' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
   });
 
   // Estados nuevos para Consumo Empleados
@@ -1609,6 +1621,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         servicio: rem.Servicio || rem.servicio || '',
         productosBar: typeof rem.productosBar === 'string' && rem.productosBar !== '' ? JSON.parse(rem.productosBar) : (Array.isArray(rem.productosBar) ? rem.productosBar : []),
         productosCosmeticos: typeof rem.productosCosmeticos === 'string' && rem.productosCosmeticos !== '' ? JSON.parse(rem.productosCosmeticos) : (Array.isArray(rem.productosCosmeticos) ? rem.productosCosmeticos : []),
+        contadorNumero: rem.Contador_Numero ? parseInt(rem.Contador_Numero) : (rem.contadorNumero ? parseInt(rem.contadorNumero) : undefined),
         sincronizado: true
       } as any;
 
@@ -1686,6 +1699,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
   const sincronizarTodoPOS = async () => {
     if (typeof window === 'undefined' || !navigator.onLine) return;
+    if (syncInProgressRef.current) return;
+    syncInProgressRef.current = true;
 
     try {
       const testMode = googleSheetsSync.isTestMode();
@@ -1809,6 +1824,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     } catch (error) {
       console.warn('[SyncPOS] Error durante la sincronización:', error);
+    } finally {
+      syncInProgressRef.current = false;
     }
   };
 
@@ -1940,6 +1957,9 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
           if (matchingVehicle.cliente) {
             setCliente(matchingVehicle.cliente);
           }
+          if (matchingVehicle.telefono !== undefined) {
+            setNumeroCliente(matchingVehicle.telefono);
+          }
           if (matchingVehicle.empleado) {
             setEmpleado(matchingVehicle.empleado);
           }
@@ -1980,16 +2000,25 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
             const totalCosmeticos = prodsCosmeticos.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
             const desc = v.descuento || 0;
             const baseLavado = v.precio > 0 ? (v.precio - totalBar - totalCosmeticos + desc) : 0;
+            const fechaVenta = normalizarFecha(v.fecha) || new Date().toISOString().split('T')[0];
+            let contadorNumero: number | undefined = undefined;
+            if (baseLavado > 0) {
+              const maxContador = nuevasVentas
+                .filter(sale => sale.fecha === fechaVenta && sale.lavado > 0 && sale.contadorNumero != null)
+                .reduce((max, sale) => Math.max(max, sale.contadorNumero!), 0);
+              contadorNumero = maxContador + 1;
+            }
 
             const nuevaVenta: Venta = {
               id: v.id,
-              fecha: normalizarFecha(v.fecha) || new Date().toISOString().split('T')[0],
+              fecha: fechaVenta,
               hora: v.horaSalida || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               horaEntrada: v.horaIngreso || '',
               horaSalida: v.horaSalida || '',
               empleado: v.empleado || 'Celular',
               patente: v.patente || '',
               cliente: v.cliente || 'Particular',
+              numeroCliente: v.telefono || '',
               lavado: baseLavado > 0 ? baseLavado : 0,
               bar: totalBar,
               cosmeticos: totalCosmeticos,
@@ -2002,6 +2031,8 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
               servicio: v.servicio || '',
               marca: v.marcaModelo?.split(' ')[0] || '',
               modelo: v.marcaModelo?.split(' ').slice(1).join(' ') || '',
+              contadorNumero,
+              sincronizado: false
             };
 
             nuevasVentas.unshift(nuevaVenta); // Agregar al inicio del registro de ventas
@@ -2029,6 +2060,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         if (huboCambios) {
           setVentas(nuevasVentas);
           localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
+          setTimeout(sincronizarTodoPOS, 100);
         }
       }
     } catch (err) {
@@ -2428,19 +2460,24 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       };
       setAuditLogs(prev => [log, ...prev]);
       
-      const nuevasVentas = ventas.map(v => v.id === editingVentaId ? nuevaVenta : v);
+      const ventaEditadaSincronizada = { ...nuevaVenta, sincronizado: true };
+      const nuevasVentas = ventas.map(v => v.id === editingVentaId ? ventaEditadaSincronizada : v);
       setVentas(nuevasVentas);
-      googleSheetsSync.syncUpdateVenta(nuevaVenta);
+      localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
+      
+      googleSheetsSync.syncUpdateVenta(ventaEditadaSincronizada);
     } else {
-      const nuevasVentas = [nuevaVenta, ...ventas];
+      const ventaAGuardar = { ...nuevaVenta, sincronizado: false };
+      const nuevasVentas = [ventaAGuardar, ...ventas];
       setVentas(nuevasVentas);
+      localStorage.setItem('gowash-ventas', JSON.stringify(nuevasVentas));
 
       if (nuevaVenta.numeroCliente) {
         const newCounts = { ...washCounts, [nuevaVenta.numeroCliente]: currentCount + 1 };
         setWashCounts(newCounts);
       }
 
-      googleSheetsSync.syncVenta(nuevaVenta);
+      setTimeout(sincronizarTodoPOS, 100);
     }
     
     limpiarFormulario();
@@ -2546,6 +2583,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
       setHoraEntrada(v.horaIngreso || hora);
       setHoraSalida(hora);
       setMetodoPago(v.metodoPago || 'Efectivo');
+      setNumeroCliente(v.telefono || '');
 
       // Recuperar arrays de productos (si vienen) y asegurar que sean arrays
       const prodsBar = Array.isArray(v.productosBar) ? v.productosBar : [];
@@ -2619,6 +2657,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         empleado: v.empleado || '',
         patente: v.patente || '',
         cliente: v.cliente || '',
+        numeroCliente: v.telefono || '',
         lavado: v.precio > 0 ? (v.precio - totalBar - totalCosmeticos + desc > 0 ? v.precio - totalBar - totalCosmeticos + desc : 0) : 0,
         bar: totalBar,
         cosmeticos: totalCosmeticos,

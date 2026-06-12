@@ -22,7 +22,7 @@ const HEADERS_VENTAS = [
   'Fecha', 'Hora_Entrada', 'Hora_Salida', 'Empleado', 'Patente',
   'Cliente', 'Numero_Cliente', 'Vehiculo', 'Servicio', 'Lavado',
   'Bar', 'Cosmeticos', 'Descuento', 'Estadia', 'Total', 'Metodo_Pago', 'ID',
-  'productosBar', 'productosCosmeticos'
+  'productosBar', 'productosCosmeticos', 'Contador_Numero'
 ];
 
 const HEADERS_GASTOS = [
@@ -141,7 +141,8 @@ function parseVentaToRow(v) {
     v.metodoPago || '',
     v.id || '',
     JSON.stringify(v.productosBar || []),
-    JSON.stringify(v.productosCosmeticos || [])
+    JSON.stringify(v.productosCosmeticos || []),
+    (v.contadorNumero || '').toString()
   ];
 }
 
@@ -405,7 +406,7 @@ export default async function handler(req, res) {
 
         // Asegurar headers
         const dHeader = await sheetsRequest(token, 'GET', `${fullSheetName}!A1:Z1`);
-        if (!dHeader.values || dHeader.values[0]?.[0] !== columns[0]) {
+        if (!dHeader.values || dHeader.values[0]?.[0] !== columns[0] || dHeader.values[0]?.length < columns.length) {
           await sheetsRequest(token, 'PUT', `${fullSheetName}!A1`, [columns]);
         }
 
