@@ -157,6 +157,21 @@ class GoogleSheetsHandler {
     if (!sheet) {
       console.log(`[GoogleSheets] La hoja "${sheetTitle}" no existe. Creándola...`);
       sheet = await this.doc.addSheet({ title: sheetTitle, headerValues: Object.keys(data) });
+    } else {
+      // Validar si los encabezados en Google Sheets son correctos o si la hoja está corrupta
+      try {
+        const expectedHeaders = Object.keys(data);
+        const currentHeaders = sheet.headerValues || [];
+        const firstKey = expectedHeaders[0];
+        const firstHeader = currentHeaders[0] || '';
+        
+        if (currentHeaders.length === 0 || firstHeader.trim().toLowerCase() !== firstKey.trim().toLowerCase()) {
+          console.log(`[GoogleSheets] Encabezados de "${sheetTitle}" corruptos o ausentes. Restableciendo...`);
+          await sheet.setHeaderRow(expectedHeaders);
+        }
+      } catch (err) {
+        console.warn(`[GoogleSheets] Advertencia al verificar/corregir encabezados de "${sheetTitle}":`, err.message);
+      }
     }
 
     await sheet.addRow(data);
