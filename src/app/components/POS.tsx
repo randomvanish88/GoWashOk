@@ -26,7 +26,7 @@ import {
   metodosParaPagoMixto,
 } from './pagoMixto';
 import { googleSheetsSync } from '../lib/googleSheetsSync';
-import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio, obtenerProductosDelSheets, vaciarPatio } from '../../services/patioSync';
+import { obtenerVehiculosDelPatio, actualizarVehiculoEnPatio, obtenerProductosDelSheets, vaciarPatio, eliminarVehiculoDelPatio } from '../../services/patioSync';
 import { toast } from 'sonner';
 
 
@@ -3017,6 +3017,45 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const reordenarContadoresDia = (fecha: string, ventasActuales: Venta[]) => {
+    // Filtrar las ventas con lavado de ese día
+    const ventasDia = ventasActuales
+      .filter(v => v.fecha === fecha && esLavaderoVenta(v))
+      .sort((a, b) => {
+        const h1 = a.horaEntrada || a.hora || '';
+        const h2 = b.horaEntrada || b.hora || '';
+        if (!h1) return 1;
+        if (!h2) return -1;
+        const [hrs1, min1] = h1.split(':').map(Number);
+        const [hrs2, min2] = h2.split(':').map(Number);
+        if (hrs1 !== hrs2) return hrs1 - hrs2;
+        if (min1 !== min2) return min1 - min2;
+        return a.id.localeCompare(b.id);
+      });
+
+    // Asignar nuevos números consecutivos empezando de 1
+    const mapeoNuevosContadores = new Map<string, number>();
+    ventasDia.forEach((v, index) => {
+      mapeoNuevosContadores.set(v.id, index + 1);
+    });
+
+    // Devolver una nueva lista de ventas con los contadores actualizados
+    return ventasActuales.map(v => {
+      if (mapeoNuevosContadores.has(v.id)) {
+        const nuevoContador = mapeoNuevosContadores.get(v.id)!;
+        if (v.contadorNumero !== nuevoContador) {
+          const ventaActualizada = { ...v, contadorNumero: nuevoContador };
+          // Enviar actualización a Google Sheets en segundo plano
+          googleSheetsSync.syncVenta(ventaActualizada).catch(err => {
+            console.error('Error actualizando contador en Sheets:', err);
+          });
+          return ventaActualizada;
+        }
+      }
+      return v;
+    });
+  };
+
   const confirmarAnulacion = () => {
     if (!motivoAnulacion) {
       toast.error('Motivo requerido', { description: 'Debe ingresar un motivo para la anulación' });
@@ -3029,13 +3068,49 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
     if (itemAAnular.type === 'venta') {
       item = ventas.find(v => v.id === itemAAnular.id);
       if (item) {
-        setVentas(ventas.filter(v => v.id !== itemAAnular.id));
+        const ventasRestantes = ventas.filter(v => v.id !== itemAAnular.id);
+        const ventasReordenadas = reordenarContadoresDia(item.fecha, ventasRestantes);
+        setVentas(ventasReordenadas);
+        localStorage.setItem('gowash-ventas', JSON.stringify(ventasReordenadas));
       }
     } else {
+      const isMovil = itemAAnular.id.startsWith('movil-');
+      const patioId = isMovil ? itemAAnular.id.replace('movil-', '') : '';
+
       item = ordenesAbiertas.find(o => o.id === itemAAnular.id);
       if (item) {
         setOrdenesAbiertas(ordenesAbiertas.filter(o => o.id !== itemAAnular.id));
         if (activeOrderId === itemAAnular.id) limpiarFormulario();
+      } else if (isMovil && patioId) {
+        const vMovil = vehiculosMovil.find(v => v.id === patioId);
+        if (vMovil) {
+          item = {
+            id: itemAAnular.id,
+            fecha: vMovil.fecha || getTodayStr(),
+            hora: vMovil.horaIngreso || '',
+            patente: vMovil.patente || '',
+            cliente: vMovil.cliente || '',
+            vehiculo: vMovil.marcaModelo || '',
+            marca: vMovil.marcaModelo?.split(' ')[0] || '',
+            modelo: vMovil.marcaModelo?.split(' ').slice(1).join(' ') || '',
+            servicio: vMovil.servicio || '',
+            total: vMovil.precio || 0,
+            lavado: vMovil.precio || 0,
+            bar: 0,
+            cosmeticos: 0,
+            metodoPago: 'Efectivo',
+            empleado: vMovil.empleado || '',
+            productosBar: [],
+            productosCosmeticos: []
+          };
+        }
+      }
+
+      if (isMovil && patioId) {
+        setVehiculosMovil(prev => prev.filter(v => v.id !== patioId));
+        eliminarVehiculoDelPatio(patioId).catch(err => {
+          console.error('[Anulacion] Error eliminando vehículo móvil en Sheets:', err);
+        });
       }
     }
 
@@ -5305,13 +5380,33 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
                                 )}
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              className="w-full h-8 text-[10px] font-black bg-purple-600 hover:bg-purple-700 text-white"
-                              onClick={() => cargarVehiculoMovilEnPOS(v)}
-                            >
-                              💰 Cerrar venta
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="flex-1 h-8 text-[10px] font-black bg-purple-600 hover:bg-purple-700 text-white"
+                                onClick={() => cargarVehiculoMovilEnPOS(v)}
+                              >
+                                💰 Cerrar venta
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0">✕</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar vehículo de la App?</AlertDialogTitle>
+                                    <AlertDialogDescription>Se perderán los datos del vehículo móvil {v.patente || 'S/P'} en el patio.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>No, mantener</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => { setItemAAnular({ id: `movil-${v.id}`, type: 'orden' }); setShowAnulacionDialog(true); }}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >Sí, eliminar</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </Card>
                         );
                       })

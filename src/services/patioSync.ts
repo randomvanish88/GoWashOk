@@ -315,6 +315,31 @@ export async function actualizarVehiculoEnPatio(
   }
 }
 
+// ─── ELIMINAR VEHÍCULO ────────────────────────────────────────────────────────
+
+export async function eliminarVehiculoDelPatio(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (isElectron()) {
+      await initElectron();
+      const result = await (window as any).electronAPI.googleSheets.deleteRow(
+        SHEET, 'id', id
+      );
+      return { success: result?.success === true };
+    } else {
+      const spreadsheetId = getActiveSpreadsheetId();
+      const resp = await fetch(`/api/patio?id=${encodeURIComponent(id)}&action=delete&spreadsheetId=${spreadsheetId}&driveFolderId=${getActiveDriveFolderId()}`, {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return { success: true };
+    }
+  } catch (error: any) {
+    console.error('[PatioSync] Error eliminando vehículo:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 // ─── VACIAR PATIO ─────────────────────────────────────────────────────────────
 
 export async function vaciarPatio(): Promise<{ success: boolean; error?: string }> {
