@@ -161,6 +161,10 @@ class GoogleSheetsHandler {
       // Validar si los encabezados en Google Sheets son correctos o si la hoja está corrupta
       try {
         const expectedHeaders = Object.keys(data);
+        
+        // Cargar los encabezados reales de la hoja antes de acceder a sheet.headerValues
+        await sheet.loadHeaderRow();
+        
         const currentHeaders = sheet.headerValues || [];
         const firstKey = expectedHeaders[0];
         const firstHeader = currentHeaders[0] || '';
@@ -171,6 +175,13 @@ class GoogleSheetsHandler {
         }
       } catch (err) {
         console.warn(`[GoogleSheets] Advertencia al verificar/corregir encabezados de "${sheetTitle}":`, err.message);
+        // Si no se pudieron cargar los encabezados o están corruptos, forzamos la configuración
+        try {
+          const expectedHeaders = Object.keys(data);
+          await sheet.setHeaderRow(expectedHeaders);
+        } catch (setErr) {
+          console.error(`[GoogleSheets] Error crítico al intentar forzar encabezados de "${sheetTitle}":`, setErr.message);
+        }
       }
     }
 
