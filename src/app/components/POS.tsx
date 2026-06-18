@@ -1932,45 +1932,7 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
         });
       });
 
-      // Si el cajero tiene un formulario de cobro abierto para esta orden móvil, actualizarlo en vivo
-      if (activeOrderId && activeOrderId.startsWith('movil-')) {
-        const activePatioId = activeOrderId.replace('movil-', '');
-        const matchingVehicle = data.find(v => v.id === activePatioId);
-        if (matchingVehicle) {
-          const prodsBar = Array.isArray(matchingVehicle.productosBar) ? matchingVehicle.productosBar : [];
-          const prodsCosmeticos = Array.isArray(matchingVehicle.productosCosmeticos) ? matchingVehicle.productosCosmeticos : [];
-          const totalBar = prodsBar.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
-          const totalCosmeticos = prodsCosmeticos.reduce((sum: number, p: any) => sum + (p.precio || 0), 0);
-          const desc = matchingVehicle.descuento || 0;
-          const baseLavado = matchingVehicle.precio > 0 ? (matchingVehicle.precio - totalBar - totalCosmeticos + desc) : 0;
 
-          setProductosBar(prodsBar);
-          setProductosCosmeticos(prodsCosmeticos);
-          setPrecioServicioLavado(baseLavado > 0 ? baseLavado : 0);
-          setLavado(baseLavado > 0 ? baseLavado : 0);
-          if (matchingVehicle.servicio) {
-            setServicio(matchingVehicle.servicio);
-          }
-          if (matchingVehicle.patente) {
-            setPatente(matchingVehicle.patente);
-          }
-          if (matchingVehicle.cliente) {
-            setCliente(matchingVehicle.cliente);
-          }
-          if (matchingVehicle.telefono !== undefined) {
-            setNumeroCliente(matchingVehicle.telefono);
-          }
-          if (matchingVehicle.empleado) {
-            setEmpleado(matchingVehicle.empleado);
-          }
-          if (desc > 0) {
-            setDescSectors((prev: any) => ({
-              ...prev,
-              lavadero: { activo: true, tipo: 'monto', valor: desc }
-            }));
-          }
-        }
-      }
 
       // Procesar los vehículos marcados como 'Entregado' (cobradas desde el celular)
       const cobrados = data.filter(v => v.estado === 'Entregado');
@@ -2560,6 +2522,22 @@ export function POS({ prices = [], isAdmin = false, onNavigateToPrices }: { pric
 
     if (activeOrderId) {
       setOrdenesAbiertas(ordenesAbiertas.map(o => o.id === activeOrderId ? orden : o));
+      
+      // Si es una orden móvil, sincronizar de inmediato los cambios (incluyendo consumos) con Sheets
+      if (activeOrderId.startsWith('movil-')) {
+        const patioId = activeOrderId.replace('movil-', '');
+        actualizarVehiculoEnPatio(patioId, {
+          productosBar: JSON.stringify(orden.productosBar || []),
+          productosCosmeticos: JSON.stringify(orden.productosCosmeticos || []),
+          precio: orden.total,
+          servicio: orden.servicio || '',
+          cliente: orden.cliente || '',
+          patente: orden.patente || '',
+          telefono: orden.numeroCliente || '',
+          empleado: orden.empleado || '',
+          descuento: orden.descuento || 0
+        }).catch(err => console.error('[POS] Error al sincronizar cambios de orden móvil guardada en Sheets:', err));
+      }
     } else {
       setOrdenesAbiertas([...ordenesAbiertas, orden]);
     }
